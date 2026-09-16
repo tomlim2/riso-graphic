@@ -24,6 +24,9 @@ const RATES = [
   { label: "8", hold: 3, title: "세 프레임에 한 장. 박자가 또렷해진다" }
 ];
 const PLAY_SCALE = 0.62; // 재생용 종이 크기. 망점도 같이 줄어 눈에는 같은 스크린으로 보인다
+// 손잡이를 끄는 동안 쓰는 크기. 한 장을 찍는 값이 재생 예산 안에 들어와야 하므로 더 작다.
+// 굽지 않고 프레임마다 바로 찍으니, 끄는 손과 화면이 같이 움직인다.
+const PREVIEW_SCALE = 0.42;
 const GRID_SCALE = 1 / 3;
 
 const canvas = document.getElementById("sheet");
@@ -85,6 +88,8 @@ let raf = 0;
 // 다시 잇는" 것과 "멈춰 달라고 해서 멈춘 것"이 섞이지 않는다.
 let wantsPlay = false;
 let resumeTimer = 0;
+let live = false;
+let liveRaf = 0;
 
 // 굽는 도중에 다이얼이 또 움직이면 앞의 굽기를 버려야 한다. 세대 번호가 그 표다.
 let generation = 0;
@@ -261,6 +266,38 @@ function showFrame(frame) {
   return true;
 }
 
+// 미리보기. 굽지 않고 프레임마다 바로 찍는다. 손잡이를 끄는 동안에는 필름을 다시 굽는 것이
+// 불가능하므로(한 벌에 1초 넘게 걸린다) 화질을 내주고 움직임을 지킨다. 따라가지 못하면
+// 프레임이 떨어질 뿐인데, 프레임 번호를 벽시계에서 뽑으므로 박자는 어긋나지 않는다.
+function startLive() {
+  if (live) return;
+  live = true;
+  const started = performance.now();
+
+  const step = (now) => {
+    if (!live) return;
+    const frame = Math.floor(((now - started) / 1000) * FPS) % FRAMES;
+    state.frame = frame;
+    printSheet(canvas, settings(plateById(state.plate), PALETTES[state.palette], { frame, scale: PREVIEW_SCALE }));
+    frameOut.textContent = `${frame} / ${FRAMES}`;
+    liveRaf = requestAnimationFrame(step);
+  };
+
+  liveRaf = requestAnimationFrame(step);
+}
+
+function stopLive() {
+  live = false;
+  cancelAnimationFrame(liveRaf);
+}
+
+// 멈춰 있을 때 끄는 동안. 움직이지는 않지만 손을 따라와야 하므로 작게 한 장만 찍는다.
+function sketch() {
+  printSheet(canvas, settings(plateById(state.plate), PALETTES[state.palette], { frame: state.frame, scale: PREVIEW_SCALE }));
+  status.textContent = `${plateById(state.plate).name} · DRAFT · F${state.frame}`;
+  writeHash();
+}
+
 // 기계를 세운다. 쓰는 사람의 뜻은 건드리지 않는다.
 function stop() {
   generation += 1;
@@ -275,13 +312,15 @@ function stop() {
 function halt() {
   wantsPlay = false;
   stop();
+  stopLive();
 }
 
-// 다이얼이 바뀐 뒤 다시 잇는다. 슬라이더는 끄는 동안 계속 바뀌므로 잠시 기다렸다가 간다.
+// 손이 멎은 뒤에 할 일. 움직이던 중이었으면 구워서 잇고, 멈춰 있었으면 제 크기로 다시 찍는다.
+// 끄는 동안에는 둘 다 못 한다 — 굽는 데 1초, 제 크기 한 장에 100밀리초가 넘게 든다.
 function resume(delay = 0) {
   clearTimeout(resumeTimer);
-  if (!wantsPlay || state.grid !== "off") return;
-  resumeTimer = setTimeout(play, delay);
+  if (state.grid !== "off") return;
+  resumeTimer = setTimeout(() => (wantsPlay ? play() : render()), delay);
 }
 
 async function play() {
@@ -292,6 +331,7 @@ async function play() {
 
   wantsPlay = true;
   stop();
+  stopLive();
   const mine = generation;
 
   playButton.textContent = "PRINTING…";
@@ -371,16 +411,15 @@ function buildRow(row, items, isOn, onPick, decorate) {
     button.addEventListener("click", () => {
       onPick(item);
       mark(row, items, isOn);
-      render();
-      resume(); // 버튼은 한 번 누르고 끝이라 기다릴 것 없이 바로 잇는다
+      nudged(); // 슬라이더와 같은 길 — 바로 가벼운 한 장, 잠시 뒤 제 것으로
     });
     row.append(button);
   }
   mark(row, items, isOn);
 }
 
-// 슬라이더는 끄는 내내 값이 바뀐다. 그 동안은 정지 화면을 보여 주고, 손이 멎으면 잇는다.
-// 한 칸 움직일 때마다 다시 구우면 아무것도 못 한다.
+// 슬라이더는 끄는 내내 값이 바뀐다. 손이 멎고 이만큼 지나야 다시 굽는다.
+// 한 칸 움직일 때마다 굽기 시작하면 아무것도 못 한다.
 const SETTLE = 500;
 
 // 고른 판의 손잡이만 조절칸으로 짓는다. 판을 바꾸면 칸도 통째로 바뀐다 — 남의 판에 없는
@@ -420,11 +459,9 @@ function buildKnobs() {
     if (knob.hint) input.title = knob.hint;
 
     input.addEventListener("input", () => {
-      stop();
       values[knob.key] = Number(input.value);
       out.textContent = values[knob.key].toFixed(digits);
-      render();
-      resume(SETTLE);
+      nudged();
     });
 
     row.append(head, input);
@@ -491,21 +528,35 @@ buildRow(
   (item) => { stop(); state.boil = item.kind; }
 );
 
+// 값이 끌리는 동안. 움직이던 중이었으면 미리보기로 계속 돌리고, 멈춰 있었으면 정지 화면만
+// 다시 찍는다. 손이 멎으면 제 크기로 구워 넘긴다.
+function nudged() {
+  stop();
+
+  if (state.grid !== "off") {
+    render();
+  } else if (wantsPlay) {
+    startLive();
+    status.textContent = `${plateById(state.plate).name} · LIVE`;
+    writeHash();
+  } else {
+    sketch();
+  }
+
+  resume(SETTLE);
+}
+
 for (const [name, dial] of Object.entries(dials)) {
   dial.input.addEventListener("input", () => {
-    stop();
     state[name] = dial.read(dial.input.value);
     dial.out.textContent = dial.show(state[name]);
-    render();
-    resume(SETTLE);
+    nudged();
   });
 }
 
 headlineInput.addEventListener("input", () => {
-  stop();
   state.headline = headlineInput.value;
-  render();
-  resume(SETTLE);
+  nudged();
 });
 
 // 프레임을 직접 끄는 것은 "이 한 장을 보겠다"는 뜻이다. 멈춘 채로 둔다.
@@ -525,10 +576,8 @@ playButton.addEventListener("click", () => {
 });
 
 document.getElementById("reroll").addEventListener("click", () => {
-  stop();
   state.seed = (Math.random() * 0xffffffff) >>> 0;
-  render();
-  resume();
+  nudged();
 });
 
 document.getElementById("save").addEventListener("click", () => {
@@ -548,11 +597,9 @@ addEventListener("keydown", (event) => {
   if (event.key === "s" || event.key === "S") document.getElementById("save").click();
   if (event.key === " ") { event.preventDefault(); playButton.click(); }
   if (event.key === "g" || event.key === "G") {
-    stop();
     state.grid = state.grid === "off" ? gridItems[1].kind : "off";
     mark(gridRow, gridItems, (item) => item.kind === state.grid);
-    render();
-    resume();
+    nudged();
   }
 });
 
