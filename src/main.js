@@ -57,7 +57,7 @@ const DEFAULTS = {
   headline: "",
   grid: "off",
   frame: 0,
-  hold: 2,
+  hold: 3, // 초당 여덟 장. 이 물결에는 이 박자가 맞는다
   boil: "twos"
 };
 
@@ -92,7 +92,7 @@ function readHash() {
   if (params.has("t")) out.headline = params.get("t");
   if (params.has("grid")) out.grid = ["plates", "inks", "frames"].includes(params.get("grid")) ? params.get("grid") : "off";
   if (params.has("f")) out.frame = Math.max(0, Number(params.get("f")) | 0) % FRAMES;
-  if (params.has("hold")) out.hold = RATES.some((r) => r.hold === Number(params.get("hold"))) ? Number(params.get("hold")) : 2;
+  if (params.has("hold")) out.hold = RATES.some((r) => r.hold === Number(params.get("hold"))) ? Number(params.get("hold")) : 3;
   if (params.has("boil")) out.boil = ["held", "twos", "every"].includes(params.get("boil")) ? params.get("boil") : "twos";
   return out;
 }
