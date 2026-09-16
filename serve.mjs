@@ -63,4 +63,13 @@ const server = createServer(async (request, response) => {
   }
 });
 
+// A port already taken is the ordinary way this fails: a server from an earlier session is
+// usually still holding it. An unhandled 'error' event throws a stack trace that says none
+// of that, so the one case worth naming gets named.
+server.on("error", (error) => {
+  if (error.code !== "EADDRINUSE") throw error;
+  console.error(`port ${PORT} is already in use. Free it, or take another: node serve.mjs ${PORT + 1}`);
+  process.exit(1);
+});
+
 server.listen(PORT, () => console.log(`riso-graphic — http://localhost:${PORT}`));
