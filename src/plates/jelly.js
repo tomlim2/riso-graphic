@@ -10,6 +10,8 @@
 // 여러 마리는 깊이로 벌린다. 멀수록 작고 흐리고 위에 있다. 먼 것부터 찍고 가까운 것이 그
 // 위를 덮으므로, 가까운 놈의 녹아웃이 먼 놈을 지워 가림이 저절로 생긴다.
 
+import { makeNoise2 } from "../rng.js";
+
 // 종. 위는 둥근 지붕, 아래는 살짝 들린 가리비 테두리.
 function bell(cx, cy, rx, ry, options = {}) {
   const { steps = 44, scallops = 6 } = options;
@@ -77,28 +79,48 @@ export const jelly = {
 
     // 무리를 짠다. 난수는 여기서 다 쓰고 그리는 동안에는 쓰지 않는다 — 그리기는 먼 것부터
     // 도는데 거기서 난수를 당기면 마리 수를 바꿀 때마다 무리 전체가 다시 뽑힌다.
+    // 밭 둘. 하나는 어디에 모일지, 하나는 얼마나 클지를 정한다. 서로 다른 밭이라야 크기가
+    // 자리를 따라가지 않는다 — 같은 밭에서 뽑으면 가운데가 늘 크고 가장자리가 늘 작아져,
+    // 규칙이 눈에 먼저 읽힌다.
+    const placeField = makeNoise2(R);
+    const sizeField = makeNoise2(R);
+
     const swarm = [];
     for (let i = 0; i < count; i += 1) {
-      // 깊이도 마리마다 새로 뽑는다. 차례대로 한 칸씩 멀어지게 두면 무리가 아니라 사다리가
-      // 된다 — 크기도 높이도 순서대로 줄어들어 한눈에 셀 수 있게 된다.
-      const far = R.float(0, 1);
-      const size = width * knobs.bell * (1 - far * knobs.depth) * R.float(0.72, 1.3);
-
-      // 자리는 가로세로 둘 다 흩는다. 가로만 벌리면 같은 높이에 나란히 걸린다. 몇 번 다시
-      // 뽑아 서로 너무 붙지 않게 하되, 조금 겹치는 것은 둔다 — 가림이 깊이를 말해 준다.
-      let x = 0;
-      let y = 0;
-      for (let tryAt = 0; tryAt < 16; tryAt += 1) {
-        x = R.float(width * 0.14, width * 0.86);
-        y = height * (0.72 - far * 0.46) + R.float(-1, 1) * height * 0.09;
-        if (swarm.every((other) => Math.hypot(other.x - x, other.y - y) > (size + other.size) * 0.78)) break;
+      // 자리는 후보를 여러 개 뽑아 가장 점수가 높은 데로 간다. 점수는 셋을 더한 것이다 —
+      // 가운데로 당기는 기운, 밭이 뭉쳐 있는 정도, 이미 놓인 놈에게서 떨어진 정도.
+      let spot = null;
+      for (let tryAt = 0; tryAt < 14; tryAt += 1) {
+        const x = R.float(width * 0.1, width * 0.9);
+        const y = R.float(height * 0.14, height * 0.86);
+        const off = Math.hypot((x - width / 2) / (width / 2), (y - height / 2) / (height / 2));
+        const pull = 1 - Math.min(1, off / 1.2);
+        const clump = placeField(x / 230, y / 230);
+        const room = swarm.length
+          ? Math.min(1, Math.min(...swarm.map((o) => Math.hypot(o.x - x, o.y - y))) / (width * 0.28))
+          : 1;
+        const score = pull * 0.9 + clump * 0.7 + room * 0.9;
+        if (!spot || score > spot.score) spot = { x, y, score };
       }
+
+      // 크기는 다른 밭에서. 가까운 놈끼리는 비슷하게 크고, 밭이 낮은 자리에서는 함께 작다.
+      // 큰 것이 가까운 것이므로 깊이는 크기에서 나온다 — 따로 뽑으면 큰데 흐린 놈이 생긴다.
+      //
+      // 값 노이즈는 네 귀퉁이를 섞어 만들므로 값이 가운데로 몰린다. 그대로 쓰면 크기가 전부
+      // 고만고만해져 깊이가 사라진다. 두 겹으로 겹쳐 잔결을 주고, 가운데에서 밀어내 대비를
+      // 되찾는다.
+      const coarse = sizeField(spot.x / 190, spot.y / 190);
+      const fine = sizeField(spot.x / 70 + 13, spot.y / 70 + 7);
+      const raw = coarse * 0.68 + fine * 0.32;
+      const grain = Math.min(1, Math.max(0, (raw - 0.5) * 2.2 + 0.5));
+      const far = 1 - grain;
+      const size = width * knobs.bell * (1 - far * knobs.depth) * R.float(0.88, 1.12);
 
       const spec = {
         far,
         size,
-        x,
-        y,
+        x: spot.x,
+        y: spot.y,
         phase: R.float(0, Math.PI * 2),
         show: 1 - far * 0.55,
         strands: [],
