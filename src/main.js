@@ -263,6 +263,7 @@ function showFrame(frame) {
   canvas.width = shot.width;
   canvas.height = shot.height;
   canvas.getContext("2d").drawImage(shot, 0, 0);
+  fitCanvas();
   return true;
 }
 
@@ -279,6 +280,7 @@ function startLive() {
     const frame = Math.floor(((now - started) / 1000) * FPS) % FRAMES;
     state.frame = frame;
     printSheet(canvas, settings(plateById(state.plate), PALETTES[state.palette], { frame, scale: PREVIEW_SCALE }));
+    fitCanvas();
     frameOut.textContent = `${frame} / ${FRAMES}`;
     liveRaf = requestAnimationFrame(step);
   };
@@ -291,9 +293,41 @@ function stopLive() {
   cancelAnimationFrame(liveRaf);
 }
 
+// 화면에 걸리는 크기는 자리가 정한다. 그리는 크기는 끄는 동안 454, 재생 670, 멈춰 서면
+// 1080으로 바뀌는데, 그때마다 그림까지 작아졌다 커지면 무엇이 달라졌는지 알 수 없다.
+// 달라진 것은 해상도뿐이다.
+//
+// CSS의 aspect-ratio로는 안 된다. 높이를 채우게 두면 max-width가 가로만 잘라 비율이
+// 깨지고, 둘 다 auto로 두면 캔버스가 제 픽셀 수만큼만 걸린다. 남은 자리를 재서 직접 정한다.
+const NARROW = matchMedia("(max-width: 860px)");
+
+function fitCanvas() {
+  // 좁은 화면에서는 가로를 가득 채우는 쪽이 맞다. 그때는 CSS에 맡긴다
+  if (NARROW.matches) {
+    canvas.style.width = "";
+    canvas.style.height = "";
+    return;
+  }
+
+  const press = canvas.parentElement;
+  const style = getComputedStyle(press);
+  const room = {
+    width: press.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight),
+    height: press.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom)
+  };
+  if (room.width <= 0 || room.height <= 0) return;
+
+  const fit = Math.min(room.width / canvas.width, room.height / canvas.height);
+  canvas.style.width = `${Math.floor(canvas.width * fit)}px`;
+  canvas.style.height = `${Math.floor(canvas.height * fit)}px`;
+}
+
+addEventListener("resize", fitCanvas);
+
 // 멈춰 있을 때 끄는 동안. 움직이지는 않지만 손을 따라와야 하므로 작게 한 장만 찍는다.
 function sketch() {
   printSheet(canvas, settings(plateById(state.plate), PALETTES[state.palette], { frame: state.frame, scale: PREVIEW_SCALE }));
+  fitCanvas();
   status.textContent = `${plateById(state.plate).name} · DRAFT · F${state.frame}`;
   writeHash();
 }
@@ -390,6 +424,7 @@ function render() {
       state.grid === "plates" ? "같은 롤로 모든 판화를 나란히" : state.grid === "inks" ? "같은 판화를 배색 아홉 벌로" : "한 바퀴를 아홉 자리에서 끊어";
   }
 
+  fitCanvas();
   frameOut.textContent = `${state.frame} / ${FRAMES}`;
   status.textContent = `${note} · ${Math.round(performance.now() - started)} MS`;
   writeHash();

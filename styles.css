@@ -46,11 +46,12 @@ html, body {
 }
 
 /* 판형에 매이지 않게. 정사각 한 장이든 가로로 긴 콘택트 시트든 두 변 모두에 맞춰 줄어든다.
-   높이를 1200px로 박아 두었더니 판형을 정사각으로 바꾸는 순간 넘쳐 나갔다. */
+   높이를 1200px로 박아 두었더니 판형을 정사각으로 바꾸는 순간 넘쳐 나갔다.
+
+   크기는 캔버스가 몇 픽셀이냐가 아니라 자리가 얼마나 남았느냐가 정한다. 그 계산은
+   자바스크립트(fitCanvas)가 하고, 여기서는 넘치지 않게만 막는다. */
 #sheet {
   display: block;
-  width: auto;
-  height: auto;
   max-width: 100%;
   max-height: 100%;
   background: var(--paper);
@@ -185,5 +186,5 @@ input[type="range"] {
   body { overflow-y: auto; height: auto; }
   html { height: auto; }
   .press { height: auto; }
-  #sheet { max-height: none; width: 100%; }
+  #sheet { height: auto; max-height: none; width: 100%; }
 }

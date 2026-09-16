@@ -15,7 +15,7 @@ import { splinePath, polyPath } from "./shapes.js";
 // 판형. 판화는 전부 이 좌표로 그리고, 종이가 더 작게 걸리면 배율이 알아서 줄인다.
 // 세로 위치를 픽셀로 박아 두면 판형을 바꾸는 순간 다섯 장이 한꺼번에 무너지므로,
 // 판화는 되도록 height의 비율로 자리를 잡는다.
-export const SHEET = { width: 1000, height: 1000 };
+export const SHEET = { width: 1080, height: 1080 };
 
 // 분판 하나. 색은 없고 커버리지만 있다. 여기 그리는 검정은 "이만큼 덮는다"는 뜻이지
 // 검정 잉크가 아니다. 색은 종이에 닿기 직전에야 정해진다.
