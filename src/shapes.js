@@ -16,10 +16,16 @@ export function polyPath(context, points, close = true) {
 
 // Catmull-Rom through every point, as beziers. A closed loop of these is the organic blob.
 export function splinePath(context, points, close = true) {
+  context.beginPath();
+  splineSubpath(context, points, close);
+}
+
+// The same curve without starting a new path. Two of these in one path, filled "evenodd",
+// give a ring with a wall of varying thickness — which is what a carved water ring is.
+export function splineSubpath(context, points, close = true) {
   const n = points.length;
   const at = (i) => (close ? points[((i % n) + n) % n] : points[Math.max(0, Math.min(n - 1, i))]);
 
-  context.beginPath();
   context.moveTo(points[0][0], points[0][1]);
   const last = close ? n : n - 1;
   for (let i = 0; i < last; i += 1) {

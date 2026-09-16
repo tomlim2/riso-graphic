@@ -33,8 +33,21 @@
   </section>
 
   <section class="card">
+    <h2>MOTION <span class="out" id="frameOut">0 / 48</span></h2>
+    <button id="play" class="wide" type="button">PLAY 24FPS</button>
+    <input id="scrub" class="mt" type="range" min="0" max="47" value="0" aria-label="프레임">
+    <div class="row seg mt" id="loop" role="group" aria-label="루프 길이"></div>
+    <div class="row seg mt" id="step" role="group" aria-label="촬영 간격"></div>
+  </section>
+
+  <section class="card">
+    <h2>BOIL</h2>
+    <div class="row seg" id="boil" role="group" aria-label="끓음"></div>
+  </section>
+
+  <section class="card">
     <h2>CONTACT SHEET</h2>
-    <div class="row seg" id="grid" role="group" aria-label="콘택트 시트"></div>
+    <div class="row seg wrap" id="grid" role="group" aria-label="콘택트 시트"></div>
   </section>
 
   <section class="card">
@@ -67,7 +80,7 @@
     <input id="register" type="range" min="0" max="5" value="2" aria-label="판 어긋남">
   </section>
 
-  <p class="hint">N 새 롤 · G 콘택트 시트 · S 저장</p>
+  <p class="hint">SPACE 재생 · N 새 롤 · G 콘택트 시트 · S 저장</p>
 </aside>
 
 <noscript><p class="noscript">이 페이지는 자바스크립트로 그립니다.</p></noscript>

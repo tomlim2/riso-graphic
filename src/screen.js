@@ -12,6 +12,12 @@ export const ANGLES = { key: 45, body: 15, wash: 75 };
 // 종이 크기마다 한 벌. 롤에만 달려 있고 다이얼에는 달려 있지 않다.
 //   speck  — 픽셀마다 흰 잡음. 망점의 가장자리를 갉는다
 //   mottle — 낮은 주파수. 드럼이 두껍게 먹은 자리와 얇게 지나간 자리
+//
+// 얼룩은 주기가 110픽셀과 31픽셀이라 픽셀마다 만들 이유가 없다. 4픽셀에 한 번만 재고
+// 그 칸을 나눠 쓴다. 망점 아래에서는 차이가 보이지 않는데 값은 열여섯 배 덜 만든다 —
+// 끓는 화면은 이 필드를 프레임마다 새로 뽑으므로 여기가 곧 재생 속도다.
+const MOTTLE_SHIFT = 2;
+
 export function makeInkFields(width, height, rng) {
   const count = width * height;
   const speck = new Float32Array(count);
@@ -19,14 +25,20 @@ export function makeInkFields(width, height, rng) {
 
   const coarse = makeNoise2(rng);
   const fine = makeNoise2(rng);
-  const mottle = new Float32Array(count);
-  for (let y = 0, i = 0; y < height; y += 1) {
-    for (let x = 0; x < width; x += 1, i += 1) {
-      mottle[i] = coarse(x / 110, y / 110) * 0.65 + fine(x / 31, y / 31) * 0.35;
+  const step = 1 << MOTTLE_SHIFT;
+  const mottleWidth = ((width + step - 1) >> MOTTLE_SHIFT) + 1;
+  const mottleHeight = ((height + step - 1) >> MOTTLE_SHIFT) + 1;
+  const mottle = new Float32Array(mottleWidth * mottleHeight);
+
+  for (let y = 0, i = 0; y < mottleHeight; y += 1) {
+    const sy = y << MOTTLE_SHIFT;
+    for (let x = 0; x < mottleWidth; x += 1, i += 1) {
+      const sx = x << MOTTLE_SHIFT;
+      mottle[i] = coarse(sx / 110, sy / 110) * 0.65 + fine(sx / 31, sy / 31) * 0.35;
     }
   }
 
-  return { speck, mottle, width, height };
+  return { speck, mottle, mottleWidth, mottleShift: MOTTLE_SHIFT, width, height };
 }
 
 // 커버리지 c를 망점 반지름으로 바꾼다.
@@ -50,10 +62,13 @@ export function screenSeparation(image, fields, options) {
   const half = cell / 2;
   const soft = 2.2 / half; // 망점 가장자리를 2.2픽셀에 걸쳐 흐린다. 계단을 막는다
   const ragged = grain * 1.4;
+  const shift = fields.mottleShift;
+  const mottleWidth = fields.mottleWidth;
 
   for (let y = 0, i = 0; y < height; y += 1) {
     const ys = y * sin;
     const yc = y * cos;
+    const mrow = (y >> shift) * mottleWidth;
 
     for (let x = 0; x < width; x += 1, i += 1) {
       const p = i * 4 + 3;
@@ -63,7 +78,7 @@ export function screenSeparation(image, fields, options) {
       // 그 위를 농도 얼룩이 다시 흔든다. 이 상한이 없으면 솔리드가 완전히 납작해져
       // 망점으로 바꾼 보람이 사라진다. GRAIN을 0으로 내리면 상한이 1로 올라가
       // 얼룩 없는 깨끗한 망점이 되므로, 스크린만 따로 판단할 수 있다.
-      let c = (data[p] / 255) * (1 - grain * 0.32) * (1 + (mottle[i] - 0.5) * grain * 0.6);
+      let c = (data[p] / 255) * (1 - grain * 0.32) * (1 + (mottle[mrow + (x >> shift)] - 0.5) * grain * 0.6);
       if (c <= 0) { data[p] = 0; continue; }
       if (c > 1) c = 1;
 
@@ -91,11 +106,15 @@ export function paperTooth(context, fields, width, height, shade) {
   const g = (tint >> 8) & 255;
   const b = tint & 255;
 
-  for (let i = 0, p = 0; i < fields.speck.length; i += 1, p += 4) {
-    data[p] = r;
-    data[p + 1] = g;
-    data[p + 2] = b;
-    data[p + 3] = (fields.speck[i] * 26 + (fields.mottle[i] - 0.5) * 18) | 0;
+  const shift = fields.mottleShift;
+  for (let y = 0, i = 0, p = 0; y < height; y += 1) {
+    const mrow = (y >> shift) * fields.mottleWidth;
+    for (let x = 0; x < width; x += 1, i += 1, p += 4) {
+      data[p] = r;
+      data[p + 1] = g;
+      data[p + 2] = b;
+      data[p + 3] = (fields.speck[i] * 26 + (fields.mottle[mrow + (x >> shift)] - 0.5) * 18) | 0;
+    }
   }
 
   return image;

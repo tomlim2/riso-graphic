@@ -19,14 +19,18 @@ export const SHEET = { width: 900, height: 1200 };
 export class Separation {
   #g;
 
-  constructor(role, width, height) {
+  // 판화는 언제나 900x1200 좌표로 그린다. 종이가 그보다 작게 걸리면 — 콘택트 시트의
+  // 축소판, 재생용 프레임 — 컨텍스트를 그만큼 줄여 두고 판화는 모르게 한다. 판화가 종이
+  // 크기를 신경 쓰기 시작하면 여백과 글자 크기가 배율마다 따로 놀게 된다.
+  constructor(role, width, height, scale = 1) {
     this.role = role;
     this.width = width;
     this.height = height;
     this.canvas = document.createElement("canvas");
-    this.canvas.width = width;
-    this.canvas.height = height;
+    this.canvas.width = Math.round(width * scale);
+    this.canvas.height = Math.round(height * scale);
     this.#g = this.canvas.getContext("2d");
+    this.#g.setTransform(scale, 0, 0, scale, 0, 0);
   }
 
   get context() {
@@ -178,14 +182,35 @@ export function rolesFor(inks) {
   };
 }
 
-// 필드는 이 파일에서 제일 비싼 것이고 롤과 크기에만 달려 있다. 다이얼을 끄는 동안
-// 다시 만들지 않도록 들고 있는다.
-let cached = null;
+// 필드는 이 파일에서 제일 비싼 것이다. 정지된 한 장이면 한 벌로 끝나지만, 끓는 화면은
+// 프레임마다 다른 벌을 쓴다. 매번 새로 만들면 재생이 서지 않으므로 몇 벌만 만들어 두고
+// 돌려 쓴다. 실제 스크린 인쇄의 끓음도 몇 장이 돌아가며 반복되는 것이라 이쪽이 맞다.
+// 끓음 한 바퀴(8벌)에 정지 화면과 콘택트 시트 몫을 얹고도 남게. 작으면 한 바퀴를 도는
+// 동안 쓸 것을 저희끼리 밀어내고, 프레임마다 필드를 새로 만들게 된다.
+const POOL = 20;
+const pool = new Map();
 function fieldsFor(seed, width, height) {
-  if (cached && cached.seed === seed && cached.width === width && cached.height === height) return cached.fields;
+  const key = `${seed >>> 0}:${width}x${height}`;
+  const held = pool.get(key);
+  if (held) return held;
+
   const fields = makeInkFields(width, height, makeRng((seed ^ 0x5bf03635) >>> 0));
-  cached = { seed, width, height, fields };
+  pool.set(key, fields);
+  if (pool.size > POOL) pool.delete(pool.keys().next().value);
   return fields;
+}
+
+// 끓음. 같은 롤이라도 인상(impression)이 바뀌면 스크린과 판 어긋남이 함께 바뀐다.
+//   held  — 한 장. 종이는 붙박이고 그림이 그 밑에서 움직인다
+//   twos  — 두 프레임에 한 번. 손으로 그린 애니메이션이 늘 그러던 속도다
+//   every — 매 프레임. 화면 전체가 끓는다
+const BOIL_STEP = { held: 0, twos: 2, every: 1 };
+const BOIL_POOL = 8;
+
+function impressionOf(boil, frame, frames) {
+  const step = BOIL_STEP[boil] ?? 0;
+  if (step === 0) return 0;
+  return Math.floor((((frame % frames) + frames) % frames) / step) % BOIL_POOL;
 }
 
 export function printSheet(canvas, options) {
@@ -198,9 +223,15 @@ export function printSheet(canvas, options) {
     grain = 0.35,
     registration = 2,
     headline = "",
-    width = SHEET.width,
-    height = SHEET.height
+    frame = 0,
+    frames = 1,
+    boil = "held",
+    scale = 1
   } = options;
+
+  const { width, height } = SHEET;
+  const deviceWidth = Math.round(width * scale);
+  const deviceHeight = Math.round(height * scale);
 
   const inks = inksFor(palette, inkCount);
   const roles = rolesFor(inks);
@@ -211,7 +242,7 @@ export function printSheet(canvas, options) {
   const S = {};
   for (const role of ["key", "body", "wash"]) {
     const index = roles[role];
-    if (!drums.has(index)) drums.set(index, new Separation(role, width, height));
+    if (!drums.has(index)) drums.set(index, new Separation(role, width, height, scale));
     S[role] = drums.get(index);
   }
 
@@ -226,58 +257,68 @@ export function printSheet(canvas, options) {
     separation
   }));
 
+  // 한 바퀴를 0에서 1로. 판화는 프레임 번호가 아니라 이 값을 본다. 어디서 끊어도 이어지려면
+  // 판화 안의 모든 주기가 t에 대해 한 바퀴여야 한다.
+  const span = Math.max(1, frames);
+  const t = span > 1 ? (((frame % span) + span) % span) / span : 0;
+
   const R = makeRng(seed >>> 0);
-  const page = { width, height, margin: 78, palette, inks, roles, headline, seed };
+  const page = { width, height, margin: 78, palette, inks, roles, headline, seed, frame, frames: span, t };
   plate.paint(S, R, page);
 
-  const fields = fieldsFor(seed >>> 0, width, height);
+  // 인상이 바뀌면 스크린도 판 어긋남도 함께 바뀐다. 둘은 같은 한 번의 통과에서 나오는 것이라
+  // 따로 놀면 안 된다.
+  const impression = impressionOf(boil, frame, span);
+  const fieldSeed = (seed ^ Math.imul(impression + 1, 0x9e3779b9)) >>> 0;
+  const fields = fieldsFor(fieldSeed, deviceWidth, deviceHeight);
+
+  canvas.width = deviceWidth;
+  canvas.height = deviceHeight;
   const out = canvas.getContext("2d");
-  canvas.width = width;
-  canvas.height = height;
 
   out.globalCompositeOperation = "source-over";
   out.fillStyle = PAPER;
-  out.fillRect(0, 0, width, height);
+  out.fillRect(0, 0, deviceWidth, deviceHeight);
 
   const tooth = document.createElement("canvas");
-  tooth.width = width;
-  tooth.height = height;
-  tooth.getContext("2d").putImageData(paperTooth(out, fields, width, height, PAPER_SHADE), 0, 0);
+  tooth.width = deviceWidth;
+  tooth.height = deviceHeight;
+  tooth.getContext("2d").putImageData(paperTooth(out, fields, deviceWidth, deviceHeight, PAPER_SHADE), 0, 0);
   out.drawImage(tooth, 0, 0);
 
   // 판 어긋남은 판을 짜는 난수와 따로 둔다. 배치를 한 줄 고쳤다고 어긋남까지 달라지면
   // 무엇 때문에 달라 보이는지 알 수 없다.
-  const slip = makeRng((seed * 2654435761) >>> 0);
+  const slip = makeRng((Math.imul(seed, 2654435761) ^ Math.imul(impression + 1, 0x85ebca6b)) >>> 0);
 
-  // 망점 크기는 종이 크기를 따라간다. 축소판에서도 스크린이 같아 보이도록.
-  const scale = width / SHEET.width;
-
-  running.forEach(([index, separation], order) => {
-    const image = separation.context.getImageData(0, 0, width, height);
+  S.drums.forEach((drum, order) => {
+    const image = drum.separation.context.getImageData(0, 0, deviceWidth, deviceHeight);
     screenSeparation(image, fields, {
       cell: Math.max(2, cell * scale),
-      angle: ANGLES[separation.role],
+      angle: drum.angle,
       grain,
-      width,
-      height
+      width: deviceWidth,
+      height: deviceHeight
     });
 
-    const g = separation.context;
+    const g = drum.separation.context;
+    g.save();
+    g.setTransform(1, 0, 0, 1, 0, 0);
     g.globalCompositeOperation = "source-over";
     g.globalAlpha = 1;
     g.putImageData(image, 0, 0);
     g.globalCompositeOperation = "source-in";
-    g.fillStyle = inks[index];
-    g.fillRect(0, 0, width, height);
+    g.fillStyle = drum.ink;
+    g.fillRect(0, 0, deviceWidth, deviceHeight);
+    g.restore();
 
     // 첫 통이 기준이다. 나중 통이 어긋나는 것이 눈에 어긋남으로 읽힌다
     const dx = order === 0 ? 0 : slip.around(0, 1) * registration * scale;
     const dy = order === 0 ? 0 : slip.around(0, 1) * registration * scale;
 
     out.globalCompositeOperation = "multiply";
-    out.drawImage(separation.canvas, dx, dy);
+    out.drawImage(drum.separation.canvas, dx, dy);
   });
 
   out.globalCompositeOperation = "source-over";
-  return { inks, roles, drums: drums.size, plate: plate.id, seed };
+  return { inks, roles, drums: drums.size, plate: plate.id, seed, frame, t };
 }

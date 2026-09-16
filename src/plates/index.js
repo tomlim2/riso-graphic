@@ -8,8 +8,9 @@ import { poster } from "./poster.js";
 import { medium } from "./medium.js";
 import { moon } from "./moon.js";
 import { garden } from "./garden.js";
+import { ripple } from "./ripple.js";
 
-export const PLATES = [poster, medium, moon, garden];
+export const PLATES = [poster, medium, moon, garden, ripple];
 
 export function plateById(id) {
   return PLATES.find((plate) => plate.id === id) || PLATES[0];
