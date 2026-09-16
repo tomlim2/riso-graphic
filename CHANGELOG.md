@@ -7,6 +7,18 @@
 링크가 나중에 다른 장을 찍으면 그것은 깨진 것이므로, 같은 롤이 같은 장을 찍지 않게 되는
 변경은 MAJOR로 올린다.
 
+## [0.8.0] - 2026-09-16
+
+초당 장수를 버튼으로 고른다.
+
+### 추가
+
+- **SHEETS A SECOND — 24 · 12 · 8.** 시계는 언제나 초당 스물네 번이고, 바뀌는 것은 한 장을
+  몇 프레임 잡아 두느냐다(1·2·3). 48프레임이 셋 모두로 나누어떨어져 한 바퀴가 어디서도
+  어긋나지 않는다
+- 화면에 걸린 그림이 실제로 초당 24.3 · 12.3 · 8.3번 바뀌는 것을 캔버스 픽셀로 쟀다.
+  굽는 시간은 2.0 · 1.1 · 0.8초
+
 ## [0.7.0] - 2026-09-16
 
 그림이 초당 열두 장이 되었다. 시계는 초당 스물네 번 그대로다.
@@ -157,6 +169,7 @@
 - 다이얼 여섯 개와 PNG 내보내기, 설정 전체를 담는 주소
 - 모듈 URL에 부팅 도장을 찍는 정적 서버
 
+[0.8.0]: https://github.com/tomlim2/riso-graphic/releases/tag/v0.8.0
 [0.7.0]: https://github.com/tomlim2/riso-graphic/releases/tag/v0.7.0
 [0.6.0]: https://github.com/tomlim2/riso-graphic/releases/tag/v0.6.0
 [0.5.0]: https://github.com/tomlim2/riso-graphic/releases/tag/v0.5.0
