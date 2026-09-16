@@ -9,7 +9,13 @@ import { PALETTES } from "./palette.js";
 import { PLATES, plateById } from "./plates/index.js";
 import { printSheet, SHEET } from "./press.js";
 
+// 초당 스물네 장. 고정이다.
+//
+// 투스로 찍으면 그림은 초당 열두 장이고 한 장을 두 프레임씩 잡아 둔다. 손그림 애니메이션이
+// 늘 하던 일이고 굽는 시간도 절반이지만, 초당 스물네 번이라는 말과는 다르다. 프레임마다
+// 새로 찍는다. 값이 아니라 약속이라 다이얼로 두지 않는다.
 const FPS = 24;
+const FRAMES = 48; // 한 바퀴 2초. 물결의 박자가 여기 맞춰져 있다
 const PLAY_SCALE = 0.62; // 재생용 종이 크기. 망점도 같이 줄어 눈에는 같은 스크린으로 보인다
 const GRID_SCALE = 1 / 3;
 
@@ -21,8 +27,6 @@ const paletteRow = document.getElementById("palettes");
 const drumsRow = document.getElementById("drums");
 const gridRow = document.getElementById("grid");
 const boilRow = document.getElementById("boil");
-const stepRow = document.getElementById("step");
-const loopRow = document.getElementById("loop");
 const headlineInput = document.getElementById("headline");
 const playButton = document.getElementById("play");
 const scrub = document.getElementById("scrub");
@@ -45,8 +49,6 @@ const DEFAULTS = {
   headline: "",
   grid: "off",
   frame: 0,
-  frames: 48,
-  step: 2,
   boil: "twos"
 };
 
@@ -80,9 +82,7 @@ function readHash() {
   if (params.has("reg")) out.register = Math.max(0, Math.min(5, Number(params.get("reg"))));
   if (params.has("t")) out.headline = params.get("t");
   if (params.has("grid")) out.grid = ["plates", "inks", "frames"].includes(params.get("grid")) ? params.get("grid") : "off";
-  if (params.has("f")) out.frame = Math.max(0, Number(params.get("f")) | 0);
-  if (params.has("n")) out.frames = [24, 48, 72].includes(Number(params.get("n"))) ? Number(params.get("n")) : 48;
-  if (params.has("step")) out.step = Number(params.get("step")) === 1 ? 1 : 2;
+  if (params.has("f")) out.frame = Math.max(0, Number(params.get("f")) | 0) % FRAMES;
   if (params.has("boil")) out.boil = ["held", "twos", "every"].includes(params.get("boil")) ? params.get("boil") : "twos";
   return out;
 }
@@ -97,8 +97,6 @@ function writeHash() {
     grain: state.grain.toFixed(2),
     reg: String(state.register),
     f: String(state.frame),
-    n: String(state.frames),
-    step: String(state.step),
     boil: state.boil
   });
   if (state.headline) params.set("t", state.headline);
@@ -116,7 +114,7 @@ function settings(plate, palette, extra = {}) {
     grain: state.grain,
     registration: state.register,
     headline: state.headline,
-    frames: state.frames,
+    frames: FRAMES,
     boil: state.boil,
     ...extra
   };
@@ -124,7 +122,7 @@ function settings(plate, palette, extra = {}) {
 
 // 찍어 둔 필름이 지금 다이얼과 맞는지. 하나라도 다르면 다시 찍는다.
 function filmKey() {
-  return [state.plate, state.seed, state.palette, state.drums, state.cell, state.grain, state.register, state.headline, state.frames, state.step, state.boil].join("|");
+  return [state.plate, state.seed, state.palette, state.drums, state.cell, state.grain, state.register, state.headline, state.boil].join("|");
 }
 
 // -- 콘택트 시트 -------------------------------------------------------------------------
@@ -147,7 +145,7 @@ function gridCells() {
   const plate = plateById(state.plate);
   const count = 9;
   return Array.from({ length: count }, (_, index) => {
-    const frame = Math.round((index * state.frames) / count);
+    const frame = Math.round((index * FRAMES) / count);
     return { plate, palette: PALETTES[state.palette], frame, label: `${frame}` };
   });
 }
@@ -199,15 +197,10 @@ async function bake(mine) {
   const palette = PALETTES[state.palette];
   const shots = [];
 
-  // 투스로 찍으면 그림은 절반만 찍고 한 장을 두 프레임씩 잡아 둔다. 손으로 그린 애니메이션이
-  // 늘 하던 일이고, 여기서는 찍는 시간도 절반이 된다. 시계는 그대로 24fps다.
-  const sheets = Math.ceil(state.frames / state.step);
-
-  for (let index = 0; index < sheets; index += 1) {
-    const frame = index * state.step;
+  for (let frame = 0; frame < FRAMES; frame += 1) {
     printSheet(offscreen, settings(plate, palette, { frame, scale: PLAY_SCALE }));
     shots.push(await createImageBitmap(offscreen));
-    status.textContent = `PRINTING ${index + 1} / ${sheets}`;
+    status.textContent = `PRINTING ${frame + 1} / ${FRAMES}`;
 
     // 창을 놓아주되 rAF로는 하지 않는다. 창이 앞에 없으면 rAF는 초당 한 번까지 조여지고,
     // 굽는 일은 화면에 그리는 일이 아니라 그 박자를 따를 이유가 없다. 재생은 rAF가 맞다 —
@@ -225,8 +218,7 @@ async function bake(mine) {
 
 function showFrame(frame) {
   if (!film) return false;
-  const wrapped = ((frame % state.frames) + state.frames) % state.frames;
-  const shot = film.shots[Math.floor(wrapped / state.step) % film.shots.length];
+  const shot = film.shots[((frame % FRAMES) + FRAMES) % FRAMES];
   canvas.width = shot.width;
   canvas.height = shot.height;
   canvas.getContext("2d").drawImage(shot, 0, 0);
@@ -281,17 +273,17 @@ async function play() {
 
   const tick = (now) => {
     if (!playing) return;
-    const frame = Math.floor(((now - started) / 1000) * FPS) % state.frames;
+    const frame = Math.floor(((now - started) / 1000) * FPS) % FRAMES;
     if (frame !== shown) {
       showFrame(frame);
       state.frame = frame;
       scrub.value = String(frame);
-      frameOut.textContent = `${frame} / ${state.frames}`;
+      frameOut.textContent = `${frame} / ${FRAMES}`;
       shown = frame;
       ticks += 1;
     }
     if (now - mark0 >= 1000) {
-      status.textContent = `${plateById(state.plate).name} · PLAYING ${ticks} FPS · ${state.frames}F ON ${state.step === 1 ? "ONES" : "TWOS"} · BOIL ${state.boil.toUpperCase()}`;
+      status.textContent = `${plateById(state.plate).name} · PLAYING ${ticks} FPS · ${(FRAMES / FPS).toFixed(1)}S LOOP · BOIL ${state.boil.toUpperCase()}`;
       ticks = 0;
       mark0 = now;
     }
@@ -322,7 +314,7 @@ function render() {
       state.grid === "plates" ? "같은 롤로 모든 판화를 나란히" : state.grid === "inks" ? "같은 판화를 배색 아홉 벌로" : "한 바퀴를 아홉 자리에서 끊어";
   }
 
-  frameOut.textContent = `${state.frame} / ${state.frames}`;
+  frameOut.textContent = `${state.frame} / ${FRAMES}`;
   status.textContent = `${note} · ${Math.round(performance.now() - started)} MS`;
   writeHash();
 }
@@ -395,33 +387,12 @@ buildRow(drumsRow, [{ label: "2", count: 2 }, { label: "3", count: 3 }], (item) 
 buildRow(gridRow, gridItems, (item) => item.kind === state.grid, (item) => { stop(); state.grid = item.kind; });
 
 buildRow(
-  stepRow,
-  [{ label: "ONES", count: 1, title: "한 프레임에 한 장. 24장을 다 찍는다" },
-   { label: "TWOS", count: 2, title: "두 프레임에 한 장. 손그림 애니메이션의 기본이고 찍을 장수가 절반이다" }],
-  (item) => item.count === state.step,
-  (item) => { stop(); state.step = item.count; }
-);
-
-buildRow(
   boilRow,
   [{ label: "HELD", kind: "held", title: "한 장. 종이는 붙박이고 그림이 그 밑에서 움직인다" },
    { label: "TWOS", kind: "twos", title: "두 프레임에 한 번. 손으로 그린 애니메이션의 속도" },
    { label: "EVERY", kind: "every", title: "매 프레임. 화면 전체가 끓는다" }],
   (item) => item.kind === state.boil,
   (item) => { stop(); state.boil = item.kind; }
-);
-
-buildRow(
-  loopRow,
-  [24, 48, 72].map((n) => ({ label: String(n), count: n, title: `${n}프레임 = ${(n / FPS).toFixed(1)}초` })),
-  (item) => item.count === state.frames,
-  (item) => {
-    stop();
-    state.frames = item.count;
-    state.frame = Math.min(state.frame, item.count - 1);
-    scrub.max = String(item.count - 1);
-    scrub.value = String(state.frame);
-  }
 );
 
 // 슬라이더는 끄는 내내 값이 바뀐다. 그 동안은 정지 화면을 보여 주고, 손이 멎으면 잇는다.
@@ -496,8 +467,8 @@ addEventListener("keydown", (event) => {
 // -- 시동 -------------------------------------------------------------------------------
 
 headlineInput.value = state.headline;
-scrub.max = String(state.frames - 1);
-scrub.value = String(Math.min(state.frame, state.frames - 1));
+scrub.max = String(FRAMES - 1);
+scrub.value = String(Math.min(state.frame, FRAMES - 1));
 state.frame = Number(scrub.value);
 for (const [name, dial] of Object.entries(dials)) {
   dial.input.value = name === "grain" ? String(Math.round(state.grain * 100)) : String(state[name]);

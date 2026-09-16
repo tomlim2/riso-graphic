@@ -7,6 +7,17 @@
 링크가 나중에 다른 장을 찍으면 그것은 깨진 것이므로, 같은 롤이 같은 장을 찍지 않게 되는
 변경은 MAJOR로 올린다.
 
+## [0.6.0] - 2026-09-16
+
+초당 스물네 장으로 고정. 주소의 `n=` 과 `step=` 은 더 이상 읽지 않는다.
+
+### 바뀜
+
+- **프레임마다 새로 찍는다.** 투스 촬영은 그림이 초당 열두 장이라, 초당 스물네 번이라는
+  말과 다르다. 이웃 두 프레임이 서로 다른 판임을 확인했다
+- **루프 길이와 촬영 간격 다이얼을 없앴다.** 24fps, 48프레임, 2초. 값이 아니라 약속이다
+- 한 바퀴 굽는 데 2.1초. 장수는 두 배가 됐지만 필드 풀이 더워진 뒤라 전보다 빠르다
+
 ## [0.5.0] - 2026-09-16
 
 화면이 RIPPLE 하나로 줄었다. `plate=` 를 담은 옛 링크는 어느 판을 가리키든 RIPPLE로 열린다.
@@ -135,6 +146,7 @@
 - 다이얼 여섯 개와 PNG 내보내기, 설정 전체를 담는 주소
 - 모듈 URL에 부팅 도장을 찍는 정적 서버
 
+[0.6.0]: https://github.com/tomlim2/riso-graphic/releases/tag/v0.6.0
 [0.5.0]: https://github.com/tomlim2/riso-graphic/releases/tag/v0.5.0
 [0.4.0]: https://github.com/tomlim2/riso-graphic/releases/tag/v0.4.0
 [0.3.0]: https://github.com/tomlim2/riso-graphic/releases/tag/v0.3.0
