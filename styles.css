@@ -154,6 +154,22 @@ input[type="range"] {
   letter-spacing: 0.02em;
 }
 
+/* 판마다 달라지는 조절칸. 이름과 값이 한 줄, 그 아래 슬라이더 */
+.knob + .knob { margin-top: 9px; }
+
+.knobHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  opacity: 0.7;
+  margin-bottom: 3px;
+}
+
+.knobHead .out { font-weight: 500; opacity: 0.85; }
+
 .hint { margin: 2px 0 0; opacity: 0.45; font-size: 10px; letter-spacing: 0.1em; }
 
 .noscript { padding: 80px 24px; text-align: center; }

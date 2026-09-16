@@ -197,8 +197,31 @@ export const hello = {
 ```
 
 `S`는 통 셋과 `S.drums`(실제로 도는 통 목록), `R`은 그 롤의 난수, `page`는 크기와 여백과
-배색, 그리고 시간 `t`다. 분판이 받는 것: `flood` `shape` `line` `disc` `ring` `block` `ramp` `text`
+배색, 시간 `t`, 그리고 이 판의 손잡이 값 `knobs`다. 분판이 받는 것: `flood` `shape` `line` `disc` `ring` `block` `ramp` `text`
 `knockout` `draw`.
+
+### 손잡이는 판마다 다르다
+
+판이 `knobs` 목록을 내놓으면 화면이 그것만 보고 조절칸을 짓는다. 공유 다이얼이 아니다 —
+RIPPLE에 HORIZON이 없고 MOON에 RINGS가 없다. 남의 판에 없는 값을 띄워 두면 무엇을 돌리는지
+알 수 없게 된다.
+
+```js
+knobs: [
+  { key: "rings", label: "RINGS", min: 1, max: 10, step: 1, value: 3 }
+]
+```
+
+값은 판마다 따로 기억한다. 판을 바꿨다 돌아와도 맞춰 둔 것이 남아 있고, 한 판의 값이
+다른 판에 새어 들어가지 않는다. 주소에는 지금 걸린 판의 것만 싣는다.
+
+| 판 | 손잡이 |
+| --- | --- |
+| RIPPLE | RINGS · REACH · EASE · ARCS · WEIGHT · SQUASH · DOT |
+| MOON | MOON · HORIZON · RISE · SKY · STARS · GLINTS |
+
+RINGS를 올릴 때만 한 가지 조심할 것이 있다. 고리 수 × 잡는 프레임 ÷ 48이 0.5를 넘으면
+물결이 거꾸로 돈다. 초당 여덟 장에서 그 경계는 여덟이다.
 
 ## 다이얼
 
@@ -208,6 +231,7 @@ export const hello = {
 | PLATE | 판화 고르기. 목록이 하나뿐이면 숨고 그 자리에 이름만 남는다 |
 | MOTION | 재생과 프레임 끌기 |
 | SHEETS A SECOND | 초당 24·12·8장. 시계와 루프 길이는 고정이다 |
+| PLATE KNOBS | 고른 판이 내놓은 손잡이. 판마다 다르고 값도 따로 기억한다 |
 | BOIL | HELD·TWOS·EVERY |
 | CONTACT SHEET | PLATES는 걸린 판화를, INKS는 배색 아홉 벌로, FRAMES는 한 바퀴를 |
 | HEADLINE | POSTER처럼 제목을 받는 판이 걸려 있을 때만 뜬다 |

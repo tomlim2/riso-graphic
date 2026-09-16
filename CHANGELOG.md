@@ -7,6 +7,21 @@
 링크가 나중에 다른 장을 찍으면 그것은 깨진 것이므로, 같은 롤이 같은 장을 찍지 않게 되는
 변경은 MAJOR로 올린다.
 
+## [0.12.0] - 2026-09-16
+
+판마다 제 손잡이를 내놓는다.
+
+### 추가
+
+- **PLATE KNOBS.** 판이 `knobs` 목록을 내놓으면 화면이 그것만 보고 조절칸을 짓는다. 공유
+  다이얼이 아니다 — RIPPLE에 HORIZON이 없고 MOON에 RINGS가 없다
+- RIPPLE은 RINGS · REACH · EASE · ARCS · WEIGHT · SQUASH · DOT,
+  MOON은 MOON · HORIZON · RISE · SKY · STARS · GLINTS
+- 값은 판마다 따로 기억한다. 판을 바꿨다 돌아와도 맞춰 둔 것이 남아 있고, 한 판의 값이
+  다른 판에 새어 들어가지 않는다. 주소에는 지금 걸린 판의 것만 싣는다
+- 화면이 넘겨 주지 않은 손잡이는 판이 스스로 적어 둔 기본값으로 채운다. 판 하나만 들고
+  찍어 보는 자리에서도 그대로 돈다
+
 ## [0.11.0] - 2026-09-16
 
 RIPPLE을 비웠다.
@@ -233,6 +248,7 @@ MOON이 고르개로 돌아왔고, 걸린 판에서 글자를 뺐다.
 - 다이얼 여섯 개와 PNG 내보내기, 설정 전체를 담는 주소
 - 모듈 URL에 부팅 도장을 찍는 정적 서버
 
+[0.12.0]: https://github.com/tomlim2/riso-graphic/releases/tag/v0.12.0
 [0.11.0]: https://github.com/tomlim2/riso-graphic/releases/tag/v0.11.0
 [0.10.0]: https://github.com/tomlim2/riso-graphic/releases/tag/v0.10.0
 [0.9.0]: https://github.com/tomlim2/riso-graphic/releases/tag/v0.9.0

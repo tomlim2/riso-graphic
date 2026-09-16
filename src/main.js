@@ -34,6 +34,8 @@ const paletteRow = document.getElementById("palettes");
 const drumsRow = document.getElementById("drums");
 const gridRow = document.getElementById("grid");
 const boilRow = document.getElementById("boil");
+const knobsCard = document.getElementById("knobsCard");
+const knobsRow = document.getElementById("knobs");
 const rateRow = document.getElementById("rate");
 const headlineInput = document.getElementById("headline");
 const playButton = document.getElementById("play");
@@ -62,6 +64,16 @@ const DEFAULTS = {
 };
 
 const state = { ...DEFAULTS, ...readHash() };
+
+// 손잡이 값은 판마다 따로 기억한다. 판을 바꿨다 돌아와도 맞춰 둔 것이 남아 있어야 하고,
+// 한 판의 값이 다른 판에 새어 들어가서도 안 된다 — 판마다 필요한 것이 다르기 때문이다.
+const knobState = {};
+function knobsFor(plate) {
+  if (!knobState[plate.id]) {
+    knobState[plate.id] = Object.fromEntries((plate.knobs || []).map((knob) => [knob.key, knob.value]));
+  }
+  return knobState[plate.id];
+}
 
 const offscreen = document.createElement("canvas");
 let film = null;
@@ -94,6 +106,7 @@ function readHash() {
   if (params.has("f")) out.frame = Math.max(0, Number(params.get("f")) | 0) % FRAMES;
   if (params.has("hold")) out.hold = RATES.some((r) => r.hold === Number(params.get("hold"))) ? Number(params.get("hold")) : 3;
   if (params.has("boil")) out.boil = ["held", "twos", "every"].includes(params.get("boil")) ? params.get("boil") : "twos";
+  if (params.has("k")) out.rawKnobs = params.get("k");
   return out;
 }
 
@@ -112,6 +125,12 @@ function writeHash() {
   });
   if (state.headline) params.set("t", state.headline);
   if (state.grid !== "off") params.set("grid", state.grid);
+
+  // 주소에는 지금 걸린 판의 손잡이만 싣는다. 판마다 열쇠가 다르므로 섞어 담을 수 없다.
+  const current = knobsFor(plateById(state.plate));
+  const packed = Object.entries(current).map(([key, value]) => `${key}:${value}`).join("|");
+  if (packed) params.set("k", packed);
+
   history.replaceState(null, "", `#${params.toString()}`);
 }
 
@@ -119,6 +138,7 @@ function settings(plate, palette, extra = {}) {
   return {
     plate,
     palette,
+    knobs: knobsFor(plate),
     inkCount: state.drums,
     seed: state.seed,
     cell: state.cell,
@@ -133,7 +153,9 @@ function settings(plate, palette, extra = {}) {
 
 // 찍어 둔 필름이 지금 다이얼과 맞는지. 하나라도 다르면 다시 찍는다.
 function filmKey() {
-  return [state.plate, state.seed, state.palette, state.drums, state.cell, state.grain, state.register, state.headline, state.hold, state.boil].join("|");
+  const current = knobsFor(plateById(state.plate));
+  const knobPart = Object.entries(current).map(([key, value]) => `${key}:${value}`).join(",");
+  return [state.plate, state.seed, state.palette, state.drums, state.cell, state.grain, state.register, state.headline, state.hold, state.boil, knobPart].join("|");
 }
 
 // -- 콘택트 시트 -------------------------------------------------------------------------
@@ -357,6 +379,58 @@ function buildRow(row, items, isOn, onPick, decorate) {
   mark(row, items, isOn);
 }
 
+// 슬라이더는 끄는 내내 값이 바뀐다. 그 동안은 정지 화면을 보여 주고, 손이 멎으면 잇는다.
+// 한 칸 움직일 때마다 다시 구우면 아무것도 못 한다.
+const SETTLE = 500;
+
+// 고른 판의 손잡이만 조절칸으로 짓는다. 판을 바꾸면 칸도 통째로 바뀐다 — 남의 판에 없는
+// 값을 띄워 두면 무엇을 돌리는지 알 수 없게 된다.
+function buildKnobs() {
+  const plate = plateById(state.plate);
+  const values = knobsFor(plate);
+  const list = plate.knobs || [];
+
+  knobsRow.replaceChildren();
+  knobsCard.hidden = list.length === 0;
+  if (!list.length) return;
+
+  const places = (step) => (String(step).includes(".") ? String(step).split(".")[1].length : 0);
+
+  for (const knob of list) {
+    const digits = places(knob.step);
+    const row = document.createElement("div");
+    row.className = "knob";
+
+    const head = document.createElement("div");
+    head.className = "knobHead";
+    const name = document.createElement("span");
+    name.textContent = knob.label;
+    const out = document.createElement("span");
+    out.className = "out";
+    out.textContent = values[knob.key].toFixed(digits);
+    head.append(name, out);
+
+    const input = document.createElement("input");
+    input.type = "range";
+    input.min = String(knob.min);
+    input.max = String(knob.max);
+    input.step = String(knob.step);
+    input.value = String(values[knob.key]);
+    input.setAttribute("aria-label", knob.label);
+
+    input.addEventListener("input", () => {
+      stop();
+      values[knob.key] = Number(input.value);
+      out.textContent = values[knob.key].toFixed(digits);
+      render();
+      resume(SETTLE);
+    });
+
+    row.append(head, input);
+    knobsRow.append(row);
+  }
+}
+
 // 판화가 하나뿐이면 고르개도, 판화끼리 견주는 콘택트 시트도 뜻이 없다. 목록을 따라간다.
 const many = PLATES.length > 1;
 
@@ -372,7 +446,7 @@ if (many) {
     plateRow,
     PLATES.map((plate) => ({ label: plate.name, title: plate.about, id: plate.id })),
     (item) => item.id === state.plate,
-    (item) => { stop(); state.plate = item.id; }
+    (item) => { stop(); state.plate = item.id; buildKnobs(); }
   );
 } else {
   // 고를 것이 없으면 고르개를 치우고, 그 자리에 지금 걸린 판의 이름만 남긴다
@@ -415,10 +489,6 @@ buildRow(
   (item) => item.kind === state.boil,
   (item) => { stop(); state.boil = item.kind; }
 );
-
-// 슬라이더는 끄는 내내 값이 바뀐다. 그 동안은 정지 화면을 보여 주고, 손이 멎으면 잇는다.
-// 한 칸 움직일 때마다 다시 구우면 아무것도 못 한다.
-const SETTLE = 500;
 
 for (const [name, dial] of Object.entries(dials)) {
   dial.input.addEventListener("input", () => {
@@ -486,6 +556,20 @@ addEventListener("keydown", (event) => {
 });
 
 // -- 시동 -------------------------------------------------------------------------------
+
+// 주소에 실려 온 손잡이는 지금 걸린 판의 것이다. 그 판이 내놓지 않은 열쇠는 버린다.
+if (state.rawKnobs) {
+  const plate = plateById(state.plate);
+  const values = knobsFor(plate);
+  for (const pair of state.rawKnobs.split("|")) {
+    const [key, raw] = pair.split(":");
+    const knob = (plate.knobs || []).find((item) => item.key === key);
+    if (!knob) continue;
+    const value = Number(raw);
+    if (Number.isFinite(value)) values[key] = Math.max(knob.min, Math.min(knob.max, value));
+  }
+}
+buildKnobs();
 
 // 제목을 받는 판이 하나도 안 걸려 있으면 그 칸은 아무 데도 닿지 않는다
 document.getElementById("headlineCard").hidden = !PLATES.some((plate) => plate.headline);

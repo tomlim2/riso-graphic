@@ -229,7 +229,8 @@ export function printSheet(canvas, options) {
     frame = 0,
     frames = 1,
     boil = "held",
-    scale = 1
+    scale = 1,
+    knobs = {}
   } = options;
 
   const { width, height } = SHEET;
@@ -265,8 +266,15 @@ export function printSheet(canvas, options) {
   const span = Math.max(1, frames);
   const t = span > 1 ? (((frame % span) + span) % span) / span : 0;
 
+  // 손잡이는 판마다 다르다. 화면이 넘겨 주지 않은 것은 판이 스스로 적어 둔 기본값으로
+  // 채운다 — 그래야 판 하나만 들고 찍어 보는 자리에서도 그대로 돈다.
+  const settings = Object.fromEntries((plate.knobs || []).map((knob) => [knob.key, knob.value]));
+
   const R = makeRng(seed >>> 0);
-  const page = { width, height, margin: 78, palette, inks, roles, headline, seed, frame, frames: span, t };
+  const page = {
+    width, height, margin: 78, palette, inks, roles, headline, seed, frame, frames: span, t,
+    knobs: { ...settings, ...knobs }
+  };
   plate.paint(S, R, page);
 
   // 인상이 바뀌면 스크린도 판 어긋남도 함께 바뀐다. 둘은 같은 한 번의 통과에서 나오는 것이라
