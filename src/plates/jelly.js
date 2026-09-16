@@ -1,11 +1,14 @@
-// 어두운 물을 밝은 것 하나가 올라간다.
+// 어두운 물을 밝은 것들이 올라간다.
 //
-// 흰 잉크가 없으므로 빛나는 것은 전부 파낸 자리다. 물을 깔고, 종이 모양으로 파내고, 그
-// 안에만 옅은 통을 얹는다. 물 위에 밝은 잉크를 칠하는 방법은 없다 — 곱하기는 언제나 더
-// 어둡게만 만든다.
+// 흰 잉크가 없으므로 빛나는 것은 전부 파낸 자리다. 물을 깔고, 종 모양으로 파내고, 그 안에만
+// 옅은 통을 얹는다. 물 위에 밝은 잉크를 칠하는 방법은 없다 — 곱하기는 언제나 더 어둡게만
+// 만든다.
 //
 // 오르는 것처럼 보이려면 해파리가 아니라 물이 움직여야 한다. 해파리가 실제로 올라가면 한
 // 바퀴 끝에서 제자리로 돌아오느라 튄다. 티끌을 아래로 흘려 보내면 같은 말을 하면서 이어진다.
+//
+// 여러 마리는 깊이로 벌린다. 멀수록 작고 흐리고 위에 있다. 먼 것부터 찍고 가까운 것이 그
+// 위를 덮으므로, 가까운 놈의 녹아웃이 먼 놈을 지워 가림이 저절로 생긴다.
 
 // 종. 위는 둥근 지붕, 아래는 살짝 들린 가리비 테두리.
 function bell(cx, cy, rx, ry, options = {}) {
@@ -28,123 +31,159 @@ function bell(cx, cy, rx, ry, options = {}) {
 export const jelly = {
   id: "jelly",
   name: "JELLY",
-  about: "어두운 물을 올라가는 빛. 밝은 것은 전부 파낸 자리다",
+  about: "어두운 물을 올라가는 빛들. 밝은 것은 전부 파낸 자리다",
 
   knobs: [
-    { key: "bell", label: "BELL", min: 0.08, max: 0.3, step: 0.01, value: 0.17 },
+    { key: "count", label: "COUNT", min: 1, max: 9, step: 1, value: 5 },
+    { key: "bell", label: "BELL", min: 0.05, max: 0.26, step: 0.01, value: 0.13 },
+    { key: "depth", label: "DEPTH", min: 0, max: 0.8, step: 0.05, value: 0.55 },
     { key: "pulse", label: "PULSE", min: 0, max: 0.35, step: 0.01, value: 0.06 },
     // 한 바퀴에 몇 번 뛰는가. 정수여야 한 바퀴 끝에서 제자리로 돌아온다
     { key: "throb", label: "THROB", min: 1, max: 4, step: 1, value: 2 },
     { key: "drift", label: "DRIFT", min: 0, max: 0.06, step: 0.005, value: 0.012 },
-    { key: "tentacles", label: "TENTACLES", min: 0, max: 24, step: 1, value: 11 },
-    { key: "trail", label: "TRAIL", min: 0.1, max: 0.7, step: 0.01, value: 0.38 },
+    { key: "tentacles", label: "TENTACLES", min: 0, max: 20, step: 1, value: 9 },
+    { key: "trail", label: "TRAIL", min: 0.1, max: 0.7, step: 0.01, value: 0.3 },
     { key: "wobble", label: "WOBBLE", min: 0, max: 1.6, step: 0.05, value: 0.45 },
-    { key: "arms", label: "ARMS", min: 0, max: 6, step: 1, value: 4 },
+    { key: "arms", label: "ARMS", min: 0, max: 6, step: 1, value: 3 },
     { key: "motes", label: "MOTES", min: 0, max: 120, step: 5, value: 45 },
     { key: "deep", label: "DEEP", min: 0.2, max: 1, step: 0.05, value: 0.85 }
   ],
 
   paint(S, R, page) {
     const { width, height, t, knobs } = page;
-    const { pulse, throb, drift, tentacles, arms, motes, deep, wobble } = knobs;
+    const { count, pulse, throb, drift, tentacles, arms, motes, deep, wobble } = knobs;
 
     const turn = t * Math.PI * 2;
-    const cx = width * 0.5;
-    const cy = height * 0.4 + Math.sin(turn) * height * drift;
-
-    // 종이 뛴다. 오므리면 좁고 길어지고 펴면 넓고 납작해진다 — 부피는 얼추 지킨다.
-    // 세기(PULSE)와 빠르기(THROB)를 따로 둔 것은 둘이 다른 것이기 때문이다. 크게 한 번
-    // 천천히 뛰는 것과 작게 여러 번 떠는 것은 같은 값으로 묶일 수 없다.
-    const beat = Math.sin(turn * throb);
-    const base = width * knobs.bell;
-    const rx = base * (1 - pulse * beat);
-    const ry = base * 0.94 * (1 + pulse * beat * 0.9);
 
     // 물. 위가 깊고 아래로 갈수록 옅어진다
     S.key.ramp(0, 0, width, height, { from: deep, to: deep * 0.22 });
     S.wash.ramp(0, 0, width, height, { from: deep * 0.5, to: 0.06 });
 
-    // 티끌. 아래로 흘러 해파리가 오르는 것처럼 보이게 한다. 물을 찍은 두 통에서 모두 파낸다
-    const motesAt = [];
+    // 티끌. 아래로 흘러 해파리가 오르는 것처럼 보이게 한다. 물을 찍은 두 통에서 모두 파낸다.
+    // 속도는 한 바퀴에 한 번이나 두 번 — 실수로 주면 t=1에서 제자리로 돌아오지 않아 튄다.
+    const specks = [];
     for (let i = 0; i < motes; i += 1) {
       const x = R.float(0, width);
       const lane = R.float(0, 1);
       const size = R.float(1.4, 4.2);
-      // 한 바퀴에 정확히 한 번 또는 두 번 건넌다. 실수로 주면 t=1에서 제자리로 돌아오지
-      // 않아 티끌이 통째로 튄다 — 판 안의 모든 주기는 t에 대해 한 바퀴여야 한다.
       const speed = R.int(1, 2);
-      const y = ((lane + t * speed) % 1) * (height + 60) - 30;
-      motesAt.push([x, y, size]);
+      specks.push([x, ((lane + t * speed) % 1) * (height + 60) - 30, size]);
     }
     for (const drum of [S.key, S.wash]) {
       drum.knockout((sep) => {
-        for (const [x, y, size] of motesAt) sep.disc(x, y, size);
+        for (const [x, y, size] of specks) sep.disc(x, y, size);
       });
     }
 
-    // 종 자리를 물에서 파낸다. 그래야 종이가 드러나고, 그 위에 얹는 옅은 통이 빛으로 보인다.
-    //
-    // 한 번에 다 파내면 종이가 오려 붙인 스티커처럼 보인다. 녹아웃도 톤을 받으므로, 바깥
-    // 테를 옅게 파고 안으로 갈수록 깊이 판다. 빛이 번지는 것은 세기가 아니라 가장자리다.
-    const dome = bell(cx, cy, rx, ry);
-    const glow = [
-      [1.34, 0.2],
-      [1.2, 0.35],
-      [1.09, 0.6],
-      [1, 1]
-    ].map(([spread, tone]) => [bell(cx, cy, rx * spread, ry * spread), tone]);
+    // 무리를 짠다. 난수는 여기서 다 쓰고 그리는 동안에는 쓰지 않는다 — 그리기는 먼 것부터
+    // 도는데 거기서 난수를 당기면 마리 수를 바꿀 때마다 무리 전체가 다시 뽑힌다.
+    const swarm = [];
+    for (let i = 0; i < count; i += 1) {
+      const rank = count === 1 ? 0 : i / (count - 1);
+      const far = Math.min(1, Math.max(0, rank + R.float(-0.12, 0.12)));
+      const size = width * knobs.bell * (1 - far * knobs.depth) * R.float(0.86, 1.14);
 
-    for (const drum of [S.key, S.wash]) {
-      drum.knockout((sep) => {
-        for (const [shape, tone] of glow) sep.shape(shape, { tone });
-      });
+      // 자리는 몇 번 다시 뽑아 서로 너무 붙지 않게 한다
+      let x = 0;
+      for (let tryAt = 0; tryAt < 12; tryAt += 1) {
+        x = R.float(width * 0.16, width * 0.84);
+        if (swarm.every((other) => Math.abs(other.x - x) > (size + other.size) * 0.85)) break;
+      }
+
+      const spec = {
+        far,
+        size,
+        x,
+        y: height * (0.66 - far * 0.4) + R.float(-1, 1) * height * 0.05,
+        phase: R.float(0, Math.PI * 2),
+        show: 1 - far * 0.55,
+        strands: [],
+        ribbons: []
+      };
+
+      const strandCount = Math.round(tentacles * (1 - far * 0.35));
+      for (let k = 0; k < strandCount; k += 1) {
+        spec.strands.push({
+          at: strandCount === 1 ? 0.5 : k / (strandCount - 1),
+          length: height * knobs.trail * R.float(0.45, 1.3) * (1 - far * 0.4),
+          amp: wobble * R.float(0.35, 0.95),
+          phase: R.float(0, Math.PI * 2),
+          curl: R.float(3.2, 6.4),
+          lean: R.float(-0.5, 0.5),
+          weight: R.float(1.6, 3) * (1 - far * 0.45)
+        });
+      }
+
+      const ribbonCount = Math.round(arms * (1 - far * 0.4));
+      for (let k = 0; k < ribbonCount; k += 1) {
+        spec.ribbons.push({
+          offset: ribbonCount === 1 ? 0 : (k / (ribbonCount - 1) - 0.5) * 1.1,
+          length: height * knobs.trail * R.float(0.3, 0.55) * (1 - far * 0.4),
+          amp: wobble * R.float(0.3, 0.7),
+          phase: R.float(0, Math.PI * 2),
+          weight: (7 - 3 * (k % 2)) * (1 - far * 0.45)
+        });
+      }
+
+      swarm.push(spec);
     }
 
-    // 빛. 파낸 자리 안쪽에만 옅은 통을 얹어 갓 아래가 비치게 한다
-    S.body.shape(dome, { tone: 0.32 });
-    S.key.line(dome, { w: 2.8, tone: 0.8, close: true });
+    // 먼 것부터. 가까운 놈의 녹아웃이 먼 놈을 지우므로 가림이 저절로 생긴다
+    swarm.sort((a, b) => b.far - a.far);
 
-    // 촉수. 아래로 갈수록 크게 흔들리고, 흔들림이 아래로 번져 간다
-    const trail = height * knobs.trail;
-    for (let i = 0; i < tentacles; i += 1) {
-      const u = tentacles === 1 ? 0.5 : i / (tentacles - 1);
-      const x0 = cx + (u * 2 - 1) * rx * 0.94;
-      const y0 = cy - Math.sin(u * Math.PI) * ry * 0.26;
-      const length = trail * R.float(0.45, 1.3);
-      // 흔들림의 크기는 손잡이가 정한다. 0이면 곧게 늘어지고, 올릴수록 크게 굽이친다.
-      const amp = rx * wobble * R.float(0.35, 0.95);
-      const phase = R.float(0, Math.PI * 2);
-      const curl = R.float(3.2, 6.4); // 흔들림이 아래로 번져 가는 빠르기. 클수록 말린다
-      const lean = R.float(-0.5, 0.5);
-      const weight = R.float(1.6, 3);
-      const points = [];
+    for (const one of swarm) {
+      const beat = Math.sin(turn * throb + one.phase);
+      const cx = one.x;
+      const cy = one.y + Math.sin(turn + one.phase) * height * drift;
+      const rx = one.size * (1 - pulse * beat);
+      const ry = one.size * 0.94 * (1 + pulse * beat * 0.9);
 
-      // 파동이 아래로 번져 가므로 끝이 말린다. 아래로 갈수록 크게 흔들리고, 전체가 한쪽으로
-      // 흐르면서 늘어진다 — 곧게 내리면 촉수가 아니라 실이 된다.
-      for (let s = 0; s <= 26; s += 1) {
-        const along = s / 26;
-        const wave = Math.sin(turn - along * curl + phase) * amp * Math.pow(along, 1.5);
-        const sweep = lean * rx * along * along;
-        points.push([x0 + wave + sweep, y0 + along * length]);
+      const dome = bell(cx, cy, rx, ry);
+
+      // 빛은 한 번에 파내지 않는다. 바깥 테를 옅게 파고 안으로 갈수록 깊이 판다.
+      // 한 번에 다 파내면 오려 붙인 스티커가 된다.
+      const glow = [
+        [1.34, 0.2],
+        [1.2, 0.35],
+        [1.09, 0.6],
+        [1, 1]
+      ];
+      for (const drum of [S.key, S.wash, S.body]) {
+        drum.knockout((sep) => {
+          for (const [spread, tone] of glow) {
+            sep.shape(bell(cx, cy, rx * spread, ry * spread), { tone: tone * one.show });
+          }
+        });
       }
-      S.key.line(points, { w: weight, tone: 0.82 });
-    }
 
-    // 구완. 가운데에서 내려오는 두꺼운 주름. 촉수보다 짧고 굵다
-    for (let i = 0; i < arms; i += 1) {
-      const offset = arms === 1 ? 0 : (i / (arms - 1) - 0.5) * rx * 1.1;
-      const length = trail * R.float(0.3, 0.55);
-      const amp = rx * wobble * R.float(0.3, 0.7);
-      const phase = R.float(0, Math.PI * 2);
-      const points = [];
+      S.body.shape(dome, { tone: 0.32 * one.show });
+      S.key.line(dome, { w: 2.8 * (1 - one.far * 0.4), tone: 0.8 * one.show, close: true });
 
-      for (let s = 0; s <= 18; s += 1) {
-        const along = s / 18;
-        const swing = Math.sin(turn - along * 2.8 + phase) * amp * Math.pow(along, 1.3);
-        points.push([cx + offset + swing, cy + along * length]);
+      // 촉수. 파동이 아래로 번져 가므로 끝이 말린다
+      for (const strand of one.strands) {
+        const x0 = cx + (strand.at * 2 - 1) * rx * 0.94;
+        const y0 = cy - Math.sin(strand.at * Math.PI) * ry * 0.26;
+        const points = [];
+        for (let s = 0; s <= 26; s += 1) {
+          const along = s / 26;
+          const wave = Math.sin(turn - along * strand.curl + strand.phase + one.phase) * rx * strand.amp * Math.pow(along, 1.5);
+          const sweep = strand.lean * rx * along * along;
+          points.push([x0 + wave + sweep, y0 + along * strand.length]);
+        }
+        S.key.line(points, { w: strand.weight, tone: 0.82 * one.show });
       }
-      S.body.line(points, { w: 7 - 3 * (i % 2), tone: 0.55 });
-      S.key.line(points, { w: 2, tone: 0.5 });
+
+      // 구완. 가운데에서 내려오는 두꺼운 주름
+      for (const ribbon of one.ribbons) {
+        const points = [];
+        for (let s = 0; s <= 18; s += 1) {
+          const along = s / 18;
+          const swing = Math.sin(turn - along * 2.8 + ribbon.phase + one.phase) * rx * ribbon.amp * Math.pow(along, 1.3);
+          points.push([cx + ribbon.offset * rx + swing, cy + along * ribbon.length]);
+        }
+        S.body.line(points, { w: ribbon.weight, tone: 0.55 * one.show });
+        S.key.line(points, { w: 2 * (1 - one.far * 0.4), tone: 0.5 * one.show });
+      }
     }
   }
 };

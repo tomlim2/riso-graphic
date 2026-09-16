@@ -98,7 +98,12 @@ node serve.mjs
 
 평균 대비 몇 배인가로만 보면 안 된다. 걸음의 크기가 고르게 모여 있으면 아무 걸음이나 최대가
 될 수 있어서, 이음매가 1.3배라는 말은 튄다는 뜻도 안 튄다는 뜻도 아니다. 나머지 걸음의
-표준편차로 재서 **±2σ 안이면 이은 것**이다. 걸린 네 판은 −1.2에서 1.7 사이에 있다.
+표준편차로 재서 **±2σ 안이면 이은 것**이다.
+
+한 번 재고 판단하지는 않는다. 초당 여덟 장이면 걸음이 열여섯뿐이라 표준편차 자체가 흔들리고,
+아무 이상이 없어도 z가 2를 넘는 씨앗이 나온다. **씨앗을 대여섯 개 바꿔 가며 재서 부호가 섞여
+흩어지면 잡음이고, 씨앗과 무관하게 크고 양수로 나오면 끊긴 것이다.** JELLY 무리를 여섯
+씨앗으로 잰 값이 +2.07에서 −1.90까지 흩어졌다 — 잡음이다.
 
 ### 미리 찍어 두고 튼다
 
@@ -223,7 +228,7 @@ knobs: [
 | RIPPLE | RINGS · REACH · EASE · ARCS · WEIGHT · SQUASH · DOT |
 | MOON | MOON · HORIZON · RISE · SKY · STARS · GLINTS |
 | GARDEN | STEMS · REACH · LEAF · SWAY · SIDE · BERRIES |
-| JELLY | BELL · PULSE · THROB · DRIFT · TENTACLES · TRAIL · WOBBLE · ARMS · MOTES · DEEP |
+| JELLY | COUNT · BELL · DEPTH · PULSE · THROB · DRIFT · TENTACLES · TRAIL · WOBBLE · ARMS · MOTES · DEEP |
 
 움직임을 손잡이로 뺄 때는 세기와 빠르기를 따로 둔다. JELLY의 종은 PULSE로 얼마나 크게
 뛸지, THROB로 한 바퀴에 몇 번 뛸지를 따로 정한다. 크게 한 번 천천히 뛰는 것과 작게 여러
