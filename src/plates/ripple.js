@@ -36,9 +36,10 @@ export const ripple = {
     S.wash.ramp(0, 0, width, height, { from: 0.44, to: 0.08 });
     S.body.ramp(0, height * 0.52, width, height * 0.48, { from: 0, to: 0.16 });
 
+    // 고리는 종이 밖까지 나가야 한다. 안에서 멈추면 물이 아니라 과녁이 된다
     const systems = [
-      { x: width * 0.38, y: height * 0.4, reach: 700, rings: 11, phase: 0, weight: 1 },
-      { x: width * 0.72, y: height * 0.63, reach: 480, rings: 8, phase: 0.37, weight: 0.78 }
+      { x: width * 0.38, y: height * 0.38, reach: Math.hypot(width, height) * 0.88, rings: 12, phase: 0, weight: 1 },
+      { x: width * 0.73, y: height * 0.66, reach: Math.hypot(width, height) * 0.58, rings: 9, phase: 0.37, weight: 0.78 }
     ];
 
     for (const system of systems) {
@@ -87,6 +88,6 @@ export const ripple = {
       S.key.disc(x, y, R.float(1.6, 3.4), { tone: pulse * 0.5 });
     }
 
-    S.key.text("RIPPLE — 24FPS, ONE TURN", margin, height - 54, { font: `500 12px ${MONO}`, track: 2.2 });
+    S.key.text("RIPPLE — 24FPS, ONE TURN", margin, height - 46, { font: `500 12px ${MONO}`, track: 2.2 });
   }
 };

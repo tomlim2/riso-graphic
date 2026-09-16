@@ -456,3 +456,7 @@ for (const [name, dial] of Object.entries(dials)) {
   dial.out.textContent = dial.show(state[name]);
 }
 render();
+
+// 판화는 기본으로 움직인다. 열면 바로 찍고 튼다 — 정지된 한 장은 t를 안 보는 판화일 뿐이다.
+// 콘택트 시트를 펼친 채로 들어왔거나, 쓰는 사람이 움직임을 줄여 달라고 해 둔 경우는 빼고.
+if (state.grid === "off" && !matchMedia("(prefers-reduced-motion: reduce)").matches) play();

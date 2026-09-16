@@ -45,11 +45,14 @@ html, body {
   justify-content: center;
 }
 
+/* 판형에 매이지 않게. 정사각 한 장이든 가로로 긴 콘택트 시트든 두 변 모두에 맞춰 줄어든다.
+   높이를 1200px로 박아 두었더니 판형을 정사각으로 바꾸는 순간 넘쳐 나갔다. */
 #sheet {
   display: block;
-  height: min(100%, 1200px);
   width: auto;
+  height: auto;
   max-width: 100%;
+  max-height: 100%;
   background: var(--paper);
   box-shadow: 0 1px 2px rgba(43, 39, 36, 0.18), 0 18px 44px rgba(43, 39, 36, 0.22);
 }
@@ -165,5 +168,6 @@ input[type="range"] {
   }
   body { overflow-y: auto; height: auto; }
   html { height: auto; }
-  #sheet { height: auto; width: 100%; }
+  .press { height: auto; }
+  #sheet { max-height: none; width: 100%; }
 }

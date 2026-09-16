@@ -150,8 +150,9 @@ export function leaf(rng, cx, cy, size, tilt = 0, options = {}) {
 
 // -- memphis garnish -------------------------------------------------------------------
 
+// phase를 t에 맞춰 한 바퀴 돌리면 물결이 선 위를 흘러간다. 루프가 이어지려면 한 바퀴여야 한다.
 export function wave(x0, y0, x1, y1, options = {}) {
-  const { amplitude = 12, cycles = 6, steps = 96, noise = null, wobble = 3, offset = 0 } = options;
+  const { amplitude = 12, cycles = 6, steps = 96, noise = null, wobble = 3, offset = 0, phase = 0 } = options;
   const dx = x1 - x0;
   const dy = y1 - y0;
   const length = Math.hypot(dx, dy) || 1;
@@ -161,7 +162,7 @@ export function wave(x0, y0, x1, y1, options = {}) {
 
   for (let i = 0; i <= steps; i += 1) {
     const t = i / steps;
-    let push = Math.sin(t * Math.PI * 2 * cycles) * amplitude;
+    let push = Math.sin(t * Math.PI * 2 * cycles + phase) * amplitude;
     if (noise) push += noise(offset + t * cycles * 3) * wobble;
     points.push([x0 + dx * t + nx * push, y0 + dy * t + ny * push]);
   }

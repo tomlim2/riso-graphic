@@ -10,7 +10,10 @@ export const garden = {
   about: "겹침만 본다. 통이 하나 늘면 색은 하나가 아니라 넷이 는다",
 
   paint(S, R, page) {
-    const { width, height, margin } = page;
+    const { width, height, margin, t } = page;
+
+    // 바람. 줄기마다 박자를 조금씩 어긋나게 주면 한 덩어리로 흔들리지 않는다
+    const turn = t * Math.PI * 2;
 
     S.wash.block(0, 0, width, height, { tone: 0.13 });
     S.key.block(0, 0, width, 26);
@@ -18,14 +21,15 @@ export const garden = {
 
     // 한 자리에서 부챗살로 올라간다. 밑동을 모아 두면 잎은 위에서 저절로 물린다
     const rootX = width * 0.5;
-    const rootY = height - 214;
+    const rootY = height * 0.83;
     const stems = 13;
 
     const sprigs = [];
     for (let i = 0; i < stems; i += 1) {
       const spread = stems === 1 ? 0.5 : i / (stems - 1);
-      const angle = -Math.PI * (0.88 - spread * 0.76) + R.float(-0.05, 0.05);
-      const reach = R.float(300, 560);
+      const sway = Math.sin(turn + i * 0.55) * 0.045;
+      const angle = -Math.PI * (0.88 - spread * 0.76) + R.float(-0.05, 0.05) + sway;
+      const reach = R.float(280, 520);
       const tipX = rootX + Math.cos(angle) * reach * 0.86;
       const tipY = rootY + Math.sin(angle) * reach;
       sprigs.push({ angle, tipX, tipY, size: R.float(92, 168), drum: S.drums[i % S.drums.length].separation });
@@ -60,10 +64,10 @@ export const garden = {
       S.key.disc(rootX + (sprig.tipX - rootX) * t, rootY + (sprig.tipY - rootY) * t, R.float(7, 17), { tone: R.float(0.8, 1) });
     }
 
-    S.body.block(-40, height - 150, width + 80, 200, { corners: [120, 0, 0, 0] });
+    S.body.block(-40, height - 128, width + 80, 180, { corners: [110, 0, 0, 0] });
     S.body.knockout((sep) => {
-      sep.text("한 통이 늘 때 색은 하나가 아니라 넷이 는다", margin, height - 82, { font: `700 30px ${DISPLAY}` });
-      sep.text(`${S.drums.length} DRUMS · MULTIPLY`, margin, height - 50, { font: `500 12px ${MONO}`, track: 2 });
+      sep.text("한 통이 늘 때 색은 하나가 아니라 넷이 는다", margin, height - 68, { font: `700 28px ${DISPLAY}` });
+      sep.text(`${S.drums.length} DRUMS · MULTIPLY`, margin, height - 40, { font: `500 12px ${MONO}`, track: 2 });
     });
   }
 };
