@@ -79,22 +79,26 @@ export const jelly = {
     // 도는데 거기서 난수를 당기면 마리 수를 바꿀 때마다 무리 전체가 다시 뽑힌다.
     const swarm = [];
     for (let i = 0; i < count; i += 1) {
-      const rank = count === 1 ? 0 : i / (count - 1);
-      const far = Math.min(1, Math.max(0, rank + R.float(-0.12, 0.12)));
-      const size = width * knobs.bell * (1 - far * knobs.depth) * R.float(0.86, 1.14);
+      // 깊이도 마리마다 새로 뽑는다. 차례대로 한 칸씩 멀어지게 두면 무리가 아니라 사다리가
+      // 된다 — 크기도 높이도 순서대로 줄어들어 한눈에 셀 수 있게 된다.
+      const far = R.float(0, 1);
+      const size = width * knobs.bell * (1 - far * knobs.depth) * R.float(0.72, 1.3);
 
-      // 자리는 몇 번 다시 뽑아 서로 너무 붙지 않게 한다
+      // 자리는 가로세로 둘 다 흩는다. 가로만 벌리면 같은 높이에 나란히 걸린다. 몇 번 다시
+      // 뽑아 서로 너무 붙지 않게 하되, 조금 겹치는 것은 둔다 — 가림이 깊이를 말해 준다.
       let x = 0;
-      for (let tryAt = 0; tryAt < 12; tryAt += 1) {
-        x = R.float(width * 0.16, width * 0.84);
-        if (swarm.every((other) => Math.abs(other.x - x) > (size + other.size) * 0.85)) break;
+      let y = 0;
+      for (let tryAt = 0; tryAt < 16; tryAt += 1) {
+        x = R.float(width * 0.14, width * 0.86);
+        y = height * (0.72 - far * 0.46) + R.float(-1, 1) * height * 0.09;
+        if (swarm.every((other) => Math.hypot(other.x - x, other.y - y) > (size + other.size) * 0.78)) break;
       }
 
       const spec = {
         far,
         size,
         x,
-        y: height * (0.66 - far * 0.4) + R.float(-1, 1) * height * 0.05,
+        y,
         phase: R.float(0, Math.PI * 2),
         show: 1 - far * 0.55,
         strands: [],
