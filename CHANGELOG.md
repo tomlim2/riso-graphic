@@ -7,6 +7,22 @@
 링크가 나중에 다른 장을 찍으면 그것은 깨진 것이므로, 같은 롤이 같은 장을 찍지 않게 되는
 변경은 MAJOR로 올린다.
 
+## [0.10.0] - 2026-09-16
+
+MOON이 고르개로 돌아왔고, 걸린 판에서 글자를 뺐다.
+
+### 추가
+
+- **MOON.** 판화가 둘이 되면서 고르개와 PLATES 콘택트 시트가 저절로 다시 떴다. 기본은
+  RIPPLE 그대로다
+
+### 바뀜
+
+- **걸린 두 판에서 글자를 뺐다.** 움직이는 그림에 얹힌 잔글씨는 매 프레임 읽히기를
+  요구하면서 아무것도 말하지 않는다
+- 제목을 받는 판이 하나도 안 걸려 있으면 HEADLINE 칸도 함께 숨는다. 어느 판이 제목을
+  받는지는 판 자신이 들고 있다
+
 ## [0.9.0] - 2026-09-16
 
 느리게 찍을 때 물결이 거꾸로 돌던 것을 고치고, 초당 여덟 장을 기본으로 삼았다.
@@ -193,6 +209,7 @@
 - 다이얼 여섯 개와 PNG 내보내기, 설정 전체를 담는 주소
 - 모듈 URL에 부팅 도장을 찍는 정적 서버
 
+[0.10.0]: https://github.com/tomlim2/riso-graphic/releases/tag/v0.10.0
 [0.9.0]: https://github.com/tomlim2/riso-graphic/releases/tag/v0.9.0
 [0.8.0]: https://github.com/tomlim2/riso-graphic/releases/tag/v0.8.0
 [0.7.0]: https://github.com/tomlim2/riso-graphic/releases/tag/v0.7.0

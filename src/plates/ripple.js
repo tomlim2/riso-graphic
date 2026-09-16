@@ -8,7 +8,6 @@
 // 목판의 물결은 선이 아니라 폭이 변하는 띠다. 고리 두 개 사이를 evenodd로 채워, 파낸 골처럼
 // 자리마다 두께가 달라지게 한다. 같은 굵기로 한 번 그으면 그냥 원이 된다.
 
-import { MONO } from "../type.js";
 import { splineSubpath } from "../shapes.js";
 
 function ring(cx, cy, radius, options = {}) {
@@ -30,7 +29,7 @@ export const ripple = {
   about: "24fps 물결. 고리가 나고 퍼지고 지는 동안 t가 한 바퀴 돈다",
 
   paint(S, R, page) {
-    const { width, height, margin, t } = page;
+    const { width, height, t } = page;
 
     // 물. 위가 멀고 아래가 가깝다. 바탕이 진하면 고리가 등고선처럼 보이므로 낮게 깐다
     S.wash.ramp(0, 0, width, height, { from: 0.44, to: 0.08 });
@@ -116,7 +115,5 @@ export const ripple = {
       const pulse = 0.5 + 0.5 * Math.sin((t + R.next()) * Math.PI * 2);
       S.key.disc(x, y, R.float(1.6, 3.4), { tone: pulse * 0.5 });
     }
-
-    S.key.text("RIPPLE — 24FPS, ONE TURN", margin, height - 46, { font: `500 12px ${MONO}`, track: 2.2 });
   }
 };

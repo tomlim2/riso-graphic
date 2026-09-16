@@ -1,7 +1,6 @@
 // 계조와 녹아웃만으로 짜는 판. 흰 잉크가 없는 기계에서 밝은 것을 얻는 방법은 하나뿐이다.
 // 그 자리를 찍지 않는 것. 달도, 물 위에 부서지는 달빛도 전부 파낸 구멍이다.
 
-import { DISPLAY, MONO } from "../type.js";
 import * as shapes from "../shapes.js";
 
 export const moon = {
@@ -10,7 +9,7 @@ export const moon = {
   about: "계조와 녹아웃. 하늘은 램프, 달과 물빛은 파낸 자리",
 
   paint(S, R, page) {
-    const { width, height, margin, t } = page;
+    const { width, height, t } = page;
 
     const turn = t * Math.PI * 2;
     const swing = (phase = 0) => Math.sin(turn + phase);
@@ -92,11 +91,5 @@ export const moon = {
     });
 
     S.key.line([[0, horizon], [width, horizon]], { w: 2, tone: 0.5, smooth: false });
-
-    // 글자도 물에서 파낸다. 진한 물 위에 진한 잉크로 쓰면 읽히지 않는다
-    carveWater((sep) => {
-      sep.text("달은 찍지 않은 자리다", margin, height - 82, { font: `700 38px ${DISPLAY}` });
-      sep.text("MOONRISE — EVERY BRIGHT THING IS A HOLE", margin, height - 48, { font: `500 12px ${MONO}`, track: 2 });
-    });
   }
 };

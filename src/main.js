@@ -487,6 +487,8 @@ addEventListener("keydown", (event) => {
 
 // -- 시동 -------------------------------------------------------------------------------
 
+// 제목을 받는 판이 하나도 안 걸려 있으면 그 칸은 아무 데도 닿지 않는다
+document.getElementById("headlineCard").hidden = !PLATES.some((plate) => plate.headline);
 headlineInput.value = state.headline;
 scrub.max = String(FRAMES - 1);
 scrub.value = String(Math.min(state.frame, FRAMES - 1));

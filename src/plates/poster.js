@@ -21,6 +21,10 @@ export const poster = {
   name: "POSTER",
   about: "제목과 큰 덩어리. 글자는 진한 통에, 바닥 글씨는 녹아웃으로",
 
+  // 이 판은 제목을 받는다. 화면의 HEADLINE 칸은 그것을 받는 판이 하나라도 걸려 있을 때만
+  // 뜬다 — 아무도 읽지 않는 입력칸을 남겨 둘 이유가 없다.
+  headline: true,
+
   paint(S, R, page) {
     const { width, height, margin, palette, headline, t } = page;
     const noise = makeNoise(R);
