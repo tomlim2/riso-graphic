@@ -1,0 +1,157 @@
+:root {
+  --desk: #ddd8cb;
+  --paper: #efe9dd;
+  --ink: #2b2724;
+  --line: rgba(43, 39, 36, 0.22);
+}
+
+* { box-sizing: border-box; }
+
+[hidden] { display: none !important; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--desk);
+  color: var(--ink);
+  font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.04em;
+}
+
+.bar {
+  position: fixed;
+  z-index: 2;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  gap: 14px;
+  align-items: baseline;
+  padding: 14px 18px;
+  pointer-events: none;
+}
+
+.mark { font-weight: 700; letter-spacing: 0.18em; }
+.sub { opacity: 0.5; }
+.tag { letter-spacing: 0.14em; }
+.status { margin-left: auto; opacity: 0.6; }
+
+/* The sheet sits on the desk, clear of the deck on the left. */
+.press {
+  height: 100%;
+  padding: 52px 28px 28px 288px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#sheet {
+  display: block;
+  height: min(100%, 1200px);
+  width: auto;
+  max-width: 100%;
+  background: var(--paper);
+  box-shadow: 0 1px 2px rgba(43, 39, 36, 0.18), 0 18px 44px rgba(43, 39, 36, 0.22);
+}
+
+.deck {
+  position: fixed;
+  z-index: 10;
+  left: 18px;
+  top: 52px;
+  bottom: 18px;
+  width: 242px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  padding: 10px;
+}
+
+.card h2 {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0 0 8px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  opacity: 0.7;
+}
+
+.card h2 .out {
+  margin-left: auto;
+  font-weight: 500;
+  opacity: 0.8;
+}
+
+button, input[type="text"] {
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  border: 1px solid var(--line);
+  padding: 7px 9px;
+  cursor: pointer;
+  letter-spacing: 0.12em;
+}
+
+button:hover { background: rgba(43, 39, 36, 0.06); }
+button.on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+.wide { display: block; width: 100%; text-align: center; }
+.mt { margin-top: 6px; }
+
+.row { display: flex; gap: 6px; }
+.seg button { flex: 1; text-align: center; }
+
+input[type="text"] {
+  width: 100%;
+  cursor: text;
+  letter-spacing: 0.02em;
+}
+
+input[type="range"] {
+  width: 100%;
+  accent-color: var(--ink);
+  cursor: pointer;
+}
+
+/* One button per palette, the inks themselves as the label — a name would say less. */
+.palettes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.swatch {
+  display: flex;
+  height: 30px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.swatch span { flex: 1; }
+.swatch.on { outline: 2px solid var(--ink); outline-offset: 1px; }
+
+.hint { margin: 2px 0 0; opacity: 0.45; font-size: 10px; letter-spacing: 0.1em; }
+
+.noscript { padding: 80px 24px; text-align: center; }
+
+@media (max-width: 860px) {
+  .press { padding: 52px 16px 16px; }
+  .deck {
+    position: static;
+    width: auto;
+    margin: 44px 16px 0;
+    max-height: none;
+  }
+  body { overflow-y: auto; height: auto; }
+  html { height: auto; }
+  #sheet { height: auto; width: 100%; }
+}

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RISO GRAPHIC — 리소 스타일 샘플</title>
+<meta name="description" content="스팟 잉크 두세 통을 한 장에 겹쳐 찍는 리소그래프 인쇄를 캔버스로 흉내 낸 샘플 시트. 잉크 중첩, 그레인, 미세한 판 어긋남을 실제 인쇄 순서대로 재현한다.">
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+
+<header class="bar">
+  <span class="mark">RISO GRAPHIC</span>
+  <span class="sub"><span class="tag">SAMPLE SHEET</span></span>
+  <span class="status" id="status">BOOT</span>
+</header>
+
+<main class="press">
+  <canvas id="sheet" width="900" height="1200" aria-label="리소 스타일로 인쇄된 샘플 포스터"></canvas>
+</main>
+
+<aside class="deck">
+  <section class="card">
+    <h2>SHEET</h2>
+    <button id="reroll" class="wide">NEW SHEET</button>
+    <button id="save" class="wide mt">PNG</button>
+  </section>
+
+  <section class="card">
+    <h2>HEADLINE</h2>
+    <input id="headline" type="text" placeholder="배색 이름을 따라감" aria-label="포스터 헤드라인">
+  </section>
+
+  <section class="card">
+    <h2>INKS</h2>
+    <div class="palettes" id="palettes" role="group" aria-label="잉크 배색"></div>
+  </section>
+
+  <section class="card">
+    <h2>DRUMS</h2>
+    <div class="row seg" id="drums" role="group" aria-label="드럼 수">
+      <button type="button" data-drums="2">2</button>
+      <button type="button" data-drums="3" class="on">3</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>GRAIN <span class="out" id="grainOut">0.34</span></h2>
+    <input id="grain" type="range" min="0" max="60" value="34" aria-label="그레인 양">
+  </section>
+
+  <section class="card">
+    <h2>REGISTER <span class="out" id="registerOut">2 PX</span></h2>
+    <input id="register" type="range" min="0" max="5" value="2" aria-label="판 어긋남">
+  </section>
+
+  <p class="hint">N 새 시트 · S 저장</p>
+</aside>
+
+<noscript><p class="noscript">이 페이지는 자바스크립트로 그립니다.</p></noscript>
+
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
