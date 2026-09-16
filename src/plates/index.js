@@ -10,9 +10,10 @@
 import { ripple } from "./ripple.js";
 import { moon } from "./moon.js";
 import { garden } from "./garden.js";
+import { jelly } from "./jelly.js";
 
 // 첫째가 기본이다.
-export const PLATES = [ripple, moon, garden];
+export const PLATES = [ripple, moon, garden, jelly];
 
 export function plateById(id) {
   return PLATES.find((plate) => plate.id === id) || PLATES[0];
