@@ -228,7 +228,22 @@ knobs: [
 | RIPPLE | RINGS · REACH · EASE · ARCS · WEIGHT · SQUASH · DOT |
 | MOON | MOON · HORIZON · RISE · SKY · STARS · GLINTS |
 | GARDEN | STEMS · REACH · LEAF · SWAY · SIDE · BERRIES |
-| JELLY | COUNT · BELL · DEPTH · PULSE · THROB · DRIFT · TENTACLES · TRAIL · WOBBLE · ARMS · MOTES · DEEP |
+| JELLY | COUNT · FIELD · BELL · DEPTH · PULSE · THROB · DRIFT · TENTACLES · TRAIL · WOBBLE · ARMS · MOTES · DEEP |
+
+### 손잡이로 씨앗을 줄 수도 있다
+
+JELLY의 **FIELD**는 값이 아니라 씨앗이다. 무리를 놓는 밭과 크기를 정하는 밭이 이 숫자에서
+나오므로, 끌면 잉크도 종이결도 그대로인 채 배치만 다시 뽑힌다. NEW ROLL이 전부를 바꾸는
+것과 다르다 — 마음에 드는 인쇄 상태를 잡아 놓고 구도만 골라 볼 수 있다.
+
+종이의 롤을 섞어 만들므로 NEW ROLL은 여전히 배치까지 바꾼다. 같은 롤에 같은 FIELD면 언제나
+같은 무리가 나온다.
+
+```js
+const layout = makeRng((page.seed ^ Math.imul(knobs.field + 1, 0x9e3779b9)) >>> 0);
+```
+
+### 세기와 빠르기
 
 움직임을 손잡이로 뺄 때는 세기와 빠르기를 따로 둔다. JELLY의 종은 PULSE로 얼마나 크게
 뛸지, THROB로 한 바퀴에 몇 번 뛸지를 따로 정한다. 크게 한 번 천천히 뛰는 것과 작게 여러

@@ -10,7 +10,7 @@
 // 여러 마리는 깊이로 벌린다. 멀수록 작고 흐리고 위에 있다. 먼 것부터 찍고 가까운 것이 그
 // 위를 덮으므로, 가까운 놈의 녹아웃이 먼 놈을 지워 가림이 저절로 생긴다.
 
-import { makeNoise2 } from "../rng.js";
+import { makeRng, makeNoise2 } from "../rng.js";
 
 // 종. 위는 둥근 지붕, 아래는 살짝 들린 가리비 테두리.
 function bell(cx, cy, rx, ry, options = {}) {
@@ -37,6 +37,8 @@ export const jelly = {
 
   knobs: [
     { key: "count", label: "COUNT", min: 1, max: 9, step: 1, value: 5 },
+    // 무리만 따로 굴리는 씨앗. 종이의 롤은 그대로 두고 배치와 크기만 바꾼다
+    { key: "field", label: "FIELD", min: 0, max: 199, step: 1, value: 0, hint: "밭의 씨앗. 종이의 롤은 그대로 두고 무리만 다시 뽑는다" },
     { key: "bell", label: "BELL", min: 0.05, max: 0.26, step: 0.01, value: 0.13 },
     { key: "depth", label: "DEPTH", min: 0, max: 0.8, step: 0.05, value: 0.55 },
     { key: "pulse", label: "PULSE", min: 0, max: 0.35, step: 0.01, value: 0.06 },
@@ -56,6 +58,10 @@ export const jelly = {
     const { count, pulse, throb, drift, tentacles, arms, motes, deep, wobble } = knobs;
 
     const turn = t * Math.PI * 2;
+
+    // 무리는 제 씨앗으로 굴린다. 종이의 롤에 밭의 씨앗을 섞으므로, NEW ROLL은 여전히 전부를
+    // 바꾸고 FIELD는 그리는 잉크와 종이결을 건드리지 않은 채 배치만 다시 뽑는다.
+    const layout = makeRng((page.seed ^ Math.imul(knobs.field + 1, 0x9e3779b9)) >>> 0);
 
     // 물. 위가 깊고 아래로 갈수록 옅어진다
     S.key.ramp(0, 0, width, height, { from: deep, to: deep * 0.22 });
@@ -82,8 +88,8 @@ export const jelly = {
     // 밭 둘. 하나는 어디에 모일지, 하나는 얼마나 클지를 정한다. 서로 다른 밭이라야 크기가
     // 자리를 따라가지 않는다 — 같은 밭에서 뽑으면 가운데가 늘 크고 가장자리가 늘 작아져,
     // 규칙이 눈에 먼저 읽힌다.
-    const placeField = makeNoise2(R);
-    const sizeField = makeNoise2(R);
+    const placeField = makeNoise2(layout);
+    const sizeField = makeNoise2(layout);
 
     const swarm = [];
     for (let i = 0; i < count; i += 1) {
@@ -91,8 +97,8 @@ export const jelly = {
       // 가운데로 당기는 기운, 밭이 뭉쳐 있는 정도, 이미 놓인 놈에게서 떨어진 정도.
       let spot = null;
       for (let tryAt = 0; tryAt < 14; tryAt += 1) {
-        const x = R.float(width * 0.1, width * 0.9);
-        const y = R.float(height * 0.14, height * 0.86);
+        const x = layout.float(width * 0.1, width * 0.9);
+        const y = layout.float(height * 0.14, height * 0.86);
         const off = Math.hypot((x - width / 2) / (width / 2), (y - height / 2) / (height / 2));
         const pull = 1 - Math.min(1, off / 1.2);
         const clump = placeField(x / 230, y / 230);
@@ -114,14 +120,14 @@ export const jelly = {
       const raw = coarse * 0.68 + fine * 0.32;
       const grain = Math.min(1, Math.max(0, (raw - 0.5) * 2.2 + 0.5));
       const far = 1 - grain;
-      const size = width * knobs.bell * (1 - far * knobs.depth) * R.float(0.88, 1.12);
+      const size = width * knobs.bell * (1 - far * knobs.depth) * layout.float(0.88, 1.12);
 
       const spec = {
         far,
         size,
         x: spot.x,
         y: spot.y,
-        phase: R.float(0, Math.PI * 2),
+        phase: layout.float(0, Math.PI * 2),
         show: 1 - far * 0.55,
         strands: [],
         ribbons: []
@@ -131,12 +137,12 @@ export const jelly = {
       for (let k = 0; k < strandCount; k += 1) {
         spec.strands.push({
           at: strandCount === 1 ? 0.5 : k / (strandCount - 1),
-          length: height * knobs.trail * R.float(0.45, 1.3) * (1 - far * 0.4),
-          amp: wobble * R.float(0.35, 0.95),
-          phase: R.float(0, Math.PI * 2),
-          curl: R.float(3.2, 6.4),
-          lean: R.float(-0.5, 0.5),
-          weight: R.float(1.6, 3) * (1 - far * 0.45)
+          length: height * knobs.trail * layout.float(0.45, 1.3) * (1 - far * 0.4),
+          amp: wobble * layout.float(0.35, 0.95),
+          phase: layout.float(0, Math.PI * 2),
+          curl: layout.float(3.2, 6.4),
+          lean: layout.float(-0.5, 0.5),
+          weight: layout.float(1.6, 3) * (1 - far * 0.45)
         });
       }
 
@@ -144,9 +150,9 @@ export const jelly = {
       for (let k = 0; k < ribbonCount; k += 1) {
         spec.ribbons.push({
           offset: ribbonCount === 1 ? 0 : (k / (ribbonCount - 1) - 0.5) * 1.1,
-          length: height * knobs.trail * R.float(0.3, 0.55) * (1 - far * 0.4),
-          amp: wobble * R.float(0.3, 0.7),
-          phase: R.float(0, Math.PI * 2),
+          length: height * knobs.trail * layout.float(0.3, 0.55) * (1 - far * 0.4),
+          amp: wobble * layout.float(0.3, 0.7),
+          phase: layout.float(0, Math.PI * 2),
           weight: (7 - 3 * (k % 2)) * (1 - far * 0.45)
         });
       }

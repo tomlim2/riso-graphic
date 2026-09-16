@@ -417,6 +417,7 @@ function buildKnobs() {
     input.step = String(knob.step);
     input.value = String(values[knob.key]);
     input.setAttribute("aria-label", knob.label);
+    if (knob.hint) input.title = knob.hint;
 
     input.addEventListener("input", () => {
       stop();
