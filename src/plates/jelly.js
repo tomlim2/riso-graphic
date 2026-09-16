@@ -32,7 +32,10 @@ export const jelly = {
 
   knobs: [
     { key: "bell", label: "BELL", min: 0.08, max: 0.3, step: 0.01, value: 0.17 },
-    { key: "pulse", label: "PULSE", min: 0, max: 0.35, step: 0.01, value: 0.14 },
+    { key: "pulse", label: "PULSE", min: 0, max: 0.35, step: 0.01, value: 0.06 },
+    // 한 바퀴에 몇 번 뛰는가. 정수여야 한 바퀴 끝에서 제자리로 돌아온다
+    { key: "throb", label: "THROB", min: 1, max: 4, step: 1, value: 2 },
+    { key: "drift", label: "DRIFT", min: 0, max: 0.06, step: 0.005, value: 0.012 },
     { key: "tentacles", label: "TENTACLES", min: 0, max: 24, step: 1, value: 11 },
     { key: "trail", label: "TRAIL", min: 0.1, max: 0.7, step: 0.01, value: 0.38 },
     { key: "wobble", label: "WOBBLE", min: 0, max: 1.6, step: 0.05, value: 0.45 },
@@ -43,14 +46,16 @@ export const jelly = {
 
   paint(S, R, page) {
     const { width, height, t, knobs } = page;
-    const { pulse, tentacles, arms, motes, deep, wobble } = knobs;
+    const { pulse, throb, drift, tentacles, arms, motes, deep, wobble } = knobs;
 
     const turn = t * Math.PI * 2;
     const cx = width * 0.5;
-    const cy = height * 0.4 + Math.sin(turn) * height * 0.02;
+    const cy = height * 0.4 + Math.sin(turn) * height * drift;
 
-    // 종이 뛴다. 오므리면 좁고 길어지고 펴면 넓고 납작해진다 — 부피는 얼추 지킨다
-    const beat = Math.sin(turn * 2);
+    // 종이 뛴다. 오므리면 좁고 길어지고 펴면 넓고 납작해진다 — 부피는 얼추 지킨다.
+    // 세기(PULSE)와 빠르기(THROB)를 따로 둔 것은 둘이 다른 것이기 때문이다. 크게 한 번
+    // 천천히 뛰는 것과 작게 여러 번 떠는 것은 같은 값으로 묶일 수 없다.
+    const beat = Math.sin(turn * throb);
     const base = width * knobs.bell;
     const rx = base * (1 - pulse * beat);
     const ry = base * 0.94 * (1 + pulse * beat * 0.9);
@@ -60,7 +65,7 @@ export const jelly = {
     S.wash.ramp(0, 0, width, height, { from: deep * 0.5, to: 0.06 });
 
     // 티끌. 아래로 흘러 해파리가 오르는 것처럼 보이게 한다. 물을 찍은 두 통에서 모두 파낸다
-    const drift = [];
+    const motesAt = [];
     for (let i = 0; i < motes; i += 1) {
       const x = R.float(0, width);
       const lane = R.float(0, 1);
@@ -69,11 +74,11 @@ export const jelly = {
       // 않아 티끌이 통째로 튄다 — 판 안의 모든 주기는 t에 대해 한 바퀴여야 한다.
       const speed = R.int(1, 2);
       const y = ((lane + t * speed) % 1) * (height + 60) - 30;
-      drift.push([x, y, size]);
+      motesAt.push([x, y, size]);
     }
     for (const drum of [S.key, S.wash]) {
       drum.knockout((sep) => {
-        for (const [x, y, size] of drift) sep.disc(x, y, size);
+        for (const [x, y, size] of motesAt) sep.disc(x, y, size);
       });
     }
 
@@ -119,8 +124,8 @@ export const jelly = {
       for (let s = 0; s <= 26; s += 1) {
         const along = s / 26;
         const wave = Math.sin(turn - along * curl + phase) * amp * Math.pow(along, 1.5);
-        const drift = lean * rx * along * along;
-        points.push([x0 + wave + drift, y0 + along * length]);
+        const sweep = lean * rx * along * along;
+        points.push([x0 + wave + sweep, y0 + along * length]);
       }
       S.key.line(points, { w: weight, tone: 0.82 });
     }

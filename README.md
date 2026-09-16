@@ -223,10 +223,18 @@ knobs: [
 | RIPPLE | RINGS · REACH · EASE · ARCS · WEIGHT · SQUASH · DOT |
 | MOON | MOON · HORIZON · RISE · SKY · STARS · GLINTS |
 | GARDEN | STEMS · REACH · LEAF · SWAY · SIDE · BERRIES |
-| JELLY | BELL · PULSE · TENTACLES · TRAIL · WOBBLE · ARMS · MOTES · DEEP |
+| JELLY | BELL · PULSE · THROB · DRIFT · TENTACLES · TRAIL · WOBBLE · ARMS · MOTES · DEEP |
 
-RINGS를 올릴 때만 한 가지 조심할 것이 있다. 고리 수 × 잡는 프레임 ÷ 48이 0.5를 넘으면
-물결이 거꾸로 돈다. 초당 여덟 장에서 그 경계는 여덟이다.
+움직임을 손잡이로 뺄 때는 세기와 빠르기를 따로 둔다. JELLY의 종은 PULSE로 얼마나 크게
+뛸지, THROB로 한 바퀴에 몇 번 뛸지를 따로 정한다. 크게 한 번 천천히 뛰는 것과 작게 여러
+번 떠는 것은 같은 값으로 묶일 수 없다.
+
+두 가지 경계가 있다.
+
+- **한 바퀴에 몇 번**을 세는 손잡이는 정수여야 한다. THROB가 2.5면 한 바퀴 끝에서 종이
+  제자리로 돌아오지 않는다
+- RIPPLE의 **RINGS**는 고리 수 × 잡는 프레임 ÷ 48이 0.5를 넘으면 물결이 거꾸로 돈다.
+  초당 여덟 장에서 그 경계는 여덟이다
 
 ## 다이얼
 
