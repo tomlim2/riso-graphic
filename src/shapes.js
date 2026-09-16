@@ -117,16 +117,28 @@ export function drop(rng, cx, cy, size, tilt = 0) {
   return points;
 }
 
-export function leaf(rng, cx, cy, size, tilt = 0) {
+// 잎. 타원이 아니다 — 양 끝이 뾰족해야 잎으로 읽힌다. 폭을 (1 - u²)의 거듭제곱으로 주면
+// 끝에서 폭과 기울기가 함께 0이 되어 꼭지점이 생긴다. 거기에 전체를 한쪽으로 휘게 한다.
+export function leaf(rng, cx, cy, size, tilt = 0, options = {}) {
+  const { thickness = 0.4, bend = 0.15, steps = 11 } = options;
+  const cos = Math.cos(tilt);
+  const sin = Math.sin(tilt);
+  const jitter = 1 + rng.float(-0.06, 0.06);
   const points = [];
-  const steps = 14;
-  for (let i = 0; i < steps; i += 1) {
-    const t = (i / steps) * Math.PI * 2;
-    const x = Math.cos(t) * size;
-    const y = Math.sin(t) * size * 0.42 * (1 + rng.float(-0.06, 0.06));
-    const bend = Math.sin((x / size) * Math.PI * 0.5) * size * 0.18;
-    points.push([cx + x * Math.cos(tilt) - (y + bend) * Math.sin(tilt), cy + x * Math.sin(tilt) + (y + bend) * Math.cos(tilt)]);
-  }
+
+  const place = (u, side) => {
+    const x = u * size;
+    const half = thickness * size * jitter * Math.pow(Math.max(0, 1 - u * u), 1.15);
+    const curve = bend * size * (1 - u * u);
+    const y = side * half + curve;
+    points.push([cx + x * cos - y * sin, cy + x * sin + y * cos]);
+  };
+
+  // 위 가장자리는 끝점까지, 아래 가장자리는 끝점을 빼고 돌아온다. 같은 점을 두 번 넣으면
+  // 스플라인의 제어점이 뭉개진다
+  for (let i = 0; i <= steps; i += 1) place(-1 + (2 * i) / steps, 1);
+  for (let i = steps - 1; i >= 1; i -= 1) place(-1 + (2 * i) / steps, -1);
+
   return points;
 }
 

@@ -54,7 +54,8 @@ const server = createServer(async (request, response) => {
       );
     }
     if (type.startsWith("text/javascript")) {
-      body = Buffer.from(body.toString("utf8").replace(/from "(\.\/[^"]+)"/g, (_, specifier) => `from "${stamp(specifier)}"`));
+      // 판화는 src/plates/ 아래에서 "../rng.js"처럼 올라가며 부른다. ./만 보면 그 줄을 놓친다
+      body = Buffer.from(body.toString("utf8").replace(/from "(\.\.?\/[^"]+)"/g, (_, specifier) => `from "${stamp(specifier)}"`));
     }
 
     response.writeHead(200, { "content-type": type, "cache-control": "no-store" }).end(body);

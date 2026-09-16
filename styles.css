@@ -139,6 +139,18 @@ input[type="range"] {
 .swatch span { flex: 1; }
 .swatch.on { outline: 2px solid var(--ink); outline-offset: 1px; }
 
+/* 판화 이름은 여러 줄로 접힌다. 목록이 늘어도 카드가 버틴다 */
+.seg.wrap { flex-wrap: wrap; }
+.seg.wrap button { flex: 1 0 44%; }
+
+.about {
+  margin: 8px 0 0;
+  font-size: 10px;
+  line-height: 1.5;
+  opacity: 0.55;
+  letter-spacing: 0.02em;
+}
+
 .hint { margin: 2px 0 0; opacity: 0.45; font-size: 10px; letter-spacing: 0.1em; }
 
 .noscript { padding: 80px 24px; text-align: center; }
