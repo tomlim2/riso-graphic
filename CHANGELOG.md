@@ -7,6 +7,21 @@
 링크가 나중에 다른 장을 찍으면 그것은 깨진 것이므로, 같은 롤이 같은 장을 찍지 않게 되는
 변경은 MAJOR로 올린다.
 
+## [0.13.0] - 2026-09-16
+
+GARDEN이 돌아왔다.
+
+### 추가
+
+- **GARDEN.** 밑동을 한 자리에 모아 부챗살로 올린 잎 다발. 잎 한 장이 한 통이라 물린 자리마다
+  다른 색이 난다. 통 셋으로 낼 수 있는 색은 셋이 아니라 겹치는 조합만큼이라는 것을 보는 판이다
+- 손잡이 여섯 — STEMS · REACH · LEAF · SWAY · SIDE · BERRIES
+
+### 바뀜
+
+- 걸린 판이 되었으므로 GARDEN에서도 글자를 뺐다. 바닥을 받치는 블록만 남겼다
+- 잎 크기와 뻗는 길이를 종이 크기의 비율로 돌렸다. 픽셀로 박혀 있어 판형을 바꾸면 무너졌다
+
 ## [0.12.0] - 2026-09-16
 
 판마다 제 손잡이를 내놓는다.
@@ -248,6 +263,7 @@ MOON이 고르개로 돌아왔고, 걸린 판에서 글자를 뺐다.
 - 다이얼 여섯 개와 PNG 내보내기, 설정 전체를 담는 주소
 - 모듈 URL에 부팅 도장을 찍는 정적 서버
 
+[0.13.0]: https://github.com/tomlim2/riso-graphic/releases/tag/v0.13.0
 [0.12.0]: https://github.com/tomlim2/riso-graphic/releases/tag/v0.12.0
 [0.11.0]: https://github.com/tomlim2/riso-graphic/releases/tag/v0.11.0
 [0.10.0]: https://github.com/tomlim2/riso-graphic/releases/tag/v0.10.0

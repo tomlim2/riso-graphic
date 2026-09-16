@@ -12,11 +12,11 @@
 이런 것을 뭐라고 부르는지, 진과는 어떻게 다른지, 코드가 쓰는 인쇄 용어가 각각 무슨 뜻인지는
 [MAP.md](MAP.md)에 적어 두었다.
 
-지금 걸려 있는 판은 **RIPPLE**과 **MOON**이다. POSTER · MEDIUM · GARDEN 도 `src/plates/`에
-그대로 있고, `src/plates/index.js`에 한 줄씩 더하면 판화 고르개와 콘택트 시트에 함께
-돌아온다. 목록이 하나뿐일 때는 고르개가 아예 숨는다.
+지금 걸려 있는 판은 **RIPPLE** · **MOON** · **GARDEN**이다. POSTER와 MEDIUM 도
+`src/plates/`에 그대로 있고, `src/plates/index.js`에 한 줄씩 더하면 판화 고르개와 콘택트
+시트에 함께 돌아온다. 목록이 하나뿐일 때는 고르개가 아예 숨는다.
 
-걸린 두 판에는 글자가 없다. 움직이는 그림에 얹힌 잔글씨는 매 프레임 읽히기를 요구하면서
+걸린 판에는 글자가 없다. 움직이는 그림에 얹힌 잔글씨는 매 프레임 읽히기를 요구하면서
 아무것도 말하지 않는다. 제목을 받는 판(POSTER)이 하나도 안 걸려 있으면 화면의 HEADLINE
 칸도 함께 숨는다 — 아무 데도 닿지 않는 입력칸을 남겨 둘 이유가 없다.
 
@@ -219,6 +219,7 @@ knobs: [
 | --- | --- |
 | RIPPLE | RINGS · REACH · EASE · ARCS · WEIGHT · SQUASH · DOT |
 | MOON | MOON · HORIZON · RISE · SKY · STARS · GLINTS |
+| GARDEN | STEMS · REACH · LEAF · SWAY · SIDE · BERRIES |
 
 RINGS를 올릴 때만 한 가지 조심할 것이 있다. 고리 수 × 잡는 프레임 ÷ 48이 0.5를 넘으면
 물결이 거꾸로 돈다. 초당 여덟 장에서 그 경계는 여덟이다.
@@ -250,14 +251,15 @@ RINGS를 올릴 때만 한 가지 조심할 것이 있다. 고리 수 × 잡는 
 
 | 판단할 것 | 자리 |
 | --- | --- |
+| 겹침이 내는 색 | GARDEN 판화 |
+| 계조와 녹아웃 | MOON 판화 |
 | 이 배색에서 무너지는 판화가 있는지 | CONTACT SHEET · PLATES |
 | 이 판화가 아홉 배색을 다 견디는지 | CONTACT SHEET · INKS |
 | 루프가 이어지는지, 어디서 비는지 | CONTACT SHEET · FRAMES |
 | 이음매가 정말 이어졌는지 | 이웃 프레임의 픽셀 차이를 한 바퀴 재서 마지막 걸음을 견준다 |
 | 망점만 따로 | GRAIN을 0으로 |
 
-목록에 없는 판화들이 맡던 판단 — 스크린 자체는 MEDIUM, 겹침이 내는 색은 GARDEN — 은 그
-판을 목록에 되돌리면 함께 돌아온다. 계조와 녹아웃은 MOON이 맡는다.
+스크린 자체를 판단하는 자리는 MEDIUM이 맡는다. 목록에 없으므로, 필요하면 되돌려 쓴다.
 
 ## 파일
 
