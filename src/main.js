@@ -9,13 +9,17 @@ import { PALETTES } from "./palette.js";
 import { PLATES, plateById } from "./plates/index.js";
 import { printSheet, SHEET } from "./press.js";
 
-// 초당 스물네 장. 고정이다.
+// 시계는 초당 스물네 번, 그림은 초당 열두 장.
 //
-// 투스로 찍으면 그림은 초당 열두 장이고 한 장을 두 프레임씩 잡아 둔다. 손그림 애니메이션이
-// 늘 하던 일이고 굽는 시간도 절반이지만, 초당 스물네 번이라는 말과는 다르다. 프레임마다
-// 새로 찍는다. 값이 아니라 약속이라 다이얼로 두지 않는다.
+// HOLD는 한 장을 몇 프레임 잡아 두느냐다. 2면 투스 촬영 — 손그림 애니메이션이 늘 하던
+// 방식이고, 움직임에 또렷한 박자가 생긴다. 1로 내리면 프레임마다 새 장이라 초당 스물네
+// 장이 되고 흐름이 매끄러워지는 대신 굽는 시간이 두 배가 된다. 값이 아니라 약속이라
+// 다이얼로 두지 않는다. 바꿀 일이 있으면 이 한 줄이다.
 const FPS = 24;
+const HOLD = 2;
+const RATE = FPS / HOLD; // 초당 찍는 장수
 const FRAMES = 48; // 한 바퀴 2초. 물결의 박자가 여기 맞춰져 있다
+const SHEETS = FRAMES / HOLD;
 const PLAY_SCALE = 0.62; // 재생용 종이 크기. 망점도 같이 줄어 눈에는 같은 스크린으로 보인다
 const GRID_SCALE = 1 / 3;
 
@@ -197,10 +201,10 @@ async function bake(mine) {
   const palette = PALETTES[state.palette];
   const shots = [];
 
-  for (let frame = 0; frame < FRAMES; frame += 1) {
-    printSheet(offscreen, settings(plate, palette, { frame, scale: PLAY_SCALE }));
+  for (let index = 0; index < SHEETS; index += 1) {
+    printSheet(offscreen, settings(plate, palette, { frame: index * HOLD, scale: PLAY_SCALE }));
     shots.push(await createImageBitmap(offscreen));
-    status.textContent = `PRINTING ${frame + 1} / ${FRAMES}`;
+    status.textContent = `PRINTING ${index + 1} / ${SHEETS}`;
 
     // 창을 놓아주되 rAF로는 하지 않는다. 창이 앞에 없으면 rAF는 초당 한 번까지 조여지고,
     // 굽는 일은 화면에 그리는 일이 아니라 그 박자를 따를 이유가 없다. 재생은 rAF가 맞다 —
@@ -218,7 +222,8 @@ async function bake(mine) {
 
 function showFrame(frame) {
   if (!film) return false;
-  const shot = film.shots[((frame % FRAMES) + FRAMES) % FRAMES];
+  const wrapped = ((frame % FRAMES) + FRAMES) % FRAMES;
+  const shot = film.shots[Math.floor(wrapped / HOLD) % film.shots.length];
   canvas.width = shot.width;
   canvas.height = shot.height;
   canvas.getContext("2d").drawImage(shot, 0, 0);
@@ -283,7 +288,7 @@ async function play() {
       ticks += 1;
     }
     if (now - mark0 >= 1000) {
-      status.textContent = `${plateById(state.plate).name} · PLAYING ${ticks} FPS · ${(FRAMES / FPS).toFixed(1)}S LOOP · BOIL ${state.boil.toUpperCase()}`;
+      status.textContent = `${plateById(state.plate).name} · ${ticks} FPS · ${RATE} SHEETS A SECOND · ${(FRAMES / FPS).toFixed(1)}S LOOP · BOIL ${state.boil.toUpperCase()}`;
       ticks = 0;
       mark0 = now;
     }
