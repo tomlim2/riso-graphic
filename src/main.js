@@ -57,6 +57,15 @@ let film = null;
 let playing = false;
 let raf = 0;
 
+// 움직이는 것이 기본이므로, 다이얼을 하나 건드렸다고 멈춘 채로 두지 않는다. wantsPlay는
+// 쓰는 사람의 뜻이고 playing은 지금 상태다. 둘을 나눠 두어야 "잠깐 정지 화면을 보여 주고
+// 다시 잇는" 것과 "멈춰 달라고 해서 멈춘 것"이 섞이지 않는다.
+let wantsPlay = false;
+let resumeTimer = 0;
+
+// 굽는 도중에 다이얼이 또 움직이면 앞의 굽기를 버려야 한다. 세대 번호가 그 표다.
+let generation = 0;
+
 function readHash() {
   const raw = location.hash.replace(/^#/, "");
   if (!raw) return {};
@@ -180,7 +189,7 @@ function discard(reel) {
   for (const shot of reel.shots || reel) shot.close();
 }
 
-async function bake() {
+async function bake(mine) {
   const key = filmKey();
   if (film && film.key === key) return film;
 
@@ -204,7 +213,7 @@ async function bake() {
     // 굽는 일은 화면에 그리는 일이 아니라 그 박자를 따를 이유가 없다. 재생은 rAF가 맞다 —
     // 거기서는 화면과 박자를 맞추는 것이 일의 전부다.
     await new Promise((resolve) => setTimeout(resolve, 0));
-    if (filmKey() !== key) {
+    if (mine !== generation || filmKey() !== key) {
       discard(shots); // 찍는 도중 다이얼이 움직였다
       return null;
     }
@@ -224,11 +233,27 @@ function showFrame(frame) {
   return true;
 }
 
+// 기계를 세운다. 쓰는 사람의 뜻은 건드리지 않는다.
 function stop() {
+  generation += 1;
   playing = false;
+  clearTimeout(resumeTimer);
   cancelAnimationFrame(raf);
   playButton.textContent = "PLAY 24FPS";
   playButton.classList.remove("on");
+}
+
+// 멈춰 달라고 해서 멈춘다. 다음 다이얼에도 다시 돌지 않는다.
+function halt() {
+  wantsPlay = false;
+  stop();
+}
+
+// 다이얼이 바뀐 뒤 다시 잇는다. 슬라이더는 끄는 동안 계속 바뀌므로 잠시 기다렸다가 간다.
+function resume(delay = 0) {
+  clearTimeout(resumeTimer);
+  if (!wantsPlay || state.grid !== "off") return;
+  resumeTimer = setTimeout(play, delay);
 }
 
 async function play() {
@@ -237,9 +262,13 @@ async function play() {
     mark(gridRow, gridItems, (item) => item.kind === state.grid);
   }
 
+  wantsPlay = true;
+  stop();
+  const mine = generation;
+
   playButton.textContent = "PRINTING…";
-  const reel = await bake();
-  if (!reel) return;
+  const reel = await bake(mine);
+  if (!reel || mine !== generation) return;
 
   playing = true;
   playButton.textContent = "STOP";
@@ -290,7 +319,7 @@ function render() {
     const count = renderGrid();
     note = `GRID ${state.grid.toUpperCase()} · ${count} SHEETS · ROLL ${state.seed}`;
     about.textContent =
-      state.grid === "plates" ? "같은 롤로 모든 판화를 나란히" : state.grid === "inks" ? "같은 판화를 배색 아홉 벌로" : "한 판화를 한 바퀴에 걸쳐";
+      state.grid === "plates" ? "같은 롤로 모든 판화를 나란히" : state.grid === "inks" ? "같은 판화를 배색 아홉 벌로" : "한 바퀴를 아홉 자리에서 끊어";
   }
 
   frameOut.textContent = `${state.frame} / ${state.frames}`;
@@ -315,25 +344,35 @@ function buildRow(row, items, isOn, onPick, decorate) {
       onPick(item);
       mark(row, items, isOn);
       render();
+      resume(); // 버튼은 한 번 누르고 끝이라 기다릴 것 없이 바로 잇는다
     });
     row.append(button);
   }
   mark(row, items, isOn);
 }
 
+// 판화가 하나뿐이면 고르개도, 판화끼리 견주는 콘택트 시트도 뜻이 없다. 목록을 따라간다.
+const many = PLATES.length > 1;
+
 const gridItems = [
   { label: "OFF", kind: "off" },
-  { label: "PLATES", kind: "plates" },
+  ...(many ? [{ label: "PLATES", kind: "plates" }] : []),
   { label: "INKS", kind: "inks" },
   { label: "FRAMES", kind: "frames" }
 ];
 
-buildRow(
-  plateRow,
-  PLATES.map((plate) => ({ label: plate.name, title: plate.about, id: plate.id })),
-  (item) => item.id === state.plate,
-  (item) => { stop(); state.plate = item.id; }
-);
+if (many) {
+  buildRow(
+    plateRow,
+    PLATES.map((plate) => ({ label: plate.name, title: plate.about, id: plate.id })),
+    (item) => item.id === state.plate,
+    (item) => { stop(); state.plate = item.id; }
+  );
+} else {
+  // 고를 것이 없으면 고르개를 치우고, 그 자리에 지금 걸린 판의 이름만 남긴다
+  plateRow.hidden = true;
+  document.getElementById("plateTitle").textContent = PLATES[0].name;
+}
 
 buildRow(
   paletteRow,
@@ -385,12 +424,17 @@ buildRow(
   }
 );
 
+// 슬라이더는 끄는 내내 값이 바뀐다. 그 동안은 정지 화면을 보여 주고, 손이 멎으면 잇는다.
+// 한 칸 움직일 때마다 다시 구우면 아무것도 못 한다.
+const SETTLE = 500;
+
 for (const [name, dial] of Object.entries(dials)) {
   dial.input.addEventListener("input", () => {
     stop();
     state[name] = dial.read(dial.input.value);
     dial.out.textContent = dial.show(state[name]);
     render();
+    resume(SETTLE);
   });
 }
 
@@ -398,17 +442,19 @@ headlineInput.addEventListener("input", () => {
   stop();
   state.headline = headlineInput.value;
   render();
+  resume(SETTLE);
 });
 
+// 프레임을 직접 끄는 것은 "이 한 장을 보겠다"는 뜻이다. 멈춘 채로 둔다.
 scrub.addEventListener("input", () => {
-  stop();
+  halt();
   state.frame = Number(scrub.value);
   render();
 });
 
 playButton.addEventListener("click", () => {
   if (playing) {
-    stop();
+    halt();
     render();
   } else {
     play();
@@ -419,6 +465,7 @@ document.getElementById("reroll").addEventListener("click", () => {
   stop();
   state.seed = (Math.random() * 0xffffffff) >>> 0;
   render();
+  resume();
 });
 
 document.getElementById("save").addEventListener("click", () => {
@@ -439,9 +486,10 @@ addEventListener("keydown", (event) => {
   if (event.key === " ") { event.preventDefault(); playButton.click(); }
   if (event.key === "g" || event.key === "G") {
     stop();
-    state.grid = state.grid === "off" ? "plates" : "off";
+    state.grid = state.grid === "off" ? gridItems[1].kind : "off";
     mark(gridRow, gridItems, (item) => item.kind === state.grid);
     render();
+    resume();
   }
 });
 
@@ -458,5 +506,7 @@ for (const [name, dial] of Object.entries(dials)) {
 render();
 
 // 판화는 기본으로 움직인다. 열면 바로 찍고 튼다 — 정지된 한 장은 t를 안 보는 판화일 뿐이다.
-// 콘택트 시트를 펼친 채로 들어왔거나, 쓰는 사람이 움직임을 줄여 달라고 해 둔 경우는 빼고.
-if (state.grid === "off" && !matchMedia("(prefers-reduced-motion: reduce)").matches) play();
+// 쓰는 사람이 움직임을 줄여 달라고 해 두었으면 그러지 않는다. 콘택트 시트를 펼친 채로
+// 들어왔으면 뜻만 세워 두고, 시트를 닫는 순간 이어진다.
+wantsPlay = !matchMedia("(prefers-reduced-motion: reduce)").matches;
+resume();
