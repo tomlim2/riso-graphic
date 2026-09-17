@@ -11,7 +11,8 @@ by fractions of `height` wherever they can.
 
 Motion is the default. The page starts playing as soon as it opens.
 
-The hung plates are **RIPPLE** · **MOON** · **GARDEN** · **JELLY** · **CELL** · **CHLORO**.
+The hung plates are **RIPPLE** · **MOON** · **GARDEN** · **JELLY** · **CELL** · **CHLORO** ·
+**COSMOS** · **FLAKE** · **KALEIDO**.
 POSTER and MEDIUM are still in `src/plates/`. Add a line for either to `src/plates/index.js`
 and it returns to the plate picker and the contact sheet. With only one plate in the list, the
 picker hides.
@@ -150,8 +151,8 @@ Break either rule and the picture jumps between the last frame and the first. Ch
 measuring, not by eye. There are two checks.
 
 **Print just before the end.** Print a sheet at `t = 1 − 1e−9` and compare it with `t = 0`. If
-every period is whole, the two are the same sheet. RIPPLE, MOON, GARDEN and CELL pass to the
-pixel, and JELLY differs in one byte from floating-point rounding. This is the check that caught
+every period is whole, the two are the same sheet. RIPPLE, MOON, GARDEN, CELL, COSMOS, FLAKE
+and KALEIDO pass to the pixel, and JELLY differs in one byte from floating-point rounding. This is the check that caught
 RIPPLE's 1.5 turns, with about 34,000 bytes different.
 
 CHLORO draws thousands of small ellipses, and the canvas moves a few hundred bytes for a 1e−9
@@ -178,41 +179,44 @@ fall away after it are the motion's own speed, not a break.
 Printing one frame used to take longer than the playback budget allows, so the film was baked
 first and the projector only flipped through it. Almost all of that time went to halftoning
 and multiplying. That per-pixel work moved into the shader. Now even the heaviest full-size
-sheet, CHLORO, takes about a seventh of a frame's budget, and most take far less. Nothing is
+sheet, CHLORO, takes about an eighth of a frame's budget, and most take far less. Nothing is
 baked: every frame is printed as it plays.
 
 | One sheet | Canvas 2D | WebGL2 |
 | --- | --- | --- |
-| RIPPLE, 1080 | 27 ms | 1.3 ms |
-| MOON, 1080 | 96 ms | 1.7 ms |
-| GARDEN, 1080 | 35 ms | 1.4 ms |
-| JELLY, 1080 | 120 ms | 3.8 ms |
-| CELL, 1080 | 72 ms | 1.8 ms |
-| CHLORO, 1080 | 99 ms | 6.1 ms |
+| RIPPLE, 1080 | 27 ms | 1.2 ms |
+| MOON, 1080 | 97 ms | 1.7 ms |
+| GARDEN, 1080 | 35 ms | 1.3 ms |
+| JELLY, 1080 | 121 ms | 3.7 ms |
+| CELL, 1080 | 79 ms | 2.5 ms |
+| CHLORO, 1080 | 94 ms | 5.4 ms |
+| COSMOS, 1080 | 87 ms | 3.0 ms |
+| FLAKE, 1080 | 74 ms | 3.7 ms |
+| KALEIDO, 1080 | 85 ms | 1.7 ms |
 | One contact sheet | 126 ms | 14 ms |
 
 Where one WebGL2 sheet's time goes:
 
 | Stage | Time |
 | --- | --- |
-| Composing the plate | 0.03–3.6 ms |
-| Rasterizing and uploading separations | 0.6–1.8 ms |
-| One shader pass, by GPU timer | 0.1–0.7 ms |
+| Composing the plate | 0.03–2.9 ms |
+| Rasterizing and uploading separations | 0.6–1.6 ms |
+| One shader pass, by GPU timer | 0.1–0.4 ms |
 | One frame's budget at 24 fps | 42 ms |
 
 These are means on an M2 Max. Each sheet's time includes waiting for the GPU to finish, forced
 by reading back one pixel. Without that wait, you time only the composing. Boil barely changes
 the numbers. Most of the time now goes to moving separations to the GPU, not to halftoning. The
-exception is CHLORO, where drawing a few thousand chloroplasts on the canvas is the largest
-share.
+exceptions are CHLORO and FLAKE, where composing the plate (a few thousand chloroplasts, a few
+hundred crystal pieces) takes the largest share.
 
 The Canvas 2D press worked harder where a sheet carried more ink. RIPPLE and GARDEN have since
 lost their background washes, and the old press got about twice as fast on both. The first run
 measured 59 ms and 71 ms. The raw data and side-by-side images are in
-[the latest run](bench/results/2026-09-17-canvas2d-vs-webgl2-leaf-tissue/report.md). The
-earlier runs, [six plates](bench/results/2026-09-17-canvas2d-vs-webgl2-six-plates/report.md)
-with the first CHLORO and [the first run](bench/results/2026-09-17-canvas2d-vs-webgl2/report.md)
-with four plates, stay as records.
+[the latest run](bench/results/2026-09-17-canvas2d-vs-webgl2-nine-plates/report.md). The
+earlier runs stay as records: [six plates with the leaf-tissue CHLORO](bench/results/2026-09-17-canvas2d-vs-webgl2-leaf-tissue/report.md),
+[six plates with the first CHLORO](bench/results/2026-09-17-canvas2d-vs-webgl2-six-plates/report.md)
+and [the first run](bench/results/2026-09-17-canvas2d-vs-webgl2/report.md) with four plates.
 
 The milliseconds in the top bar count main-thread time only. The GPU finishes its part
 afterwards, so the bar reads lower than the tables. The FPS figure on the same bar shows whether
@@ -347,21 +351,47 @@ knobs.
 
 | Plate | Knobs |
 | --- | --- |
-| RIPPLE | RINGS · REACH · EASE · ARCS · WEIGHT · SQUASH · DOT · OFFSET |
+| RIPPLE | RINGS · REACH · EASE · ARCS · WEIGHT · SQUASH · DOT · OFFSET · DROPS · FIELD |
 | MOON | MOON · HORIZON · RISE · SKY · STARS · GLINTS |
 | GARDEN | STEMS · REACH · LEAF · SWAY · SIDE · BERRIES |
 | JELLY | COUNT · FIELD · BELL · DEPTH · PULSE · THROB · DRIFT · TENTACLES · TRAIL · WOBBLE · ARMS · MOTES · DEEP · STAIN · GAP |
-| CELL | COUNT · FIELD · SIZE · DRIFT · WOBBLE · DIVIDE · TINT · GRANULES · DEBRIS · VIGNETTE · RETICLE · FRAME |
-| CHLORO | FIELD · SIZE · STRETCH · ANGLE · JITTER · WALL · DENSITY · PLASTID · DEPTH · WANDER · TINT · GROUND · VIGNETTE · RETICLE · FRAME |
+| CELL | COUNT · FIELD · SIZE · SPIKES · LENGTH · CUPS · DEPTH · DRIFT · SPIN · GLOW · DARK · MOTES |
+| CHLORO | FIELD · SIZE · STRETCH · ANGLE · JITTER · WALL · DENSITY · PLASTID · DEPTH · WANDER · TINT · GROUND |
+| COSMOS | FIELD · STARS · SPIKES · TWINKLE · MILKY · NEBULA · GALAXY · TILT · ARMS · DARK |
+| FLAKE | FIELD · SIZE · HABIT · BRANCH · RIDGE · BUBBLE · GLINT · FLURRY · DARK |
+| KALEIDO | FIELD · MIRRORS · PIECES · SIZE · TUMBLE · TINT |
 
 Don't confuse the CELL plate with the CELL dial. The dial sets the halftone cell size for every
 plate. The plate is the microscope sheet.
 
+### Scope knobs are shared
+
+The plates inside the round frame (CELL, CHLORO, COSMOS, FLAKE and KALEIDO) also export `scope`, the eyepiece
+knobs from `src/scope.js`: FRAME, the field's radius, and VIGNETTE, how much the light dies
+toward its edge. The page builds these into their own SCOPE card under PLATE KNOBS, and the
+values are shared rather than remembered per plate, since all of them look through the same
+eyepiece. The URL carries them in `s`, next to the plate's own `k`.
+
+```js
+import { SCOPE_KNOBS } from "../scope.js";
+
+export const cell = {
+  knobs: [/* the plate's own */],
+  scope: SCOPE_KNOBS,
+  paint(S, R, page) {
+    const ring = page.width * page.knobs.frame;
+  }
+};
+```
+
+The press fills in the scope defaults the same way as the plate's own, so a plate printed on its
+own still runs. Older links that put FRAME or VIGNETTE inside `k` still open with those values.
+
 ### A knob can be a seed
 
-**FIELD** on JELLY, CELL and CHLORO is a seed, not an amount. The layout comes from this
-number, so dragging it redraws only the arrangement while the ink and the paper tooth stay the
-same. NEW ROLL, by contrast, changes everything. FIELD lets you keep a print state you like and
+**FIELD** on RIPPLE, JELLY, CELL, CHLORO, COSMOS, FLAKE and KALEIDO is a seed, not an amount.
+The layout comes from this number, so dragging it redraws only the arrangement while the ink and
+the paper tooth stay the same. NEW ROLL, by contrast, changes everything. FIELD lets you keep a print state you like and
 browse compositions.
 
 FIELD is mixed with the paper's roll, so NEW ROLL still changes the layout. The same roll with
@@ -395,6 +425,7 @@ There are two limits:
 | MOTION | Play, stop and scrub |
 | SHEETS A SECOND | 24, 12 or 8. The clock and the loop length stay fixed |
 | PLATE KNOBS | The knobs the chosen plate offers. Different on each plate, remembered per plate |
+| SCOPE | FRAME and VIGNETTE, shared by the plates inside the round frame. Hidden for the others |
 | BOIL | HELD, TWOS or EVERY |
 | CONTACT SHEET | PLATES shows every hung plate, INKS the nine palettes, FRAMES one loop |
 | HEADLINE | Appears only when a plate that takes a title, such as POSTER, is hung |
@@ -413,8 +444,8 @@ Looking good is not the same as being right. Each question has a place to check 
 
 | Question | Where to look |
 | --- | --- |
-| What colors overlaps make | GARDEN, and CHLORO's green |
-| How to make light things on a dark ground | JELLY |
+| What colors overlaps make | GARDEN, KALEIDO, and CHLORO's green |
+| How to make light things on a dark ground | JELLY, COSMOS |
 | Tone steps and knockouts | MOON |
 | Whether any plate breaks in this palette | CONTACT SHEET · PLATES |
 | Whether a plate survives all nine palettes | CONTACT SHEET · INKS |
@@ -437,7 +468,8 @@ you need it.
 | `src/shapes.js` | Organic blobs, Memphis ornaments, bands of varying width |
 | `src/mask.js` | Masks. Knocks everything outside one shape out of every drum, whether a circle or any shape made of points |
 | `src/roundel.js` | The round frame. A circle mask plus a rim that looks drawn by hand |
-| `src/scope.js` | The microscope field: light falloff, floating debris, the reticle. CELL and CHLORO use it |
+| `src/scope.js` | The eyepiece field: the shared SCOPE knobs, light falloff, floating debris. The round-frame plates use it |
+| `src/drums.js` | Picking drums by color, not brightness: the greenest pair, the bluest and yellowest drum, night and light |
 | `src/type.js` | Measuring text, line breaks, fitting type to the plate |
 | `src/plates/` | The plates, one function per sheet. RIPPLE is the model for using time |
 | `src/main.js` | Dials, contact sheet, playback clock, URL, PNG |
@@ -470,6 +502,11 @@ The partner is the middle drum. In some palettes the lightest drum is nearly the
 paper, so its crescent would vanish. The overlap color depends on the palette: red or pink with
 aqua gives deep navy, and the default palette's sky and yellow give green.
 
+DROPS adds more places where ripples start, like rain on a pond. The first drop stays in the
+middle and keeps using the roll's own random numbers, so adding drops never changes it. The
+others take their own random stream: each is placed as far as possible from the drops already
+down, is a little smaller, and spreads on its own beat. FIELD reseeds those extra drops only.
+
 ## Stains and gaps (JELLY)
 
 Light things rise through dark water. There is no white ink, so everything that glows is
@@ -499,18 +536,38 @@ toward the tip, and half of them have a white core carved down the middle.
 ## Under the microscope (CELL and CHLORO)
 
 Both plates are microscope slides. The round frame is the eyepiece's field of view, and outside
-it is paper. The field is brightest in the middle and dims toward the edge, and a faint reticle
-can cross it. `src/scope.js` draws the shared field. Its light goes down before the specimen.
-Debris and the reticle go on top of it, and the round frame comes last. CELL draws its debris
-from the random stream after the cells, so changing the debris count doesn't move them.
+it is paper. The field is brightest in the middle and dims toward the edge (VIGNETTE).
+`src/scope.js` draws the shared field. Its light goes down before the specimen, debris goes on
+top of it, and the round frame comes last. CELL draws its debris from the random stream after
+the cells, so changing the debris count doesn't move them.
 
-**CELL** is stained cells. The cytoplasm is split between the middle and lightest drums, so a
-third color appears where two cells lean on each other. Membranes, nuclei and small organelles
-are on the darkest drum. Vesicles are white holes carved out of the cytoplasm. The nucleolus is
-carved only from the darkest drum, so the cytoplasm color shows through it. A dividing cell
-fills both of its bodies in a single path. Filled separately, the overlap in the middle would
-print twice as dark. Cells drift along small closed paths, membranes ripple in place,
-organelles circle inside, and dividing cells pull apart and come back together.
+**CELL** is virus particles glowing in a dark confocal field, after a reference image: round
+particles ringed with dense club-shaped spikes, a dark core, and pale spots around it where
+spikes face the viewer. The field is laid like COSMOS and FLAKE: the drums that aren't yellow
+become the night (`src/drums.js`), and everything that glows is carved out of it. The bluest
+drum is carved less than the others, so the light comes out sky blue rather than white; only
+the brightest tips are carved nearly all the way.
+
+- **Spikes.** A stalk with a blunt head, round or flat. Stalks are carved lighter and heads
+  almost through, so the tips glow most. Lengths vary (LENGTH), and one in four looks
+  foreshortened, rising from the front of the particle instead of its rim. SPIKES sets how many
+  ring each particle.
+- **Body.** The face is carved about halfway and the rim brighter, with a faint glow around the
+  particle. The night goes back on in the middle, making the dark core.
+- **Cups.** Pale discs ring the dark core, spikes seen end-on, each with a dark center again
+  (CUPS).
+- **Depth.** Out-of-focus particles (DEPTH) go down first as large soft glows with slightly
+  darker centers. The field is a little brighter in the middle, with a few soft light patches
+  and small specks of light (MOTES). DARK sets how dark the field is, GLOW how bright the
+  particles are.
+- **Motion.** Each particle moves on its own: it circles a small closed path (DRIFT) and rocks
+  in place, and each spike stretches and tilts on its own beat (SPIN).
+
+Palettes with a deep blue, such as AQUA × BLUE × LEMON, come closest to the reference. With a
+coral, red or pink key the night turns deep purple or navy.
+
+Up to 0.32.0, CELL was stained cells in a bright field that rippled and divided; that version is
+in the git history.
 
 **CHLORO** is leaf tissue, as a light microscope shows an Elodea or moss leaf: elongated
 hexagonal cells, wall to wall, each packed with green chloroplasts.
@@ -534,7 +591,7 @@ hexagonal cells, wall to wall, each packed with green chloroplasts.
   alive.
 
 There is no green ink. The chloroplasts are filled with the two drums whose overlap comes out
-greenest, usually a yellow and a blue. When no pair makes green, as with the two-drum run of
+greenest, usually a yellow and a blue (`src/drums.js` picks them). When no pair makes green, as with the two-drum run of
 MUSTARD × LEMON, it uses the greenest single drum. The cell insides take the bluest drum, the
 wall bands the yellowest, and the rims and wall edges the darkest.
 
@@ -565,6 +622,96 @@ import { maskCircle, maskShape } from "../mask.js";
 maskCircle(S, page, width * 0.44);            // keep one circle in the middle
 maskShape(S, page, shapes.blob(R, cx, cy, r)); // keep one of the plate's own shapes
 ```
+
+## Through the telescope (COSMOS)
+
+COSMOS is the night sky in a telescope eyepiece, inside the same round frame. A microscope field
+is bright and a telescope field is dark, so this plate works like JELLY's water: it lays a dark
+ground and carves out everything that shines.
+
+The drums are split by color, not brightness (`nightAndLight` in `src/drums.js`). A yellow drum
+under the sky would multiply with the blue into a green night. So only the drums that aren't yellow become the **night** and lay
+the sky, the darkest one heaviest. The yellow drums become the **light**, printed only where
+something glows. With blue and yellow inks the night is blue and the light is yellow. Palettes
+with coral, red or pink give a deep purple or navy night.
+
+- **Milky Way.** A band crossing the field at a slant (MILKY). The night is carved faintly along
+  it and the light drum goes on lightly toward its core. A ridge of noise stretched along the
+  band becomes a dark rift that puts the darkest drum back. Inside the band, very small stars
+  crowd into star clouds.
+
+- **Nebula.** A cloud of warped noise carves the night lightly. Where the darkest drum is carved
+  again, the remaining night drums show their color. Where the warm gas is, the night is cleared
+  and the light drum goes on top, so the gas stays a clean warm color. Thin dust filaments put
+  the darkest drum back.
+- **Galaxy.** A tilted disk (TILT) with logarithmic spiral arms (ARMS). The disk is carved, and
+  the arms carve the darkest drum further, so they stay blue. The center is white with a ring of
+  the light drum around it. Yellow core and blue arms are how real spiral galaxies look. Star
+  clumps along the arms are brighter, and a dust lane runs along the inner edge of each arm.
+- **Stars.** Sizes follow a power law: many tiny stars, a few large ones. White stars carve
+  every night drum, yellow stars add the light drum on top, and blue stars carve only the
+  darkest drum. The brightest few (SPIKES) get diffraction crosses from the telescope's spider
+  vanes. All crosses share one angle, because all the light came through one telescope.
+- **Motion.** Only the stars move, each on its own. They twinkle at their own beat and tremble
+  in place with the air (TWINKLE). The Milky Way, the nebula and the galaxy stay still. With
+  TWINKLE at 0, every frame is the same sheet.
+
+The edge of the field is darkened last with the darkest drum (VIGNETTE), so stars and gas near
+the rim fade with it.
+
+The Milky Way, the nebula and the galaxy are per-pixel patterns, so they are baked once into
+small canvases and stretched onto the sheet. A bake is kept while the roll and the shape stay the
+same. The bakes use their own random streams, so a cached bake never changes what the layout
+draws. The plate always draws the same number of stars, and STARS and MILKY only decide how many
+are printed. The Milky Way's own positions and stars are drawn after everything else, so adding
+it didn't move the rest of the sky.
+
+## A snow crystal (FLAKE)
+
+FLAKE is one snow crystal under the microscope, in the manner of the photographs Wilson Bentley
+took on black grounds from the 1880s. The field is dark, laid the same way as COSMOS, and the
+crystal is carved out of it.
+
+The whole crystal comes from a 30° piece: the upper half of one arm and the side branches
+leaving it at 60°. That piece is turned six times and mirrored once each, twelve copies in all,
+so the hexagonal symmetry can't drift. A mirrored copy winds the other way, so its points are
+reversed before it joins the path. Otherwise the overlaps would cancel out and leave holes.
+
+- **Body.** A hexagonal center plate, six arms, side branches and their twigs. HABIT moves from
+  a broad plate (0) to a thin fern (1): the arms get thinner, the side branches longer and the
+  center plate smaller. Side-branch tips stay inside a hexagonal outline. BRANCH sets how many
+  side branches each arm carries.
+- **Light.** The body carves the night partway, so it stays pale blue. The edges are carved
+  through to white, including the edges where pieces overlap, which read as facets inside the
+  crystal. The arms' spines and the center plate's nested hexagons put the darkest drum back
+  (RIDGE).
+- **Bubbles.** Air bubbles don't follow the symmetry, as in real crystals (BUBBLE).
+- **Glints.** Arm tips, branch tips and corners flash, each on its own beat, with a touch of the
+  light drum at the center (GLINT).
+- **Flurry.** Small crystals float faintly around the big one and rock in place (FLURRY).
+
+Raise REGISTER and the white edges pick up colored fringes, like chromatic aberration in a
+microscope. Riso gives that for free. The crystal doesn't change over time, so it is built once;
+only the glints and the flurry move.
+
+## Kaleidoscope (KALEIDO)
+
+After the microscope and the telescope, the third thing to look through. The round frame is the
+tube. Two mirrors inside it turn one wedge MIRRORS times and flip it once each; at 6 that is
+twelve copies, the same symmetry as a snowflake.
+
+The wedge holds colored glass: blobs, shards, beads, rings, drops, leaves, sparkles and threads,
+the repository's own shape vocabulary. Each piece is printed on one drum, and one in three is
+printed again, slightly offset, on the next drum, so overlaps give third colors. The ground is
+the bright microscope field.
+
+Pieces are placed across the wedge's edges, so they meet their own reflections at the mirror
+lines and bloom there. Each drum's wedge is drawn once on a small canvas, clipped, then turned
+and flipped into place, which makes the cut edges meet exactly at the mirrors.
+
+Every piece moves on its own: it circles a small loop and rocks a little (TUMBLE). As pieces
+cross the mirror lines, the pattern opens and closes. The tube itself never turns. The plate
+always draws the same number of pieces, and PIECES only decides how many go in.
 
 ## Shape vocabulary
 

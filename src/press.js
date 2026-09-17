@@ -412,8 +412,9 @@ function print(gl, machine, canvas, options) {
   const t = span > 1 ? (((frame % span) + span) % span) / span : 0;
 
   // 손잡이는 판마다 다르다. 화면이 넘겨 주지 않은 것은 판이 스스로 적어 둔 기본값으로
-  // 채운다 — 그래야 판 하나만 들고 찍어 보는 자리에서도 그대로 돈다.
-  const settings = Object.fromEntries((plate.knobs || []).map((knob) => [knob.key, knob.value]));
+  // 채운다 — 그래야 판 하나만 들고 찍어 보는 자리에서도 그대로 돈다. 시야의 공통 손잡이(scope)도
+  // 같은 자리에 들어간다.
+  const settings = Object.fromEntries([...(plate.knobs || []), ...(plate.scope || [])].map((knob) => [knob.key, knob.value]));
 
   const R = makeRng(seed >>> 0);
   const page = {

@@ -13,9 +13,12 @@ import { garden } from "./garden.js";
 import { jelly } from "./jelly.js";
 import { cell } from "./cell.js";
 import { chloro } from "./chloro.js";
+import { cosmos } from "./cosmos.js";
+import { flake } from "./flake.js";
+import { kaleido } from "./kaleido.js";
 
 // 첫째가 기본이다.
-export const PLATES = [ripple, moon, garden, jelly, cell, chloro];
+export const PLATES = [ripple, moon, garden, jelly, cell, chloro, cosmos, flake, kaleido];
 
 export function plateById(id) {
   return PLATES.find((plate) => plate.id === id) || PLATES[0];

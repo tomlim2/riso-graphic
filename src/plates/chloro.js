@@ -24,57 +24,12 @@
 
 import { makeRng } from "../rng.js";
 import { roundel } from "../roundel.js";
-import { light, reticle } from "../scope.js";
+import { SCOPE_KNOBS, light } from "../scope.js";
+import { greenest, bluest, yellowest } from "../drums.js";
 
 const TAU = Math.PI * 2;
 const ROW = Math.sqrt(3) / 2;
 const CANDIDATES = 120;
-
-const rgbOf = (hex) => {
-  const value = parseInt(hex.slice(1), 16);
-  return [((value >> 16) & 255) / 255, ((value >> 8) & 255) / 255, (value & 255) / 255];
-};
-
-// 초록이 얼마나 초록인지. 초록 채널이 빨강과 파랑 중 큰 쪽을 얼마나 앞서는지로 잰다
-const greenness = ([r, g, b]) => g - Math.max(r, b);
-
-// 엽록체를 칠할 통. 통 하나, 또는 곱했을 때 가장 초록인 두 통. 옅은 통이 앞이다
-function greenest(drums) {
-  let best = [drums[0]];
-  let top = -Infinity;
-  drums.forEach((drum, i) => {
-    const one = rgbOf(drum.ink);
-    if (greenness(one) > top) {
-      top = greenness(one);
-      best = [drum];
-    }
-    for (const other of drums.slice(i + 1)) {
-      const two = rgbOf(other.ink);
-      const mixed = greenness(one.map((v, k) => v * two[k]));
-      if (mixed > top) {
-        top = mixed;
-        best = [drum, other];
-      }
-    }
-  });
-  return best.map((drum) => drum.separation);
-}
-
-// 색으로 통 하나를 고른다
-function pick(drums, score) {
-  let best = drums[0];
-  let top = -Infinity;
-  for (const drum of drums) {
-    const value = score(rgbOf(drum.ink));
-    if (value > top) {
-      top = value;
-      best = drum;
-    }
-  }
-  return best.separation;
-}
-const bluest = (drums) => pick(drums, ([r, g, b]) => b - (r + g) / 2);
-const yellowest = (drums) => pick(drums, ([r, g, b]) => (r + g) / 2 - b);
 
 // 격자 자리 하나의 씨앗
 const spotSeed = (seed, i, j) => (Math.imul(seed ^ Math.imul(i, 0x27d4eb2d), 0x165667b1) ^ Math.imul(j, 0x9e3779b1)) >>> 0;
@@ -312,11 +267,9 @@ export const chloro = {
     { key: "depth", label: "DEPTH", min: 0, max: 0.6, step: 0.05, value: 0.2, hint: "초점이 맞지 않아 흐린 엽록체의 비율" },
     { key: "wander", label: "WANDER", min: 0, max: 10, step: 0.5, value: 3, hint: "엽록체가 제자리에서 저마다 조금씩 움직이는 폭, 픽셀" },
     { key: "tint", label: "TINT", min: 0.3, max: 1, step: 0.05, value: 0.75, hint: "엽록체의 초록을 얼마나 진하게. 두 통이 겹쳐 초록이 난다" },
-    { key: "ground", label: "GROUND", min: 0, max: 1, step: 0.05, value: 0.7, hint: "세포 안의 하늘빛과 세포벽의 옅은 노랑" },
-    { key: "vignette", label: "VIGNETTE", min: 0, max: 1, step: 0.05, value: 0.2, hint: "시야 가장자리로 갈수록 빛이 죽는 정도" },
-    { key: "reticle", label: "RETICLE", min: 0, max: 1, step: 0.05, value: 0, hint: "접안렌즈의 눈금. 0이면 없다" },
-    { key: "frame", label: "FRAME", min: 0.3, max: 0.75, step: 0.01, value: 0.46, hint: "시야의 반지름. 0.72를 넘으면 시야가 판을 다 덮는다" }
+    { key: "ground", label: "GROUND", min: 0, max: 1, step: 0.05, value: 0.7, hint: "세포 안의 하늘빛과 세포벽의 옅은 노랑" }
   ],
+  scope: SCOPE_KNOBS,
 
   paint(S, R, page) {
     const { width, height, t, knobs } = page;
@@ -431,7 +384,6 @@ export const chloro = {
       g.stroke();
     });
 
-    reticle(S, page, ring, knobs.reticle);
     roundel(S, page, ring);
   }
 };

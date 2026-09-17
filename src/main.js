@@ -38,6 +38,8 @@ const gridRow = document.getElementById("grid");
 const boilRow = document.getElementById("boil");
 const knobsCard = document.getElementById("knobsCard");
 const knobsRow = document.getElementById("knobs");
+const scopeCard = document.getElementById("scopeCard");
+const scopeRow = document.getElementById("scopeKnobs");
 const rateRow = document.getElementById("rate");
 const headlineInput = document.getElementById("headline");
 const playButton = document.getElementById("play");
@@ -91,6 +93,23 @@ function knobsFor(plate) {
   return knobState[plate.id];
 }
 
+// 시야의 공통 손잡이는 판끼리 나눠 쓴다. 둥근 틀을 두르는 판은 모두 같은 접안렌즈를 들여다본다.
+const scopeState = {};
+function scopeFor(plate) {
+  for (const knob of plate.scope || []) {
+    if (!(knob.key in scopeState)) scopeState[knob.key] = knob.value;
+  }
+  return scopeState;
+}
+
+// 판에 넘길 손잡이 값. 판의 것에 그 판이 내놓은 시야의 것을 더한다
+function knobValues(plate) {
+  const values = { ...knobsFor(plate) };
+  const shared = scopeFor(plate);
+  for (const knob of plate.scope || []) values[knob.key] = shared[knob.key];
+  return values;
+}
+
 function readHash() {
   const raw = location.hash.replace(/^#/, "");
   if (!raw) return {};
@@ -109,6 +128,7 @@ function readHash() {
   if (params.has("hold")) out.hold = RATES.some((r) => r.hold === Number(params.get("hold"))) ? Number(params.get("hold")) : 3;
   if (params.has("boil")) out.boil = ["held", "twos", "every"].includes(params.get("boil")) ? params.get("boil") : "twos";
   if (params.has("k")) out.rawKnobs = params.get("k");
+  if (params.has("s")) out.rawScope = params.get("s");
   return out;
 }
 
@@ -129,9 +149,14 @@ function writeHash() {
   if (state.grid !== "off") params.set("grid", state.grid);
 
   // 주소에는 지금 걸린 판의 손잡이만 싣는다. 판마다 열쇠가 다르므로 섞어 담을 수 없다.
-  const current = knobsFor(plateById(state.plate));
-  const packed = Object.entries(current).map(([key, value]) => `${key}:${value}`).join("|");
+  // 시야의 손잡이는 판끼리 나눠 쓰므로 s에 따로 싣는다.
+  const plate = plateById(state.plate);
+  const packed = Object.entries(knobsFor(plate)).map(([key, value]) => `${key}:${value}`).join("|");
   if (packed) params.set("k", packed);
+  if (plate.scope?.length) {
+    const shared = scopeFor(plate);
+    params.set("s", plate.scope.map((knob) => `${knob.key}:${shared[knob.key]}`).join("|"));
+  }
 
   history.replaceState(null, "", `#${params.toString()}`);
 }
@@ -148,7 +173,7 @@ function settings(plate, palette, extra = {}) {
   return {
     plate,
     palette,
-    knobs: knobsFor(plate),
+    knobs: knobValues(plate),
     inkCount: state.drums,
     seed: state.seed,
     cell: state.cell,
@@ -407,17 +432,9 @@ function buildRow(row, items, isOn, onPick, decorate) {
   mark(row, items, isOn);
 }
 
-// 고른 판의 손잡이만 조절칸으로 짓는다. 판을 바꾸면 칸도 통째로 바뀐다 — 남의 판에 없는
-// 값을 띄워 두면 무엇을 돌리는지 알 수 없게 된다.
-function buildKnobs() {
-  const plate = plateById(state.plate);
-  const values = knobsFor(plate);
-  const list = plate.knobs || [];
-
-  knobsRow.replaceChildren();
-  knobsCard.hidden = list.length === 0;
-  if (!list.length) return;
-
+// 손잡이를 한 줄씩 짓는다. 끌면 values의 값을 바로 고친다
+function fillKnobs(container, list, values) {
+  container.replaceChildren();
   const places = (step) => (String(step).includes(".") ? String(step).split(".")[1].length : 0);
 
   for (const knob of list) {
@@ -450,8 +467,20 @@ function buildKnobs() {
     });
 
     row.append(head, input);
-    knobsRow.append(row);
+    container.append(row);
   }
+}
+
+// 고른 판의 손잡이만 조절칸으로 짓는다. 판을 바꾸면 칸도 통째로 바뀐다 — 남의 판에 없는
+// 값을 띄워 두면 무엇을 돌리는지 알 수 없게 된다. 시야의 공통 손잡이는 그 아래 따로 한 칸이다.
+function buildKnobs() {
+  const plate = plateById(state.plate);
+  const own = plate.knobs || [];
+  const scope = plate.scope || [];
+  knobsCard.hidden = own.length === 0;
+  scopeCard.hidden = scope.length === 0;
+  fillKnobs(knobsRow, own, knobsFor(plate));
+  fillKnobs(scopeRow, scope, scopeFor(plate));
 }
 
 // 판화가 하나뿐이면 고르개도, 판화끼리 견주는 콘택트 시트도 뜻이 없다. 목록을 따라간다.
@@ -572,17 +601,26 @@ press.onRestore(() => {
 // -- 시동 -------------------------------------------------------------------------------
 
 // 주소에 실려 온 손잡이는 지금 걸린 판의 것이다. 그 판이 내놓지 않은 열쇠는 버린다.
-if (state.rawKnobs) {
-  const plate = plateById(state.plate);
-  const values = knobsFor(plate);
-  for (const pair of state.rawKnobs.split("|")) {
-    const [key, raw] = pair.split(":");
-    const knob = (plate.knobs || []).find((item) => item.key === key);
+// 시야의 손잡이는 s에 따로 실려 온다. 예전 주소처럼 k에 섞여 온 것도 시야의 것으로 받는다.
+function take(raw, list, values) {
+  for (const pair of raw.split("|")) {
+    const [key, text] = pair.split(":");
+    const knob = list.find((item) => item.key === key);
     if (!knob) continue;
-    const value = Number(raw);
+    const value = Number(text);
     if (Number.isFinite(value)) values[key] = Math.max(knob.min, Math.min(knob.max, value));
   }
+}
+if (state.rawKnobs) {
+  const plate = plateById(state.plate);
+  take(state.rawKnobs, plate.knobs || [], knobsFor(plate));
+  if (!state.rawScope) take(state.rawKnobs, plate.scope || [], scopeFor(plate));
   delete state.rawKnobs;
+}
+if (state.rawScope) {
+  const holder = PLATES.find((plate) => plate.scope);
+  if (holder) take(state.rawScope, holder.scope, scopeFor(holder));
+  delete state.rawScope;
 }
 buildKnobs();
 

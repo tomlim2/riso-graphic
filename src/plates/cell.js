@@ -1,215 +1,296 @@
-// 현미경으로 들여다본 세포.
+// 공초점 현미경으로 들여다본 바이러스 입자.
 //
-// 둥근 틀이 곧 접안렌즈의 시야다. 틀 밖은 종이이고, 틀 안은 빛이 고르게 들어온 밝은 시야에
-// 물들인 세포가 떠 있다. 시야의 빛과 눈금과 부스러기는 src/scope.js가 깐다.
+// 받은 사진처럼 어두운 푸른 시야에 입자가 빛난다. 시야는 COSMOS·FLAKE처럼 깐다 — 노랗지 않은 통이
+// 밤이 되어 바닥을 깔고(src/drums.js), 빛나는 것은 전부 파낸다. 흰 잉크가 없고 곱하기는 어둡게만
+// 만들기 때문이다. 빛은 가장 파란 통을 덜 파내 흰빛보다 하늘빛이 돌게 하고, 가장 밝은 끝만 모든 밤을
+// 거의 끝까지 파낸다.
 //
-// 세포질은 가운데 통과 옅은 통에 나눠 찍는다. 두 세포가 겹친 자리에서 제3의 색이 난다. 막과
-// 핵과 작은 기관, 시야의 눈금은 가장 진한 통이다. 물집 같은 소포는 세포질에서 파낸 구멍이고,
-// 핵 안의 인은 진한 통에서만 파내 세포질 색이 비친다.
+//   가시     입자를 빽빽하게 두른 곤봉. 줄기는 옅게, 머리는 끝까지 파내 끝이 가장 밝다. 머리는 둥글거나
+//            가로로 납작하고, 넷에 하나는 이쪽을 향해 짧아 보이며 앞면에서 솟는다
+//   몸       앞면은 밤을 절반쯤 파낸 푸른 원이고 테가 밝다. 둘레에 빛이 번진다. 한가운데는 밤을 도로
+//            얹어 짙은 속이 된다
+//   컵       짙은 속을 둘러 앞을 보는 가시 머리들이 옅은 원으로 박힌다. 원 속은 다시 어둡다(CUPS)
+//   흐린 입자 초점 밖에 있는 것. 크게 번진 옅은 원에 속이 조금 어둡다(DEPTH)
+//   바탕     한가운데가 조금 밝고, 빛 번짐 몇과 작은 빛 알갱이가 뜬다(MOTES)
 //
-// 모든 움직임은 t에 대해 정확히 한 바퀴다. 세포는 작은 닫힌 길을 돌고, 막은 제자리에서
-// 일렁이며, 기관은 세포 안을 한 바퀴 흘러 돈다. 나뉘는 세포는 두 몸이 벌어졌다 붙었다를
-// 되풀이한다. 난수는 판을 짤 때 한 번에 다 쓰고, 뽑는 횟수는 t와 무관하다.
+// 움직임은 입자마다 따로다. 저마다 작은 닫힌 길을 돌고 제자리에서 조금씩 기울며, 가시는 저마다 다른
+// 박자로 늘었다 줄고 까딱인다. 다 같이 한쪽으로 흐르는 것은 없다. 박자는 모두 한 바퀴에 정수 번이다.
+// 난수는 입자마다 같은 수만큼 뽑고, 손잡이는 그중 몇을 쓸지만 정한다. 빛 알갱이와 빛 번짐은 입자를
+// 다 뽑은 뒤에 뽑는다.
+//
+// 0.32.0까지의 CELL — 흰 시야에 물들인 세포가 일렁이고 나뉘던 판 — 은 git 기록에 남아 있다.
 
 import { makeRng } from "../rng.js";
-import { splineSubpath } from "../shapes.js";
 import { roundel } from "../roundel.js";
-import { light, scatter, specks, reticle } from "../scope.js";
+import { SCOPE_KNOBS, dim, scatter } from "../scope.js";
+import { nightAndLight, bluest } from "../drums.js";
 
-// 막. 원에 주기가 다른 물결 둘을 얹는다. phase를 t로 돌리면 막이 제자리에서 일렁인다.
-// 두 물결의 빠르기가 정수배라 한 바퀴 끝에서 제 모양으로 돌아온다.
-function membrane(cx, cy, radius, { lobes, wobble, phase, squash = 1, tilt = 0, steps = 30 }) {
-  const cos = Math.cos(tilt);
-  const sin = Math.sin(tilt);
-  const points = [];
-  for (let i = 0; i < steps; i += 1) {
-    const a = (i / steps) * Math.PI * 2;
-    const r = radius * (1 + wobble * 0.62 * Math.sin(a * lobes + phase) + wobble * 0.38 * Math.sin(a * (lobes + 2) - phase * 2));
-    const x = Math.cos(a) * r;
-    const y = Math.sin(a) * r * squash;
-    points.push([cx + x * cos - y * sin, cy + x * sin + y * cos]);
-  }
-  return points;
-}
+const TAU = Math.PI * 2;
+const MOST_SPIKES = 80;
+const MOST_CUPS = 12;
+const GRAINS = 20;
+const GLOWS = 6;
 
-// 여러 몸을 한 경로로 채운다. 따로 채우면 나뉘는 세포의 가운데가 두 번 칠해져 진해진다.
-function fill(sep, bodies, tone) {
-  sep.draw((g) => {
-    g.globalAlpha = tone;
-    g.beginPath();
-    for (const body of bodies) splineSubpath(g, body, true);
-    g.fill();
-  });
+// 입자 하나에 필요한 난수를 모두, 언제나 같은 수만큼 뽑는다
+function makeParticle(layout, spot, r) {
+  return {
+    x: spot.x,
+    y: spot.y,
+    r,
+    blur: layout.next(),
+    tone: layout.float(0.8, 1.15),
+    path: {
+      ax: layout.float(0.4, 1),
+      ay: layout.float(0.4, 1),
+      fx: layout.int(1, 2),
+      fy: layout.int(1, 2),
+      px: layout.float(0, TAU),
+      py: layout.float(0, TAU)
+    },
+    spin: { base: layout.float(0, TAU), beat: layout.int(1, 2), phase: layout.float(0, TAU) },
+    spikes: Array.from({ length: MOST_SPIKES }, () => {
+      const shift = layout.float(-0.35, 0.35);
+      const length = layout.float(0.65, 1.2);
+      const facing = layout.next();
+      const shorten = layout.float(0.35, 0.7);
+      return {
+        shift,
+        facing: facing < 0.25,
+        length: length * (facing < 0.25 ? shorten : 1),
+        head: layout.next(),
+        beat: layout.int(1, 3),
+        phase: layout.float(0, TAU)
+      };
+    }),
+    cups: Array.from({ length: MOST_CUPS }, () => ({
+      shift: layout.float(-0.25, 0.25),
+      dist: layout.float(0.45, 0.72),
+      size: layout.float(0.08, 0.12)
+    })),
+    grains: Array.from({ length: GRAINS }, () => [layout.float(0, TAU), Math.sqrt(layout.next()) * 0.9, layout.float(1.8, 3)])
+  };
 }
 
 export const cell = {
   id: "cell",
   name: "CELL",
-  about: "현미경 아래의 세포. 둥근 시야 안에서 떠다니고 일렁이고 나뉜다",
+  about: "공초점 현미경 아래의 바이러스 입자. 어두운 시야에 가시 두른 입자가 저마다 빛나며 까딱인다",
 
   knobs: [
-    { key: "count", label: "COUNT", min: 3, max: 30, step: 1, value: 11 },
-    { key: "field", label: "FIELD", min: 0, max: 199, step: 1, value: 0, hint: "시야의 씨앗. 종이의 롤은 그대로 두고 세포만 다시 뽑는다" },
-    { key: "size", label: "SIZE", min: 0.04, max: 0.16, step: 0.005, value: 0.085 },
-    { key: "drift", label: "DRIFT", min: 0, max: 0.04, step: 0.002, value: 0.012, hint: "세포가 한 바퀴 동안 도는 작은 길의 크기" },
-    { key: "wobble", label: "WOBBLE", min: 0, max: 0.3, step: 0.01, value: 0.1, hint: "막이 일렁이는 정도" },
-    { key: "divide", label: "DIVIDE", min: 0, max: 1, step: 0.05, value: 0.3, hint: "나뉘고 있는 세포의 비율" },
-    { key: "tint", label: "TINT", min: 0.2, max: 0.9, step: 0.05, value: 0.5, hint: "세포질을 얼마나 진하게 물들일지" },
-    { key: "granules", label: "GRANULES", min: 0, max: 12, step: 1, value: 5, hint: "세포 하나에 든 작은 기관의 수" },
-    { key: "debris", label: "DEBRIS", min: 0, max: 120, step: 4, value: 36, hint: "시야에 떠 있는 부스러기" },
-    { key: "vignette", label: "VIGNETTE", min: 0, max: 1, step: 0.05, value: 0.5, hint: "시야 가장자리로 갈수록 빛이 죽는 정도" },
-    { key: "reticle", label: "RETICLE", min: 0, max: 1, step: 0.05, value: 0.4, hint: "접안렌즈의 눈금. 0이면 없다" },
-    { key: "frame", label: "FRAME", min: 0.3, max: 0.5, step: 0.01, value: 0.44, hint: "시야의 반지름" }
+    { key: "count", label: "COUNT", min: 3, max: 30, step: 1, value: 9 },
+    { key: "field", label: "FIELD", min: 0, max: 199, step: 1, value: 0, hint: "시야의 씨앗. 종이의 롤은 그대로 두고 입자만 다시 뽑는다" },
+    { key: "size", label: "SIZE", min: 0.04, max: 0.16, step: 0.005, value: 0.1, hint: "입자의 크기" },
+    { key: "spikes", label: "SPIKES", min: 0, max: 80, step: 1, value: 56, hint: "입자 하나를 두른 가시의 수" },
+    { key: "length", label: "LENGTH", min: 0.1, max: 0.5, step: 0.01, value: 0.3, hint: "가시의 길이. 입자 반지름에 대한 비율" },
+    { key: "cups", label: "CUPS", min: 0, max: 12, step: 1, value: 8, hint: "짙은 속을 둘러 앞을 보는 가시 머리의 수" },
+    { key: "depth", label: "DEPTH", min: 0, max: 0.7, step: 0.05, value: 0.5, hint: "초점이 맞지 않아 흐린 입자의 비율" },
+    { key: "drift", label: "DRIFT", min: 0, max: 0.04, step: 0.002, value: 0.008, hint: "입자가 한 바퀴 동안 도는 작은 길의 크기" },
+    { key: "spin", label: "SPIN", min: 0, max: 1, step: 0.05, value: 0.4, hint: "입자가 제자리에서 기울고 가시가 떠는 정도" },
+    { key: "glow", label: "GLOW", min: 0.3, max: 1, step: 0.05, value: 0.8, hint: "입자가 얼마나 밝게 빛나는지" },
+    { key: "dark", label: "DARK", min: 0.4, max: 1, step: 0.05, value: 0.9, hint: "시야가 얼마나 어두운지" },
+    { key: "motes", label: "MOTES", min: 0, max: 120, step: 4, value: 36, hint: "시야에 뜬 작은 빛 알갱이" }
   ],
+  scope: SCOPE_KNOBS,
 
   paint(S, R, page) {
     const { width, height, t, knobs } = page;
-    const { count, drift, wobble, divide, tint, granules, debris, vignette } = knobs;
-
-    const turn = t * Math.PI * 2;
+    const turn = t * TAU;
     const cx = width / 2;
     const cy = height / 2;
     const ring = width * knobs.frame;
+    const limit = ring * 0.95;
+    const { night, deepest } = nightAndLight(S.drums);
+    const blue = bluest(S.drums);
 
-    // 세포는 제 씨앗으로 굴린다. FIELD는 잉크와 종이결을 건드리지 않고 시야만 다시 뽑는다
-    const layout = makeRng((page.seed ^ Math.imul(knobs.field + 1, 0x85ebca6b)) >>> 0);
+    // 입자는 제 씨앗으로 굴린다. FIELD는 잉크와 종이결을 건드리지 않고 시야만 다시 뽑는다
+    const layout = makeRng((page.seed ^ 0x1f123bb5 ^ Math.imul(knobs.field + 1, 0x85ebca6b)) >>> 0);
 
-    light(S, page, ring, vignette);
-
-    // 세포를 놓는다. 후보를 여럿 뽑아 이웃과의 여유가 가장 큰 데로 간다. 조금 겹치는 것은
-    // 괜찮다 — 시야 안에서 세포는 서로 기댄다. 시야 밖으로 너무 나가는 자리는 깎는다.
-    const limit = ring * 0.93;
-    const cells = [];
-    for (let i = 0; i < count; i += 1) {
-      const r = width * knobs.size * layout.float(0.62, 1.38);
+    // 입자를 놓는다. 후보를 여럿 뽑아 이웃과의 여유가 가장 큰 데로 간다. 가시까지 셈에 넣어
+    // 조금만 겹친다. 시야 밖으로 너무 나가는 자리는 깎는다
+    const particles = [];
+    for (let i = 0; i < knobs.count; i += 1) {
+      const r = width * knobs.size * layout.float(0.75, 1.3);
       let spot = null;
       for (let tryAt = 0; tryAt < 24; tryAt += 1) {
-        const angle = layout.float(0, Math.PI * 2);
+        const angle = layout.float(0, TAU);
         const dist = Math.sqrt(layout.next()) * limit;
         const x = cx + Math.cos(angle) * dist;
         const y = cy + Math.sin(angle) * dist;
         let room = width;
-        for (const other of cells) room = Math.min(room, Math.hypot(other.x - x, other.y - y) - (other.r + r) * 0.82);
-        const score = room - Math.max(0, dist + r * 0.4 - limit) * 2;
+        for (const other of particles) room = Math.min(room, Math.hypot(other.x - x, other.y - y) - (other.r + r) * 1.05);
+        const score = room - Math.max(0, dist + r * 0.3 - limit) * 2;
         if (!spot || score > spot.score) spot = { x, y, score };
       }
+      particles.push(makeParticle(layout, spot, r));
+    }
+    const motes = scatter(layout, knobs.motes, limit, cx, cy);
+    const glows = Array.from({ length: GLOWS }, () => {
+      const angle = layout.float(0, TAU);
+      const dist = Math.sqrt(layout.next()) * ring * 0.85;
+      return { x: cx + Math.cos(angle) * dist, y: cy + Math.sin(angle) * dist, r: ring * layout.float(0.08, 0.2), tone: layout.float(0.15, 0.35) };
+    });
 
-      cells.push({
-        x: spot.x,
-        y: spot.y,
-        r,
-        drum: layout.chance(0.5) ? "body" : "wash",
-        tone: tint * layout.float(0.78, 1.18),
-        lobes: layout.int(2, 4),
-        wobble: wobble * layout.float(0.6, 1.3),
-        phase: layout.float(0, Math.PI * 2),
-        squash: layout.float(0.78, 1.12),
-        tilt: layout.float(0, Math.PI * 2),
-        path: {
-          ax: layout.float(0.4, 1),
-          ay: layout.float(0.4, 1),
-          fx: layout.int(1, 2),
-          fy: layout.int(1, 2),
-          px: layout.float(0, Math.PI * 2),
-          py: layout.float(0, Math.PI * 2)
-        },
-        nucleus: {
-          dx: layout.float(-0.22, 0.22),
-          dy: layout.float(-0.22, 0.22),
-          size: layout.float(0.3, 0.44),
-          tone: layout.float(0.72, 0.92),
-          phase: layout.float(0, Math.PI * 2)
-        },
-        splits: layout.chance(divide),
-        axis: layout.float(0, Math.PI),
-        granules: Array.from({ length: granules }, () => ({
-          angle: layout.float(0, Math.PI * 2),
-          dist: layout.float(0.42, 0.78),
-          size: layout.float(0.06, 0.12),
-          spin: layout.chance(0.5) ? 1 : -1,
-          phase: layout.float(0, Math.PI * 2)
-        })),
-        vesicles: Array.from({ length: layout.int(1, 3) }, () => ({
-          angle: layout.float(0, Math.PI * 2),
-          dist: layout.float(0.35, 0.7),
-          size: layout.float(0.08, 0.15)
-        }))
-      });
+    // 빛을 판다. 가장 파란 통은 share만큼만 파내 빛이 하늘빛을 띤다. share가 1이면 흰빛이다
+    const light = (paint, strength, share = 0.5) => {
+      if (!(strength > 0)) return;
+      for (const sep of night) {
+        const amount = Math.min(1, strength * (sep === blue ? share : 1));
+        sep.knockout((plate) =>
+          plate.draw((g) => {
+            g.globalAlpha = amount;
+            paint(g);
+          })
+        );
+      }
+    };
+    // 어둠을 도로 얹는다
+    const shade = (paint, strength) => {
+      for (const sep of night) {
+        sep.draw((g) => {
+          g.globalAlpha = Math.min(1, strength);
+          paint(g);
+        });
+      }
+    };
+    // 가운데에서 바깥으로 옅어지는 원 하나
+    const soft = (x, y, inner, outer, stops) => (g) => {
+      const gradient = g.createRadialGradient(x, y, inner, x, y, outer);
+      for (const [at, alpha] of stops) gradient.addColorStop(at, `rgba(0, 0, 0, ${alpha})`);
+      g.fillStyle = gradient;
+      g.beginPath();
+      g.arc(x, y, outer, 0, TAU);
+      g.fill();
+    };
+    const discs = (list) => (g) => {
+      g.beginPath();
+      for (const [dx, dy, size] of list) {
+        g.moveTo(dx + size, dy);
+        g.arc(dx, dy, size, 0, TAU);
+      }
+      g.fill();
+    };
+
+    // 바닥. 밤을 깔고 한가운데를 조금 밝힌다
+    for (const sep of night) sep.flood((sep === deepest ? 0.95 : 0.8) * knobs.dark);
+    light(soft(cx, cy, 0, ring, [[0, 0.35], [1, 0]]), 1, 0.4);
+
+    // 빛 번짐
+    for (const glow of glows) light(soft(glow.x, glow.y, 0, glow.r, [[0, glow.tone], [1, 0]]), 1);
+
+    const glowAmount = knobs.glow;
+    const shake = knobs.spin;
+    const spikeCount = Math.round(knobs.spikes);
+    const cupCount = Math.round(knobs.cups);
+
+    // 흐린 것부터, 그다음 큰 것부터
+    const blurred = (p) => p.blur < knobs.depth;
+    const placed = [...particles]
+      .sort((a, b) => (blurred(a) === blurred(b) ? b.r - a.r : blurred(a) ? -1 : 1))
+      .map((p) => ({
+        p,
+        x: p.x + Math.cos(turn * p.path.fx + p.path.px) * knobs.drift * p.path.ax * width,
+        y: p.y + Math.sin(turn * p.path.fy + p.path.py) * knobs.drift * p.path.ay * width,
+        rot: p.spin.base + Math.sin(turn * p.spin.beat + p.spin.phase) * 0.35 * shake
+      }));
+
+    // 흐린 입자. 크게 번진 옅은 원에 속이 조금 어둡다
+    for (const { p, x, y } of placed.filter((item) => blurred(item.p))) {
+      const r = p.r * 1.3;
+      const tone = glowAmount * p.tone;
+      light(soft(x, y, 0, r * 1.5, [[0, 0.42 * tone], [0.5, 0.48 * tone], [0.75, 0.28 * tone], [1, 0]]), 1);
+      shade(soft(x, y, 0, r * 0.55, [[0, 0.25], [1, 0]]), 1);
     }
 
-    const dust = scatter(layout, debris, limit, cx, cy);
+    // 빛 알갱이. 초점 밖의 작은 입자들이 제자리에서 조금씩 떤다
+    if (motes.length) {
+      light(
+        discs(
+          motes.map((m) => [
+            m.x + Math.cos(turn * m.beat + m.phase) * 3,
+            m.y + Math.sin(turn * m.beat + m.phase * 1.3) * 3,
+            m.size * 1.6
+          ])
+        ),
+        0.75
+      );
+    }
 
-    // 큰 것부터 깐다. 작은 세포가 큰 세포 위에 앉는다
-    cells.sort((a, b) => b.r - a.r);
+    // 초점이 맞은 입자
+    for (const { p, x, y, rot } of placed.filter((item) => !blurred(item.p))) {
+      const r = p.r;
+      const tone = Math.min(1, glowAmount * p.tone);
 
-    for (const cell of cells) {
-      const { path } = cell;
-      const x = cell.x + Math.cos(turn * path.fx + path.px) * drift * path.ax * width;
-      const y = cell.y + Math.sin(turn * path.fy + path.py) * drift * path.ay * width;
-      const tilt = cell.tilt + Math.sin(turn + cell.phase) * 0.08;
-      const look = { lobes: cell.lobes, wobble: cell.wobble, phase: cell.phase + turn, squash: cell.squash, tilt };
-      const plasm = S[cell.drum];
+      // 둘레의 번짐과 앞면
+      light(soft(x, y, r * 0.9, r * 1.4, [[0, 0.2 * tone], [1, 0]]), 1);
+      light(discs([[x, y, r]]), 0.45 * tone);
 
-      // 몸과 핵의 자리. 나뉘는 세포는 두 몸이 축을 따라 벌어졌다 붙었다 한다
-      let bodies;
-      let nuclei;
-      let reach;
-      if (cell.splits) {
-        const pull = cell.r * (0.42 + 0.1 * Math.sin(turn + cell.phase));
-        const ax = Math.cos(cell.axis) * pull;
-        const ay = Math.sin(cell.axis) * pull;
-        bodies = [
-          membrane(x - ax, y - ay, cell.r * 0.72, look),
-          membrane(x + ax, y + ay, cell.r * 0.72, { ...look, phase: look.phase + 1.7 })
-        ];
-        nuclei = [
-          [x - ax, y - ay, cell.r * cell.nucleus.size * 0.78],
-          [x + ax, y + ay, cell.r * cell.nucleus.size * 0.78]
-        ];
-        reach = 0.64;
-      } else {
-        bodies = [membrane(x, y, cell.r, look)];
-        nuclei = [[x + cell.nucleus.dx * cell.r, y + cell.nucleus.dy * cell.r, cell.r * cell.nucleus.size]];
-        reach = 1;
+      // 짙은 속
+      shade(soft(x, y, 0, r * 0.62, [[0, 0.9], [0.55, 0.6], [1, 0]]), 1);
+
+      // 앞면의 옅은 알갱이
+      light(discs(p.grains.map(([angle, dist, size]) => [x + Math.cos(angle + rot) * dist * r, y + Math.sin(angle + rot) * dist * r, size])), 0.22 * tone);
+
+      // 테
+      light((g) => {
+        g.lineWidth = Math.max(4, r * 0.045);
+        g.beginPath();
+        g.arc(x, y, r, 0, TAU);
+        g.stroke();
+      }, 0.9 * tone);
+
+      // 가시. 줄기는 옅게, 머리는 거의 끝까지
+      if (spikeCount > 0) {
+        const stalk = Math.max(3.5, r * 0.035);
+        const knob = Math.max(3.5, r * 0.05);
+        const stalks = [];
+        const rounds = [];
+        const flats = [];
+        p.spikes.slice(0, spikeCount).forEach((spike, k) => {
+          const wave = Math.sin(turn * spike.beat + spike.phase);
+          const angle = rot + ((k + 0.5 + spike.shift) / spikeCount) * TAU + wave * 0.04 * shake;
+          const reach = r + knobs.length * r * spike.length * (1 + wave * 0.08 * shake);
+          const ux = Math.cos(angle);
+          const uy = Math.sin(angle);
+          const foot = spike.facing ? r * 0.84 : r * 0.97;
+          stalks.push([x + ux * foot, y + uy * foot, x + ux * reach, y + uy * reach]);
+          if (spike.head < 0.35) flats.push([x + ux * reach, y + uy * reach, ux, uy]);
+          else rounds.push([x + ux * reach, y + uy * reach, spike.head < 0.8 ? knob : knob * 1.35]);
+        });
+        light((g) => {
+          g.lineWidth = stalk;
+          g.lineCap = "round";
+          g.beginPath();
+          for (const [x0, y0, x1, y1] of stalks) {
+            g.moveTo(x0, y0);
+            g.lineTo(x1, y1);
+          }
+          g.stroke();
+        }, tone, 0.7);
+        light((g) => {
+          discs(rounds)(g);
+          g.lineWidth = knob * 1.1;
+          g.lineCap = "round";
+          g.beginPath();
+          for (const [hx, hy, ux, uy] of flats) {
+            g.moveTo(hx - uy * knob * 1.3, hy + ux * knob * 1.3);
+            g.lineTo(hx + uy * knob * 1.3, hy - ux * knob * 1.3);
+          }
+          g.stroke();
+        }, tone, 0.85);
       }
 
-      // 세포 안의 한 자리. 세포와 같이 눌리고 같이 기운다
-      const inside = (angle, dist) => {
-        const lx = Math.cos(angle) * dist * cell.r;
-        const ly = Math.sin(angle) * dist * cell.r * cell.squash;
-        return [x + lx * Math.cos(tilt) - ly * Math.sin(tilt), y + lx * Math.sin(tilt) + ly * Math.cos(tilt)];
-      };
-
-      // 세포질, 그리고 거기서 파낸 소포
-      fill(plasm, bodies, Math.min(1, cell.tone));
-      plasm.knockout((sep) => {
-        for (const vesicle of cell.vesicles) {
-          const [vx, vy] = inside(vesicle.angle + turn, vesicle.dist * reach);
-          sep.disc(vx, vy, vesicle.size * cell.r);
-        }
-      });
-
-      // 막. 망점 셀보다 가늘면 점선으로 부서지므로 한 셀은 덮게 긋는다
-      const edge = Math.max(4.5, cell.r * 0.055);
-      for (const body of bodies) S.key.line(body, { w: edge, tone: 0.85, close: true });
-
-      // 작은 기관. 세포 안을 한 바퀴 흘러 돈다
-      for (const granule of cell.granules) {
-        const a = granule.angle + turn * granule.spin;
-        const [gx, gy] = inside(a, granule.dist * reach);
-        const size = granule.size * cell.r;
-        S.key.shape(membrane(gx, gy, size, { lobes: 2, wobble: 0.12, phase: granule.phase + turn, squash: 0.45, tilt: a + tilt + Math.PI / 2, steps: 12 }), { tone: 0.55 });
-      }
-
-      // 핵과 인. 인은 진한 통에서만 파내 세포질 색이 비친다
-      for (const [nx, ny, size] of nuclei) {
-        S.key.shape(membrane(nx, ny, size, { lobes: 3, wobble: 0.08, phase: cell.nucleus.phase - turn, squash: 0.9, tilt }), { tone: cell.nucleus.tone });
-        S.key.knockout((sep) => sep.disc(nx + size * 0.28, ny - size * 0.22, size * 0.24));
+      // 컵. 짙은 속을 둘러 옅은 원이 박히고, 원 속은 다시 어둡다
+      if (cupCount > 0) {
+        const cups = p.cups.slice(0, cupCount).map((cup, k) => {
+          const angle = rot + ((k + 0.5 + cup.shift) / cupCount) * TAU;
+          return [x + Math.cos(angle) * cup.dist * r, y + Math.sin(angle) * cup.dist * r, cup.size * r];
+        });
+        light(discs(cups), tone, 0.9);
+        shade(discs(cups.map(([ux, uy, size]) => [ux, uy, size * 0.5])), 0.8);
       }
     }
 
-    specks(S, dust, turn);
-    reticle(S, page, ring, knobs.reticle);
+    dim(deepest, page, ring, knobs.vignette);
     roundel(S, page, ring);
   }
 };

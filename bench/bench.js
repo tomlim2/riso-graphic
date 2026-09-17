@@ -12,13 +12,13 @@
 // GPU에 일을 맡기는 순간까지만 잡혀, 판을 짜는 시간만 남는다.
 
 const SEED = 12345;
-const IDS = ["ripple", "moon", "garden", "jelly", "cell", "chloro"];
+const IDS = ["ripple", "moon", "garden", "jelly", "cell", "chloro", "cosmos", "flake", "kaleido"];
 const ALL_IDS = [...IDS, "poster", "medium"];
 const TONES = [0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 1];
 const SHORT_TONES = [0.05, 0.2, 0.4, 0.6, 0.8, 0.95, 1];
 
 // 1:1로 잘라 볼 자리. 망점이 가장 많이 말하는 곳이다
-const CROPS = { ripple: [300, 250], moon: [340, 180], garden: [300, 420], jelly: [360, 300], cell: [420, 300], chloro: [420, 300] };
+const CROPS = { ripple: [300, 250], moon: [340, 180], garden: [300, 420], jelly: [360, 300], cell: [420, 300], chloro: [420, 300], cosmos: [420, 300], flake: [420, 300], kaleido: [420, 300] };
 
 const EMPTY = { id: "empty", name: "EMPTY", paint() {} };
 const flood = (role, tone) => ({ id: `flood-${role}`, name: "FLOOD", paint(S) { S[role].flood(tone); } });
@@ -138,6 +138,10 @@ function describe() {
   };
 }
 
+// 시야의 공통 손잡이(scope)는 새 인쇄기만 스스로 채운다. 옛 인쇄기에도 같은 값이 가도록 여기서
+// 넘긴다. 넘기지 않으면 옛 인쇄기에서 둥근 틀 판의 시야 반지름이 비어 버린다
+const scopeDefaults = (plate) => Object.fromEntries((plate?.scope || []).map((knob) => [knob.key, knob.value]));
+
 function settings(side, { paletteIndex = 0, ...extra } = {}) {
   return {
     palette: side.palettes[paletteIndex],
@@ -150,7 +154,8 @@ function settings(side, { paletteIndex = 0, ...extra } = {}) {
     frames: 48,
     boil: "twos",
     scale: 1,
-    ...extra
+    ...extra,
+    knobs: { ...scopeDefaults(extra.plate), ...(extra.knobs || {}) }
   };
 }
 

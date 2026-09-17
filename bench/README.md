@@ -98,4 +98,5 @@ GPU 단계는 이렇게 나눈다.
 | --- | --- | --- |
 | [2026-09-17-canvas2d-vs-webgl2](results/2026-09-17-canvas2d-vs-webgl2/report.md) | `a051816` 캔버스 2D와 WebGL2 작업 트리, 네 판, M2 Max | 한 장이 42~56배 빨라졌다. GRAIN 0에서 망점이 8비트 1단계 안에서 같고, 이음매 z도 씨앗마다 같다 |
 | [2026-09-17-canvas2d-vs-webgl2-six-plates](results/2026-09-17-canvas2d-vs-webgl2-six-plates/report.md) | 같은 둘, 여섯 판(0.28.0, 엽록체 한 알을 그리던 CHLORO), M2 Max | 한 장이 21~54배 빨라졌다. 새 판 CELL과 CHLORO도 한 장 2.5ms 안이다. RIPPLE과 GARDEN은 바탕을 걷어 옛 인쇄기도 절반쯤 빨라진 탓에 배수가 줄었다. 흰 종이 탓에 평균 색과 블록 차이는 종이색만큼 밀려 있고, 톤과 이음매 z는 두 인쇄기가 같다 |
+| [2026-09-17-canvas2d-vs-webgl2-nine-plates](results/2026-09-17-canvas2d-vs-webgl2-nine-plates/report.md) | 같은 둘, 아홉 판(0.33.0), M2 Max | 한 장이 1.2~5.4ms, 18~56배 빨라졌다. 새 판 COSMOS 3.0ms, FLAKE 3.7ms, KALEIDO 1.7ms, 바이러스 입자가 된 CELL 2.5ms. 두 인쇄기 모두에 판의 SCOPE 기본값을 넘겨 잰 첫 실행이다. 이음매 z는 두 인쇄기가 씨앗마다 같다 |
 | [2026-09-17-canvas2d-vs-webgl2-leaf-tissue](results/2026-09-17-canvas2d-vs-webgl2-leaf-tissue/report.md) | 같은 둘, 여섯 판(0.29.0, 잎 조직을 그리는 CHLORO), M2 Max | CHLORO가 한 장 6.1ms로 가장 무겁다. 엽록체 수천 알을 캔버스에 긋는 판 짜기가 3.6ms다. 나머지 판은 앞 실행과 같은 자리이고, 이음매 z도 두 인쇄기가 씨앗마다 같다 |
