@@ -352,7 +352,7 @@ knobs.
 | GARDEN | STEMS · REACH · LEAF · SWAY · SIDE · BERRIES |
 | JELLY | COUNT · FIELD · BELL · DEPTH · PULSE · THROB · DRIFT · TENTACLES · TRAIL · WOBBLE · ARMS · MOTES · DEEP · STAIN · GAP |
 | CELL | COUNT · FIELD · SIZE · DRIFT · WOBBLE · DIVIDE · TINT · GRANULES · DEBRIS · VIGNETTE · RETICLE · FRAME |
-| CHLORO | FIELD · SIZE · STRETCH · ANGLE · JITTER · WALL · DENSITY · PLASTID · DEPTH · STREAM · DRIFT · TINT · GROUND · VIGNETTE · RETICLE · FRAME |
+| CHLORO | FIELD · SIZE · STRETCH · ANGLE · JITTER · WALL · DENSITY · PLASTID · DEPTH · WANDER · TINT · GROUND · VIGNETTE · RETICLE · FRAME |
 
 Don't confuse the CELL plate with the CELL dial. The dial sets the halftone cell size for every
 plate. The plate is the microscope sheet.
@@ -526,11 +526,12 @@ hexagonal cells, wall to wall, each packed with green chloroplasts.
   layer is filled as one path and an overlap wouldn't darken anyway. Across layers they may
   overlap deeply, and those overlaps print darker. Out-of-focus ones (DEPTH) go down first,
   larger and lighter, with no rim.
-- **Motion.** Cytoplasmic streaming. In each cell a wave circles the center a whole number of
-  times per loop and pushes the chloroplasts back and forth. Those pressed against a wall move
-  less. Each chloroplast also trembles and tilts in place. The whole slide drifts along a small
-  ellipse under the fixed eyepiece. The two axes share one phase, so the drift never stalls on
-  a straight line.
+- **Motion.** Each chloroplast moves on its own. It circles a tiny loop in place (WANDER, a few
+  pixels) and tilts a little. Every loop has its own angle and shape, its two axes turn once or
+  twice per loop, and chloroplasts pressed against a wall move less. The walls stay still.
+  Nothing moves together: an earlier version pushed each cell's chloroplasts with one shared
+  wave and drifted the whole slide, and it read as the screen shaking rather than something
+  alive.
 
 There is no green ink. The chloroplasts are filled with the two drums whose overlap comes out
 greenest, usually a yellow and a blue. When no pair makes green, as with the two-drum run of

@@ -13,9 +13,10 @@
 // 하늘빛은 가장 파란 통, 벽의 띠는 가장 노란 통, 테두리는 가장 진한 통이다. 엽록체는 세 켜로
 // 나눠 칠해, 켜가 다른 둘이 겹친 자리는 더 진해진다. 초점이 맞지 않는 것은 먼저, 옅게, 테 없이.
 //
-// 움직임은 원형질 유동이다. 엽록체는 세포 한가운데를 도는 물결을 타고 밀렸다 돌아오고, 제자리에서
-// 조금씩 떨고 기운다. 물결은 세포마다 한 바퀴에 정수 번 돌아 루프가 이어진다. 슬라이드 전체가
-// 작은 닫힌 길을 돌지만 둥근 시야는 제자리다 — 접안렌즈 밑에서 표본이 움직이는 것이다.
+// 움직임은 엽록체마다 따로다. 저마다 제자리에서 아주 작은 고리를 돌고 조금씩 기운다. 고리의 두
+// 축은 한 바퀴에 한 번이나 두 번 돌아, 한 바퀴 끝에서 제자리로 돌아온다. 다 같이 한쪽으로 밀리는
+// 움직임 — 세포를 도는 물결이나 슬라이드가 도는 길 — 은 두지 않는다. 한 덩어리로 흔들리면 살아
+// 있는 것보다 화면이 흔들리는 것으로 읽힌다.
 //
 // 세포와 엽록체의 자리는 시간과 무관해서 한 번 짜 두고 다시 쓴다. 세포는 격자 자리마다 제 씨앗을
 // 가져, 시야를 넓히거나 좁혀도 남는 세포는 그대로다. 엽록체는 세포마다 같은 수의 후보를 뽑고,
@@ -165,8 +166,8 @@ function weave(seed, knobs, width, cx, cy, ring) {
   const sa = Math.sin(turn);
   const toWorld = ([x, y]) => [cx + (x * stretch * ca - y * sa) * spacing, cy + (x * stretch * sa + y * ca) * spacing];
 
-  // 시야에 한 번이라도 걸리는 세포까지. 슬라이드가 가장 멀리 밀린 때와 세포 하나만큼을 더한다
-  const reach = ring + width * 0.04 + spacing * stretch * 1.2;
+  // 시야에 조금이라도 걸리는 세포까지. 세포 하나만큼을 더한다
+  const reach = ring + spacing * stretch * 1.2;
   const I = Math.ceil(reach / (spacing * stretch)) + 3;
   const J = Math.ceil(reach / (spacing * ROW)) + 3;
 
@@ -205,19 +206,10 @@ function weave(seed, knobs, width, cx, cy, ring) {
       if (inner.length < 3) continue;
       const area = areaOf(inner);
       const edges = sides(inner);
-      let mx = 0;
-      let my = 0;
-      for (const [x, y] of inner) {
-        mx += x;
-        my += y;
-      }
-      mx /= inner.length;
-      my /= inner.length;
 
       // 엽록체. 언제나 같은 수의 후보를 뽑고, 앉을 수 있는 것만 앉힌다. 같은 켜끼리는 거의 겹치지
       // 않게 — 한 경로로 칠하므로 겹쳐 봐야 진해지지 않는다 — 켜가 다르면 깊이 겹쳐도 된다
       const hand = makeRng(spotSeed(seed, i, j));
-      const flow = { dir: hand.chance(0.5) ? 1 : -1, k: hand.int(1, 2), phase: hand.float(0, TAU) };
       const xs = inner.map((p) => p[0]);
       const ys = inner.map((p) => p[1]);
       const [minX, maxX, minY, maxY] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
@@ -232,8 +224,16 @@ function weave(seed, knobs, width, cx, cy, ring) {
           tilt: hand.float(0, Math.PI),
           layer: hand.int(0, 2),
           blur: hand.next(),
-          phase: hand.float(0, TAU),
-          beat: hand.int(1, 2),
+          // 제자리에서 도는 작은 고리. 두 축의 박자가 정수라 한 바퀴 끝에서 제자리로 돌아온다
+          loop: {
+            fx: hand.int(1, 2),
+            fy: hand.int(1, 2),
+            px: hand.float(0, TAU),
+            py: hand.float(0, TAU),
+            turn: hand.float(0, Math.PI),
+            reach: hand.float(0.5, 1),
+            dir: hand.chance(0.5) ? 1 : -1
+          },
           specks: [0, 1, 2].map(() => [hand.float(0, TAU), hand.float(0.1, 0.55), hand.float(0.13, 0.19)])
         };
         if (plastids.length >= target) continue;
@@ -243,12 +243,11 @@ function weave(seed, knobs, width, cx, cy, ring) {
         plastids.push(c);
       }
 
-      cells.push({ inner, cx: mx, cy: my, radius: Math.sqrt(area / Math.PI), flow, plastids });
+      cells.push({ inner, plastids });
     }
   }
 
-  const drift = makeRng(seed ^ 0x3c6ef372);
-  return { cells, drift: { phase: drift.float(0, TAU), dir: drift.chance(0.5) ? 1 : -1 } };
+  return cells;
 }
 
 // 짠 조직은 몇 벌 쥐고 있는다. 손잡이를 끄는 동안이 아니면 같은 조직을 프레임마다 다시 쓴다
@@ -262,9 +261,9 @@ function tissueFor(key, make) {
 }
 
 // 모서리를 둥글린 다각형 하나를 경로에 더한다
-function roundedSubpath(g, points, radius, ox, oy) {
+function roundedSubpath(g, points, radius) {
   const n = points.length;
-  const mid = (a, b) => [(a[0] + b[0]) / 2 + ox, (a[1] + b[1]) / 2 + oy];
+  const mid = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
   const [sx, sy] = mid(points[n - 1], points[0]);
   g.moveTo(sx, sy);
   for (let i = 0; i < n; i += 1) {
@@ -273,7 +272,7 @@ function roundedSubpath(g, points, radius, ox, oy) {
     const next = points[(i + 1) % n];
     const room = Math.min(Math.hypot(p[0] - prev[0], p[1] - prev[1]), Math.hypot(next[0] - p[0], next[1] - p[1])) * 0.2;
     const [mx, my] = mid(p, next);
-    g.arcTo(p[0] + ox, p[1] + oy, mx, my, Math.min(radius, room));
+    g.arcTo(p[0], p[1], mx, my, Math.min(radius, room));
   }
   g.closePath();
 }
@@ -311,8 +310,7 @@ export const chloro = {
     { key: "density", label: "DENSITY", min: 0, max: 1, step: 0.05, value: 0.8, hint: "세포 안을 엽록체가 얼마나 채울지" },
     { key: "plastid", label: "PLASTID", min: 0.01, max: 0.026, step: 0.001, value: 0.018, hint: "엽록체의 크기" },
     { key: "depth", label: "DEPTH", min: 0, max: 0.6, step: 0.05, value: 0.2, hint: "초점이 맞지 않아 흐린 엽록체의 비율" },
-    { key: "stream", label: "STREAM", min: 0, max: 1, step: 0.05, value: 0.5, hint: "세포 안을 도는 원형질 흐름의 세기" },
-    { key: "drift", label: "DRIFT", min: 0, max: 0.03, step: 0.002, value: 0.006, hint: "슬라이드가 한 바퀴 동안 도는 작은 길의 크기" },
+    { key: "wander", label: "WANDER", min: 0, max: 10, step: 0.5, value: 3, hint: "엽록체가 제자리에서 저마다 조금씩 움직이는 폭, 픽셀" },
     { key: "tint", label: "TINT", min: 0.3, max: 1, step: 0.05, value: 0.75, hint: "엽록체의 초록을 얼마나 진하게. 두 통이 겹쳐 초록이 난다" },
     { key: "ground", label: "GROUND", min: 0, max: 1, step: 0.05, value: 0.7, hint: "세포 안의 하늘빛과 세포벽의 옅은 노랑" },
     { key: "vignette", label: "VIGNETTE", min: 0, max: 1, step: 0.05, value: 0.2, hint: "시야 가장자리로 갈수록 빛이 죽는 정도" },
@@ -330,7 +328,7 @@ export const chloro = {
     // 조직은 제 씨앗으로 짠다. FIELD는 잉크와 종이결을 건드리지 않고 조직만 다시 뽑는다
     const seed = (page.seed ^ 0x2545f491 ^ Math.imul(knobs.field + 1, 0x85ebca6b)) >>> 0;
     const shape = [seed, width, ring, knobs.size, knobs.stretch, knobs.angle, knobs.jitter, knobs.wall, knobs.density, knobs.plastid];
-    const { cells, drift } = tissueFor(shape.join("|"), () => weave(seed, knobs, width, cx, cy, ring));
+    const cells = tissueFor(shape.join("|"), () => weave(seed, knobs, width, cx, cy, ring));
 
     const leaf = greenest(S.drums);
     const sky = bluest(S.drums);
@@ -338,14 +336,9 @@ export const chloro = {
 
     light(S, page, ring, knobs.vignette);
 
-    // 슬라이드. 둥근 시야 밑에서 작은 타원을 돈다. 두 축의 위상을 맞춰야 한 줄 위를 오가다
-    // 멈추는 일 없이 고른 빠르기로 돈다
-    const around = turn * drift.dir + drift.phase;
-    const ox = Math.cos(around) * knobs.drift * width;
-    const oy = Math.sin(around) * knobs.drift * width * 0.7;
     const corner = Math.max(2, knobs.wall * 0.9);
     const insides = (g) => {
-      for (const cell of cells) roundedSubpath(g, cell.inner, corner, ox, oy);
+      for (const cell of cells) roundedSubpath(g, cell.inner, corner);
     };
 
     // 바탕. 벽의 띠는 시야 전체에서 세포 속만 비워 칠하고, 세포 속은 하늘빛으로 칠한다
@@ -366,25 +359,24 @@ export const chloro = {
       });
     }
 
-    // 엽록체의 자리. 세포 한가운데를 도는 물결을 타고 밀리고, 제자리에서 떨고 기운다.
-    // 벽에 붙은 것은 덜 밀린다
-    const push = knobs.stream * width * 0.014;
+    // 엽록체의 자리. 저마다 제자리에서 작은 고리를 돌고 조금씩 기운다. 고리는 기울기와 모양이
+    // 제각각이고, 벽에 붙은 것은 덜 움직인다
     const layers = [[], [], []];
     const blurred = [];
     for (const cell of cells) {
-      const { dir, k, phase } = cell.flow;
       for (const p of cell.plastids) {
-        const dx = p.x - cell.cx;
-        const dy = p.y - cell.cy;
-        const dist = Math.hypot(dx, dy) || 1;
-        const hold = Math.min(1, Math.max(0.3, p.room / (p.r * 1.6)));
-        const shove = push * hold * Math.min(1, dist / cell.radius) * Math.sin(turn * dir - k * Math.atan2(dy, dx) + phase);
+        const { loop } = p;
+        const reach = knobs.wander * loop.reach * Math.min(1, Math.max(0.5, p.room / (p.r * 1.2)));
+        const along = Math.cos(turn * loop.fx * loop.dir + loop.px) * reach;
+        const across = Math.sin(turn * loop.fy * loop.dir + loop.py) * reach * 0.6;
+        const cos = Math.cos(loop.turn);
+        const sin = Math.sin(loop.turn);
         const placed = {
-          x: p.x + ox - (dy / dist) * shove + Math.cos(turn * p.beat + p.phase) * 1.2,
-          y: p.y + oy + (dx / dist) * shove + Math.sin(turn * p.beat + p.phase * 1.3) * 1.2,
+          x: p.x + along * cos - across * sin,
+          y: p.y + along * sin + across * cos,
           r: p.r,
           squash: p.squash,
-          tilt: p.tilt + Math.sin(turn + p.phase) * 0.15,
+          tilt: p.tilt + Math.sin(turn * loop.dir + loop.px) * 0.12,
           specks: p.specks
         };
         (p.blur < knobs.depth ? blurred : layers[p.layer]).push(placed);
