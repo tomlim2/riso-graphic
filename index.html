@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RISO GRAPHIC — 리소 스타일 샘플</title>
-<meta name="description" content="스팟 잉크 두세 통을 한 장에 겹쳐 찍는 리소그래프 인쇄를 캔버스로 흉내 낸다. 분판마다 각도가 다른 망점, 판 어긋남, 곱하기를 실제 인쇄 순서대로 재현하고, 한 장은 이름 붙은 판화 함수 하나다.">
+<meta name="description" content="스팟 잉크 두세 통을 한 장에 겹쳐 찍는 리소그래프 인쇄를 흉내 낸다. 분판은 캔버스에 그리고, 분판마다 각도가 다른 망점과 판 어긋남과 곱하기는 GPU가 실제 인쇄 순서대로 찍는다. 한 장은 이름 붙은 판화 함수 하나다.">
 <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
@@ -16,7 +16,8 @@
 </header>
 
 <main class="press">
-  <canvas id="sheet" width="900" height="1200" aria-label="리소 스타일로 인쇄된 샘플 시트"></canvas>
+  <canvas id="sheet" class="sheet" width="1080" height="1080" aria-label="리소 스타일로 인쇄된 샘플 시트"></canvas>
+  <canvas id="contact" class="sheet" width="1122" height="1158" aria-label="콘택트 시트" hidden></canvas>
 </main>
 
 <aside class="deck">
@@ -24,6 +25,7 @@
     <h2>SHEET</h2>
     <button id="reroll" class="wide" type="button">NEW ROLL</button>
     <button id="save" class="wide mt" type="button">PNG</button>
+    <a class="link wide mt" href="./how.html">HOW IT'S MADE</a>
   </section>
 
   <section class="card">

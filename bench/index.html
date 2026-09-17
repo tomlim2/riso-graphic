@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PRESS BENCH — 옛 인쇄기와 새 인쇄기</title>
+<style>
+  :root {
+    --desk: #ddd8cb;
+    --paper: #efe9dd;
+    --ink: #2b2724;
+    --line: rgba(43, 39, 36, 0.22);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--desk);
+    color: var(--ink);
+    font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: 0.04em;
+  }
+
+  header { padding: 14px 18px; display: flex; gap: 14px; align-items: baseline; }
+  .mark { font-weight: 700; letter-spacing: 0.18em; }
+  .sub { opacity: 0.5; }
+
+  main { padding: 0 18px 18px; display: grid; gap: 8px; max-width: 1080px; }
+  .card { background: var(--paper); border: 1px solid var(--line); padding: 10px; }
+  .card h2 { margin: 0 0 8px; font-size: 10px; letter-spacing: 0.16em; opacity: 0.7; }
+
+  .row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+
+  button, input {
+    font: inherit;
+    color: inherit;
+    background: transparent;
+    border: 1px solid var(--line);
+    padding: 7px 9px;
+    letter-spacing: 0.12em;
+  }
+  button { cursor: pointer; }
+  button:hover { background: rgba(43, 39, 36, 0.06); }
+  button.primary { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  button:disabled { opacity: 0.4; cursor: wait; }
+  input { flex: 1; min-width: 220px; letter-spacing: 0.02em; }
+
+  pre { margin: 0; white-space: pre-wrap; word-break: break-word; }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="mark">PRESS BENCH</span>
+  <span class="sub">옛 인쇄기와 새 인쇄기를 같은 롤로</span>
+</header>
+
+<main>
+  <section class="card">
+    <h2>SIDES</h2>
+    <pre id="meta">BOOT</pre>
+  </section>
+
+  <section class="card">
+    <h2>RUN</h2>
+    <div class="row" id="actions"></div>
+    <div class="row" style="margin-top: 6px">
+      <input id="run" aria-label="실행 이름. bench/results/ 아래 폴더 이름이 된다">
+      <button id="all" class="primary" type="button">ALL + SAVE</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>OUT</h2>
+    <pre id="out">버튼 하나가 측정 하나다. ALL + SAVE는 전부 재고 bench/results/에 적는다.</pre>
+  </section>
+</main>
+
+<script type="module">
+  const out = document.getElementById("out");
+  const buttons = [];
+  const busy = (on) => buttons.forEach((button) => (button.disabled = on));
+
+  const stamp = Date.now();
+  const bench = await import(`./bench.js?v=${stamp}`);
+  window.bench = bench;
+
+  const meta = await bench.setup(stamp);
+  document.getElementById("meta").textContent = [
+    `OLD  ${meta.old.kind.toUpperCase()}  ${meta.old.commit}`,
+    `NEW  ${meta.new.kind.toUpperCase()}  ${meta.new.commit}`,
+    `GPU  ${meta.gpu}`,
+    `GPU TIMER  ${meta.timerQuery ? "있음" : "없음"}`
+  ].join("\n");
+
+  const day = meta.date.slice(0, 10);
+  const nameOf = (side) => (side.source === "worktree" ? "worktree" : side.commit.split(" ")[0]);
+  document.getElementById("run").value = `${day}-${nameOf(meta.old)}-vs-${nameOf(meta.new)}`;
+
+  const single = {
+    PAPER: () => bench.paper(),
+    TONE: () => bench.tone({ grain: 0, registration: 0 }),
+    PLATES: () => bench.plates(),
+    TIMING: () => bench.timing(),
+    CONTACT: () => bench.contact(),
+    PROFILE: () => bench.profile(),
+    SEAM: () => bench.seam({ side: "new" })
+  };
+
+  const actions = document.getElementById("actions");
+  for (const [label, work] of Object.entries(single)) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = label;
+    button.addEventListener("click", async () => {
+      busy(true);
+      out.textContent = `${label} …`;
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      try {
+        out.textContent = JSON.stringify(await work(), null, 2);
+      } catch (error) {
+        out.textContent = `${label} 실패\n${error.stack || error}`;
+      }
+      busy(false);
+    });
+    actions.append(button);
+    buttons.push(button);
+  }
+
+  const allButton = document.getElementById("all");
+  buttons.push(allButton);
+  allButton.addEventListener("click", async () => {
+    const run = document.getElementById("run").value.trim();
+    busy(true);
+    const lines = [];
+    const log = (text) => {
+      lines.push(`${new Date().toLocaleTimeString()}  ${text}`);
+      out.textContent = lines.join("\n");
+    };
+    try {
+      window.lastRun = await bench.all(run, log);
+      window.lastRun.done = true;
+    } catch (error) {
+      log(`실패\n${error.stack || error}`);
+      window.lastRun = { error: String(error) };
+    }
+    busy(false);
+  });
+
+  document.body.dataset.ready = "yes";
+</script>
+</body>
+</html>

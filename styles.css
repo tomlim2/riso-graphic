@@ -1,6 +1,7 @@
 :root {
   --desk: #ddd8cb;
   --paper: #efe9dd;
+  --sheet: #fcfbf9; /* 인쇄되는 종이. src/palette.js의 PAPER와 같다 */
   --ink: #2b2724;
   --line: rgba(43, 39, 36, 0.22);
 }
@@ -32,6 +33,10 @@ html, body {
 }
 
 .mark { font-weight: 700; letter-spacing: 0.18em; }
+
+/* 머리줄은 손을 통과시키지만 연결만은 누를 수 있게 둔다 */
+.bar a { pointer-events: auto; color: inherit; text-decoration: none; white-space: nowrap; }
+.bar a:hover { text-decoration: underline; }
 .sub { opacity: 0.5; }
 .tag { letter-spacing: 0.14em; }
 .status { margin-left: auto; opacity: 0.6; }
@@ -45,16 +50,17 @@ html, body {
   justify-content: center;
 }
 
-/* 판형에 매이지 않게. 정사각 한 장이든 가로로 긴 콘택트 시트든 두 변 모두에 맞춰 줄어든다.
+/* 판형에 매이지 않게. 정사각 한 장이든 콘택트 시트든 두 변 모두에 맞춰 줄어든다.
    높이를 1200px로 박아 두었더니 판형을 정사각으로 바꾸는 순간 넘쳐 나갔다.
 
    크기는 캔버스가 몇 픽셀이냐가 아니라 자리가 얼마나 남았느냐가 정한다. 그 계산은
-   자바스크립트(fitCanvas)가 하고, 여기서는 넘치지 않게만 막는다. */
-#sheet {
+   자바스크립트(fit)가 하고, 여기서는 넘치지 않게만 막는다. 한 장은 인쇄기가 직접 찍는
+   WebGL 캔버스이고, 콘택트 시트는 따로 붙이는 2D 캔버스라 둘이 같은 옷을 입는다. */
+.sheet {
   display: block;
   max-width: 100%;
   max-height: 100%;
-  background: var(--paper);
+  background: var(--sheet);
   box-shadow: 0 1px 2px rgba(43, 39, 36, 0.18), 0 18px 44px rgba(43, 39, 36, 0.22);
 }
 
@@ -106,6 +112,16 @@ button, input[type="text"] {
 }
 
 button:hover { background: rgba(43, 39, 36, 0.06); }
+
+/* 버튼처럼 생긴 연결. 다른 페이지로 넘어가는 것이라 모양만 빌린다 */
+a.link {
+  color: inherit;
+  text-decoration: none;
+  border: 1px dashed var(--line);
+  padding: 7px 9px;
+  letter-spacing: 0.12em;
+}
+a.link:hover { background: rgba(43, 39, 36, 0.06); }
 button.on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
 
 .wide { display: block; width: 100%; text-align: center; }
@@ -186,5 +202,5 @@ input[type="range"] {
   body { overflow-y: auto; height: auto; }
   html { height: auto; }
   .press { height: auto; }
-  #sheet { height: auto; max-height: none; width: 100%; }
+  .sheet { height: auto; max-height: none; width: 100%; }
 }

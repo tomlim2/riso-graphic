@@ -6,6 +6,12 @@
       "runtimeExecutable": "node",
       "runtimeArgs": ["serve.mjs"],
       "port": 7400
+    },
+    {
+      "name": "press-bench",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["bench/serve.mjs"],
+      "port": 7401
     }
   ]
 }

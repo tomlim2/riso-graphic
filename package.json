@@ -1,12 +1,13 @@
 {
   "name": "riso-graphic",
-  "version": "0.20.0",
+  "version": "0.28.0",
   "private": true,
   "type": "module",
   "engines": {
     "node": ">=22"
   },
   "scripts": {
-    "start": "node serve.mjs"
+    "start": "node serve.mjs",
+    "bench": "node bench/serve.mjs"
   }
 }

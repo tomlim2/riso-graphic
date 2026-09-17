@@ -1,245 +1,329 @@
 # riso-graphic
 
-리소그래프 인쇄를 화면에서 흉내 내는 샘플. 스팟 잉크 두세 통을 한 장에 겹쳐 찍고, 통마다
-스크린 각도가 다르고, 판이 조금씩 어긋나고, 어떤 면도 종이를 다 덮지 못한다.
+A sample sheet that imitates risograph printing on screen. Two or three spot inks share one
+sheet. Each drum is screened at its own angle, the plates slip a little out of register, and no
+area quite covers the paper.
 
-판형은 1:1, 1080×1080이다. 판화는 전부 이 좌표로 그리고, 종이가 더 작게 걸리면 배율이
-알아서 줄인다. 세로 위치를 픽셀로 박아 두면 판형을 바꾸는 순간 다섯 장이 한꺼번에 무너지니,
-판화는 되도록 `height`의 비율로 자리를 잡는다.
+The sheet is square, 1080 × 1080. Every plate draws in those coordinates, and when the paper
+hangs smaller, the scale shrinks the drawing without the plate knowing. A vertical position
+pinned in pixels would break every plate the moment the format changed, so plates place things
+by fractions of `height` wherever they can.
 
-움직이는 것이 기본이다. 열면 바로 재생된다.
+Motion is the default. The page starts playing as soon as it opens.
 
-이런 것을 뭐라고 부르는지, 진과는 어떻게 다른지, 코드가 쓰는 인쇄 용어가 각각 무슨 뜻인지는
-[MAP.md](MAP.md)에 적어 두었다.
+The hung plates are **RIPPLE** · **MOON** · **GARDEN** · **JELLY** · **CELL** · **CHLORO**.
+POSTER and MEDIUM are still in `src/plates/`. Add a line for either to `src/plates/index.js`
+and it returns to the plate picker and the contact sheet. With only one plate in the list, the
+picker hides.
 
-지금 걸려 있는 판은 **RIPPLE** · **MOON** · **GARDEN** · **JELLY**다. POSTER와 MEDIUM 도
-`src/plates/`에 그대로 있고, `src/plates/index.js`에 한 줄씩 더하면 판화 고르개와 콘택트
-시트에 함께 돌아온다. 목록이 하나뿐일 때는 고르개가 아예 숨는다.
+None of the hung plates carry text. Small type on a moving picture asks to be read every frame
+and says nothing. When no hung plate takes a headline (POSTER does), the HEADLINE field hides
+too. An input that reaches nothing has no reason to stay.
 
-걸린 판에는 글자가 없다. 움직이는 그림에 얹힌 잔글씨는 매 프레임 읽히기를 요구하면서
-아무것도 말하지 않는다. 제목을 받는 판(POSTER)이 하나도 안 걸려 있으면 화면의 HEADLINE
-칸도 함께 숨는다 — 아무 데도 닿지 않는 입력칸을 남겨 둘 이유가 없다.
+There are no build tools: static HTML, ES modules, Canvas 2D and WebGL2. Separations are drawn
+on 2D canvases, and the GPU does everything from the halftone screen to the ink landing on the
+paper. Browsers that cannot open WebGL2 do not run it.
 
-빌드 도구가 없다. 정적 HTML, ES 모듈, 2D 캔버스가 전부다.
+Two companion documents, both in Korean:
 
-## 실행
+- [MAP.md](MAP.md): what this kind of print is called, how it differs from a zine, and where
+  each printing term in the code lives.
+- [how.html](how.html): how one halftone dot travels from a separation to the paper, with
+  figures. The press prints every figure live, so changing the shader changes the page. The
+  HOW IT'S MADE link in the SHEET card opens it.
 
-ES 모듈은 http 출처가 필요해서 `index.html`을 파일로 여는 것은 동작하지 않는다.
+## Running
+
+ES modules need an http origin, so opening `index.html` straight from disk does not work.
 
 ```bash
 node serve.mjs
 ```
 
-`http://localhost:7400`. 포트는 인자나 `PORT` 환경 변수로 바꾼다.
+Then open `http://localhost:7400`. Pass a port as an argument or set `PORT` to change it.
+`npm start` does the same thing.
 
-## 인쇄 순서
+If you change the press, measure it side by side with the old one. The method is in
+[bench/README.md](bench/README.md) (Korean).
 
-리소는 CMYK로 섞어 찍지 않는다. 색마다 드럼이 따로 있고, 드럼 수만큼 종이가 통과하며,
-섞이는 일은 종이 위에서만 일어난다. `src/press.js`가 그 순서를 그대로 따른다.
+```bash
+node bench/serve.mjs
+```
 
-1. **판 짜기** — 판화 함수가 분판에 직접 그린다. `S.key.line(...)`은 진한 통에 선을 긋는다
-2. **스크린** — 분판의 커버리지를 망점으로 바꾼다. 통마다 각도가 다르다
-3. **잉크** — 남은 알파를 그 통의 색으로 물들인다
-4. **안착** — `multiply`로, 한두 픽셀 어긋난 자리에 얹는다
+## Print order
 
-노랑이 파랑 위에 곱해지면 초록 말고 갈 곳이 없다. 통이 하나 늘 때 색이 하나가 아니라 넷이
-느는 이유이고, MEDIUM과 GARDEN이 보여주려는 것도 그것이다.
+A riso does not mix CMYK. Each color has its own drum, the paper passes once per drum, and
+colors mix only on the paper. `src/press.js` and `src/screen.js` follow that order.
 
-### 분판은 색이 아니라 커버리지다
+1. **Compose.** The plate function draws straight onto the separations. `S.key.line(...)` draws
+   a line on the darkest drum.
+2. **Screen.** Each separation's coverage becomes halftone dots, at a different angle per drum.
+3. **Ink.** The dots take that drum's color, as much as they cover.
+4. **Land.** The inks multiply onto the paper, each drum a pixel or two out of register.
 
-분판에 그리는 검정은 검정 잉크가 아니라 "이만큼 덮는다"는 뜻이다. 색은 종이에 닿기 직전에야
-정해진다. 그래서 톤 그라데이션을 그리면 망점이 자라고 죽는 실제 계조가 되고, 녹아웃은
-흰 잉크가 아니라 그 자리를 찍지 않는 일이 된다.
+Step 1 runs on Canvas 2D. Steps 2 to 4 are one fragment shader pass. Canvas is best at lines,
+type and knockouts. Halftoning and multiplying are per-pixel work that the GPU does in a single
+pass. Separations are uploaded as textures, and the shader reads only their alpha.
 
-통은 색 이름이 아니라 하는 일로 부른다. 배색마다 색이 다르니 이름은 밝기가 정한다.
+Misregistration does not move a finished plate. The shader screens each drum at its slipped
+position directly, and an edge that slips past the plate gets no ink from that drum.
 
-| 통 | 하는 일 | 스크린 각도 |
+Yellow multiplied over blue can only come out green. This is why adding a drum adds four
+colors, not one: two inks make three colors, three inks make seven. MEDIUM and GARDEN show
+this, and CHLORO gets its green this way.
+
+### A separation is coverage, not color
+
+Black drawn on a separation does not mean black ink. It means "cover this much". The color is
+decided only just before the ink reaches the paper. So a tone gradient becomes real halftone
+steps, with dots that grow and shrink, and a knockout is not white ink but a spot that drum
+does not print.
+
+Drums are named by their job, not their color. Every palette has different colors, so
+luminance decides the names.
+
+| Drum | Job | Screen angle |
 | --- | --- | --- |
-| `S.key` | 가장 진한 통. 글자와 선 | 45° |
-| `S.body` | 가운데 통. 큰 덩어리 | 15° |
-| `S.wash` | 가장 옅은 통. 바탕 | 75° |
+| `S.key` | Darkest. Type and lines | 45° |
+| `S.body` | Middle. Large masses | 15° |
+| `S.wash` | Lightest. Grounds | 75° |
 
-세 각도를 30도씩 벌려 두는 것은 인쇄가 오래 써 온 답이다. 같은 각도로 두 판을 찍으면
-무아레가 생기고, 벌어져 있으면 겹친 자리에 로제트가 뜬다. MEDIUM 판화에서 볼 수 있다.
+Spacing the three angles 30° apart is a long-standing printing convention. Two plates at the
+same angle make moiré. Spread apart, the overlaps form rosettes instead. MEDIUM shows this.
 
-통이 둘이면 `body`와 `wash`가 같은 통이 된다. 분판도 하나로 합쳐진다 — 둘로 두면 같은 판을
-두 번 찍어 저 혼자 두 배로 진해진다.
+With two drums, `body` and `wash` are the same drum and share one separation. Two separations
+would print the same plate twice and make it twice as dark.
 
-### 난수는 판을 짤 때만 쓴다
+### Randomness is spent while composing
 
-판화 함수는 한 번만 돈다. 그 안에서 난수를 다 쓰고, 찍는 동안에는 쓰지 않는다. 같은 것을
-두 통에서 파내야 할 때는 도형을 먼저 만들어 두고 두 번 새긴다. 파낼 때마다 난수를 다시
-당기면 두 통이 서로 다른 자리를 판다.
+A plate function runs once per sheet. It spends all of its random numbers there and none while
+printing. When the same shape has to be knocked out of two drums, build the shape first and
+carve it twice. Drawing fresh numbers for each knockout makes the two drums carve different
+spots.
 
-## 움직이는 판화
+### Noise comes from position
 
-시간은 판화가 받는 인자 하나다. `page.t`가 0에서 1로 한 바퀴 도는 것이 한 루프고,
-`t`를 안 보는 판화는 그대로 정지된 한 장이다.
+Paper tooth, the specks that nibble dot edges, and the mottle where the drum laid the ink thick
+are all made by the shader on the spot. It mixes the pixel position and the roll with an integer
+hash. No noise is stored per roll, so there is nothing to keep for each size or impression.
 
-판화는 기본으로 움직인다. 열면 바로 찍고 튼다. 콘택트 시트를 펼친 채로 들어왔거나 쓰는
-사람이 움직임을 줄여 달라고 해 두었으면 그러지 않는다.
+Specks follow device pixels. Mottle follows sheet coordinates, because it is a property of the
+print, so the small sheets on the contact sheet show the same mottle as the full sheet.
 
-### 이어지려면 두 가지를 지켜야 한다
+Integer math gives the same answer on every GPU, so a roll makes the same noise everywhere. The
+separations, though, are drawn by the browser's canvas, and browsers smooth edges differently.
+Pixel-identical sheets are promised only within one browser.
 
-**하나. 시간을 쓰는 모든 것이 `t`에 대해 정확히 한 바퀴여야 한다.** RIPPLE이 지키는 방식은
-이렇다.
+### The paper is white
 
-- 고리의 수명은 `(t + 위상) % 1` — `t=1`의 고리 무리는 `t=0`의 무리와 같다
-- 흔들림은 `sin(lobes*θ + 2πt)` — 정수 로브에 한 바퀴
-- 반짝임은 `sin(2π(t + 위상))`
+The stock is plain white uncoated paper (`PAPER` in `src/palette.js`). It adds no color, so the
+inks land as themselves and an overlap depends only on the inks. Perfectly flat white looks
+like a screen rather than paper, so the shader dusts it with a faint, slightly darker tooth
+(`PAPER_SHADE`).
 
-**둘. 난수를 뽑는 횟수가 `t`에 따라 달라지면 안 된다.** MOON의 별은 달 곁이면 건너뛰는데,
-달이 흔들리므로 걸러지는 별이 프레임마다 달라졌다. 하나가 걸러지면 그 뒤 별이 전부 다른
-난수를 받아 하늘이 통째로 갈린다. 뽑을 것을 먼저 다 뽑고 나서 거를지 정하면 된다.
+## Moving plates
 
-둘 중 하나라도 어기면 마지막 프레임에서 첫 프레임으로 넘어갈 때 튄다. 이음매가 실제로
-이어지는지는 눈이 아니라 자로 본다. 이웃한 두 프레임의 픽셀 차이를 한 바퀴 내내 재고,
-마지막 걸음이 나머지 걸음 사이에서 튀는지 본다.
+Time is one argument a plate receives. `page.t` runs from 0 to 1 over one loop. A plate that
+ignores `t` is a still sheet.
 
-평균 대비 몇 배인가로만 보면 안 된다. 걸음의 크기가 고르게 모여 있으면 아무 걸음이나 최대가
-될 수 있어서, 이음매가 1.3배라는 말은 튄다는 뜻도 안 튄다는 뜻도 아니다. 나머지 걸음의
-표준편차로 재서 **±2σ 안이면 이은 것**이다.
+Plates move by default: the page prints and plays as soon as it opens. The exceptions are when
+the page opens with a contact sheet showing (playback then starts when the sheet closes) and
+when the viewer has asked for reduced motion.
 
-한 번 재고 판단하지는 않는다. 초당 여덟 장이면 걸음이 열여섯뿐이라 표준편차 자체가 흔들리고,
-아무 이상이 없어도 z가 2를 넘는 씨앗이 나온다. **씨앗을 대여섯 개 바꿔 가며 재서 부호가 섞여
-흩어지면 잡음이고, 씨앗과 무관하게 크고 양수로 나오면 끊긴 것이다.** JELLY 무리를 여섯
-씨앗으로 잰 값이 +2.07에서 −1.90까지 흩어졌다 — 잡음이다.
+### Two rules for a seamless loop
 
-### 미리 찍어 두고 튼다
+**Rule one: everything that uses time must complete a whole number of cycles as `t` goes from 0
+to 1.** RIPPLE does it like this:
 
-한 프레임을 찍는 데 재생 예산보다 오래 걸린다. 그래서 필름을 먼저 찍고 영사기는 넘기기만
-한다. 인쇄가 실제로 하는 일도 그것이다.
+- A ring's life is `(t + phase) % 1`, so the rings at `t=1` are the rings at `t=0`.
+- The wobble is `sin(lobes*θ + 2πt)`: whole lobes, one cycle.
+- A second wobble layer turns the other way at `2·2πt`. It used to turn 1.5 times per loop,
+  and the rings jumped by about a pixel at the seam.
+- The glints are `sin(2π(t + phase))`.
 
-| 재는 것 | 값 |
+**Rule two: the number of random draws must not depend on `t`.** MOON skips stars that fall
+near the moon. The moon sways, so a different set of stars was skipped on each frame. Skip one
+star and every star after it gets different numbers, and the whole sky changes. Draw
+everything first, then decide what to skip.
+
+Break either rule and the picture jumps between the last frame and the first. Check seams by
+measuring, not by eye. There are two checks.
+
+**Print just before the end.** Print a sheet at `t = 1 − 1e−9` and compare it with `t = 0`. If
+every period is whole, the two are the same sheet. Every hung plate passes to the pixel, except
+JELLY, which differs in one byte from floating-point rounding. This is the check that caught
+RIPPLE's 1.5 turns, with about 34,000 bytes different.
+
+**Measure the steps.** Measure the pixel difference between each pair of neighboring frames
+around the whole loop, and see whether the last step stands out from the rest.
+
+Don't judge by the ratio to the mean. When step sizes are tightly bunched, any step can be the
+largest, so "the seam step is 1.3× the mean" doesn't show whether it jumps. Measure it against
+the standard deviation of the other steps instead: **within ±2σ, the loop is seamless.**
+
+Don't decide from one run either. At eight sheets a second a loop has only sixteen steps, so
+the standard deviation itself is unsteady, and some seeds will pass z = 2 with nothing wrong.
+**Measure five or six seeds. If the signs are mixed and scattered, it is noise. If z comes out
+large and positive whatever the seed, the loop is broken.** JELLY's swarm, measured over six
+seeds, scattered from +2.07 to −1.90: noise. Step sizes that rise smoothly into the seam and
+fall away after it, as CHLORO's do, are the motion's own speed, not a break.
+
+### Printing while playing
+
+Printing one frame used to take longer than the playback budget allows, so the film was baked
+first and the projector only flipped through it. Almost all of that time went to halftoning
+and multiplying. That per-pixel work moved into the shader, and a full-size sheet now costs
+less than a tenth of a frame's budget. Nothing is baked: every frame is printed as it plays.
+
+| One sheet | Canvas 2D | WebGL2 |
+| --- | --- | --- |
+| RIPPLE, 1080 | 28 ms | 1.3 ms |
+| MOON, 1080 | 97 ms | 1.8 ms |
+| GARDEN, 1080 | 35 ms | 1.4 ms |
+| JELLY, 1080 | 123 ms | 3.8 ms |
+| CELL, 1080 | 72 ms | 1.9 ms |
+| CHLORO, 1080 | 71 ms | 2.5 ms |
+| One contact sheet | 126 ms | 15 ms |
+
+Where one WebGL2 sheet's time goes:
+
+| Stage | Time |
 | --- | --- |
-| 한 장 찍기 (재생 크기) | 39 ms |
-| 24fps 한 프레임 예산 | 42 ms |
-| 2초 루프 굽기 (초당 12장, 24장) | 1.1 초 |
-| 콘택트 시트 아홉 장 | 170 ms |
+| Composing the plate | 0.04–1.3 ms |
+| Rasterizing and uploading separations | 0.6–1.5 ms |
+| One shader pass, by GPU timer | 0.1–0.3 ms |
+| One frame's budget at 24 fps | 42 ms |
 
-시간은 거의 전부 합성에 간다. 분판 셋을 곱하기로 얹는 픽셀 작업이고, 캔버스 2D에서는
-소프트웨어로 돈다. 실시간으로 가려면 이 합성과 망점을 프래그먼트 셰이더로 옮겨야 한다.
-망점은 픽셀마다 독립이라 옮기기에 알맞다. 지금은 굽는 쪽을 택했다.
+These are means on an M2 Max. Each sheet's time includes waiting for the GPU to finish, forced
+by reading back one pixel. Without that wait, you time only the composing. Boil barely changes
+the numbers. Most of the time now goes to moving separations to the GPU, not to halftoning.
 
-### 시계는 언제나 초당 스물네 번
+The Canvas 2D press worked harder where a sheet carried more ink. RIPPLE and GARDEN have since
+lost their background washes, and the old press got about twice as fast on both. The first run
+measured 59 ms and 71 ms. The raw data and side-by-side images are in
+[the six-plate run](bench/results/2026-09-17-canvas2d-vs-webgl2-six-plates/report.md) and
+[the first run](bench/results/2026-09-17-canvas2d-vs-webgl2/report.md).
 
-바뀌는 것은 시계가 아니라 한 장을 몇 프레임 잡아 두느냐다. 한 바퀴는 48프레임, 2초이고
-셋 모두로 나누어떨어져 어디서도 어긋나지 않는다. 기본은 초당 여덟 장 — 이 물결에는 그
-박자가 맞는다.
+The milliseconds in the top bar count main-thread time only. The GPU finishes its part
+afterwards, so the bar reads lower than the tables. The FPS figure on the same bar shows whether
+playback keeps its beat.
 
-| 초당 장수 | 한 장이 걸리는 프레임 | 한 바퀴 장수 | 굽는 시간 | 어떻게 보이는가 |
-| --- | --- | --- | --- | --- |
-| 24 | 1 | 48 | 2.0 초 | 매끄럽게 흐른다 |
-| 12 | 2 | 24 | 1.1 초 | 손그림 애니메이션의 투스 촬영 |
-| 8 | 3 | 16 | 0.8 초 | 박자가 또렷해지고 인쇄물에 가까워진다. 기본 |
+### The clock always ticks 24 times a second
 
-느리게 찍을수록 굽는 시간도 같이 줄어든다. 찍을 장수가 그만큼 적기 때문이다.
+What changes is not the clock but how many frames each sheet is held. A loop is 48 frames, or
+2 seconds, and 48 divides evenly by every hold, so the beat never drifts. The default is eight
+sheets a second, the beat that suits the ripple.
 
-### 느리게 찍으면 물결이 거꾸로 돈다
+| Sheets a second | Frames per sheet | Sheets per loop | How it looks |
+| --- | --- | --- | --- |
+| 24 | 1 | 48 | Flows smoothly |
+| 12 | 2 | 24 | "On twos", as in hand-drawn animation |
+| 8 | 3 | 16 | The beat sharpens and it looks more like print. Default |
 
-한 걸음에 고리가 나아가는 거리가 고리 사이 간격의 절반을 넘으면, 눈은 바깥 고리 대신
-안쪽 고리를 짝짓는다. 마차바퀴가 거꾸로 도는 것과 같은 일이고, 그러면 퍼지는 물결이
-모이는 물결로 보인다. 비율은 `고리 수 × 잡는 프레임 ÷ 48`이고, 0.5에 가까우면 방향이
-흐려지며 넘으면 뒤집힌다.
+When you stop and scrub, you still see only the sheets that playback would show. At eight a
+second, frames 0, 1 and 2 are all sheet 0. A sheet that playback never shows does not exist.
 
-| 고리 수 | 초당 24장 | 초당 12장 | 초당 8장 |
+### Slow printing makes ripples run backwards
+
+When a ring moves more than half the ring spacing in one step, the eye pairs it with the next
+ring in instead of the next ring out. This is the wagon-wheel effect, and it makes an outward
+ripple look like an inward one. The ratio is `rings × frames held ÷ 48`. Near 0.5 the
+direction blurs, and above it the motion flips.
+
+| Rings | 24 a second | 12 a second | 8 a second |
 | --- | --- | --- | --- |
 | 12 | 0.25 | 0.50 | **0.75** |
 | 3 | 0.06 | 0.13 | 0.19 |
 
-고리를 셋만 두는 지금 짜임은 어느 박자에서도 안전하다. 성기게 만든 것이 마차바퀴까지
-없앤 셈이다.
+With only three rings, the current design is safe at every beat. Making it sparse also got rid
+of the wagon-wheel effect.
 
-방향도 눈이 아니라 자로 본다. 중심에서 바깥으로 밝기를 훑어 이웃 두 프레임을 겹쳐 보고,
-어느 쪽으로 밀었을 때 가장 잘 맞는지 찾는다. 양수면 퍼짐, 음수면 모임이다. 고리 열둘일
-때와 셋일 때.
+Direction is measured too, not judged by eye. Sample brightness outward from the center,
+overlay two neighboring frames, and find the shift that matches best. A positive shift means
+the ripple spreads, a negative one means it gathers. The counts below are for twelve rings and
+for three:
 
-| 초당 장수 | 고리 12 | 고리 3 |
+| Sheets a second | 12 rings | 3 rings |
 | --- | --- | --- |
-| 24 | 바깥 17 / 안쪽 7 | 바깥 48 / 안쪽 0 |
-| 8 | 바깥 5 / 안쪽 3 | 바깥 16 / 안쪽 0 |
+| 24 | outward 17 / inward 7 | outward 48 / inward 0 |
+| 8 | outward 5 / inward 3 | outward 16 / inward 0 |
 
-다이얼을 하나라도 건드리면 필름을 버리고 다시 굽는다. 안 건드렸으면 즉시 다시 튼다.
+### Drawing size and display size
 
-### 손을 따라가는 크기, 눈을 위한 크기
+There is only one drawing size. Playing, stopped or while a knob is being dragged, the press
+prints at 1080. Back when a sheet was expensive, the paper changed size: 454 while dragging,
+670 while playing and 1080 when stopped.
 
-한 장 찍는 값이 크기에 거의 비례한다. 그래서 손잡이를 끄는 동안과 손을 뗀 뒤에 쓰는 종이가
-다르다.
+The display size is independent of that and depends on the space left on screen. Switching
+between the contact sheet and a single sheet does not make the picture shrink and grow.
 
-| 언제 | 크기 | 한 장 값 |
-| --- | --- | --- |
-| 손잡이를 끄는 동안 | 454 | 27 ms |
-| 재생 | 670 | 51 ms |
-| 멈춰 서서 볼 때 | 1080 | 125 ms |
+CSS `aspect-ratio` can't do this. Let the height fill the space and `max-width` clips only the
+width, which breaks the ratio. Set both to `auto` and the canvas displays at its own pixel
+size. So the page measures the space left and sets the size directly.
 
-화면에 걸리는 크기는 이것과 상관없다. 남은 자리가 정하고, 캔버스는 그 안에서 해상도만
-바뀐다. 그리는 크기가 바뀔 때마다 그림까지 작아졌다 커지면 무엇이 달라졌는지 알 수 없다.
+A single sheet is the WebGL canvas the press prints on. The contact sheet prints each cell
+small on that canvas and copies it onto a 2D canvas. A canvas can hold only one kind of
+context, so there are two.
 
-CSS의 `aspect-ratio`로는 되지 않는다. 높이를 채우게 두면 `max-width`가 가로만 잘라 비율이
-깨지고, 둘 다 `auto`로 두면 캔버스가 제 픽셀 수만큼만 걸린다. 남은 자리를 재서 직접 정한다.
+The frame number comes from the wall clock. If one sheet is late, the next one still arrives on
+its beat.
 
-끄는 동안에는 굽지 않고 프레임마다 바로 찍는다. 23밀리초면 초당 여덟 장은 물론 스물네 장도
-들어오므로, 끄는 손과 화면이 같이 움직인다. 따라가지 못하면 프레임이 떨어질 뿐인데 프레임
-번호를 벽시계에서 뽑으므로 박자는 어긋나지 않는다.
+### Stopped versus asked to stop
 
-손이 멎고 반 초가 지나야 제 것으로 넘어간다. 움직이던 중이었으면 구워서 잇고, 멈춰 있었으면
-제 크기로 다시 찍는다. 한 칸 움직일 때마다 굽기 시작하면 아무것도 못 한다.
+Since motion is the default, touching a dial does not stop it. Whether it's a button or a
+slider, the next frame prints with the new value and playback continues.
 
-모든 다이얼이 같은 길을 쓴다. 판화를 바꾸든 배색을 바꾸든 새 롤을 굴리든, 바로 가벼운 한
-장이 뜨고 잠시 뒤 제 것이 온다.
+Playback stays stopped only after you press STOP or drag the frame slider. After that, touching
+dials does not restart it on its own, because you asked it to stop. Play again and it resumes
+from the stopped frame.
 
-### 멈춘 것과 멈춰 달라고 한 것은 다르다
+### Boil
 
-움직이는 것이 기본이므로, 다이얼을 하나 건드렸다고 멈춘 채로 두지 않는다. 버튼을 누르면
-바로 다시 잇고, 슬라이더는 끄는 동안 정지 화면을 보여 주다가 손이 멎으면 잇는다. 한 칸
-움직일 때마다 다시 구우면 아무것도 못 하기 때문이다.
+Motion raises a question a still image never had: does the paper move with the picture, or
+does the picture move under the paper? There's no single right answer, so it's a dial.
 
-STOP을 눌렀거나 프레임을 직접 끌었을 때만 멈춘 채로 남는다. 그때는 다이얼을 건드려도 저
-혼자 다시 돌지 않는다 — 멈춰 달라고 한 것이므로.
-
-### 끓음
-
-정지 화면에는 없던 물음이 여기서 생긴다. 종이가 그림과 함께 움직이는가, 그림이 종이 밑에서
-움직이는가. 말로 정할 수 없어 다이얼로 두었다.
-
-| 값 | 무슨 뜻인가 |
+| Value | Meaning |
 | --- | --- |
-| HELD | 한 장. 종이는 붙박이고 그림이 그 밑에서 움직인다 |
-| TWOS | 두 프레임에 한 번 새 인상. 손그림 애니메이션이 늘 끓던 속도 |
-| EVERY | 매 프레임. 화면 전체가 끓는다 |
+| HELD | One sheet. The paper stays put and the picture moves under it |
+| TWOS | A new impression every two frames, the boil hand-drawn animation always had |
+| EVERY | A new impression every frame. The whole screen boils |
 
-인상이 바뀌면 스크린과 판 어긋남이 함께 바뀐다. 둘은 한 번의 통과에서 나오는 것이라 따로
-놀면 안 된다. 끓는 화면은 필드를 프레임마다 새로 뽑으므로, 여덟 벌만 만들어 두고 돌려 쓴다.
+A new impression changes the screen noise and the misregistration together. They come from the
+same pass through the press and must not drift apart. Impressions cycle through eight. The
+shader makes the noise on the spot, so a boiling screen costs no more.
 
-## 새 판화 만들기
+## Making a plate
 
-한 장이 곧 함수 하나다. `src/plates/`에 파일을 만들고 목록에 넣으면 화면과 콘택트 시트에
-함께 나타난다.
+A sheet is a single function. Create a file in `src/plates/`, add it to the list in
+`src/plates/index.js`, and it appears on screen and in the contact sheet.
 
 ```js
+import { DISPLAY } from "../type.js";
+
 export const hello = {
   id: "hello",
   name: "HELLO",
-  about: "화면의 판화 목록에 붙는 한 줄",
+  about: "One line shown under the plate picker",
 
   paint(S, R, page) {
     S.wash.ramp(0, 0, page.width, page.height, { from: 0.8, to: 0 });
     S.body.disc(page.width / 2, 420, 200);
-    S.key.text("안녕", page.margin, 300, { font: `700 90px ${DISPLAY}` });
+    S.key.text("Hello", page.margin, 300, { font: `700 90px ${DISPLAY}` });
     S.key.knockout((sep) => sep.disc(page.width / 2, 420, 60));
   }
 };
 ```
 
-`S`는 통 셋과 `S.drums`(실제로 도는 통 목록), `R`은 그 롤의 난수, `page`는 크기와 여백과
-배색, 시간 `t`, 그리고 이 판의 손잡이 값 `knobs`다. 분판이 받는 것: `flood` `shape` `line` `disc` `ring` `block` `ramp` `text`
-`knockout` `draw`.
+`S` holds the three drums, plus `S.drums`, the list of drums actually running. `R` is the
+roll's random generator. `page` carries the size, margin, palette, the time `t`, and this
+plate's knob values in `knobs`. A separation offers `flood`, `shape`, `line`, `disc`, `ring`,
+`block`, `ramp`, `text`, `knockout` and `draw`.
 
-### 손잡이는 판마다 다르다
+### Knobs belong to each plate
 
-판이 `knobs` 목록을 내놓으면 화면이 그것만 보고 조절칸을 짓는다. 공유 다이얼이 아니다 —
-RIPPLE에 HORIZON이 없고 MOON에 RINGS가 없다. 남의 판에 없는 값을 띄워 두면 무엇을 돌리는지
-알 수 없게 된다.
+When a plate exports a `knobs` list, the page builds controls from that list alone. These are
+not shared dials: RIPPLE has no HORIZON and MOON has no RINGS. Showing values a plate doesn't
+use would leave you guessing what you're turning.
 
 ```js
 knobs: [
@@ -247,114 +331,229 @@ knobs: [
 ]
 ```
 
-값은 판마다 따로 기억한다. 판을 바꿨다 돌아와도 맞춰 둔 것이 남아 있고, 한 판의 값이
-다른 판에 새어 들어가지 않는다. 주소에는 지금 걸린 판의 것만 싣는다.
+Values are remembered per plate. Switch to another plate and back, and your settings are still
+there. One plate's values never leak into another. The URL carries only the current plate's
+knobs.
 
-| 판 | 손잡이 |
+| Plate | Knobs |
 | --- | --- |
-| RIPPLE | RINGS · REACH · EASE · ARCS · WEIGHT · SQUASH · DOT |
+| RIPPLE | RINGS · REACH · EASE · ARCS · WEIGHT · SQUASH · DOT · OFFSET |
 | MOON | MOON · HORIZON · RISE · SKY · STARS · GLINTS |
 | GARDEN | STEMS · REACH · LEAF · SWAY · SIDE · BERRIES |
-| JELLY | COUNT · FIELD · BELL · DEPTH · PULSE · THROB · DRIFT · TENTACLES · TRAIL · WOBBLE · ARMS · MOTES · DEEP |
+| JELLY | COUNT · FIELD · BELL · DEPTH · PULSE · THROB · DRIFT · TENTACLES · TRAIL · WOBBLE · ARMS · MOTES · DEEP · STAIN · GAP |
+| CELL | COUNT · FIELD · SIZE · DRIFT · WOBBLE · DIVIDE · TINT · GRANULES · DEBRIS · VIGNETTE · RETICLE · FRAME |
+| CHLORO | COUNT · FIELD · SIZE · LENS · GRANA · STACK · LAMELLAE · DIVIDE · DRIFT · WOBBLE · TINT · STROMA · DEBRIS · VIGNETTE · RETICLE · FRAME |
 
-### 손잡이로 씨앗을 줄 수도 있다
+Don't confuse the CELL plate with the CELL dial. The dial sets the halftone cell size for every
+plate. The plate is the microscope sheet.
 
-JELLY의 **FIELD**는 값이 아니라 씨앗이다. 무리를 놓는 밭과 크기를 정하는 밭이 이 숫자에서
-나오므로, 끌면 잉크도 종이결도 그대로인 채 배치만 다시 뽑힌다. NEW ROLL이 전부를 바꾸는
-것과 다르다 — 마음에 드는 인쇄 상태를 잡아 놓고 구도만 골라 볼 수 있다.
+### A knob can be a seed
 
-종이의 롤을 섞어 만들므로 NEW ROLL은 여전히 배치까지 바꾼다. 같은 롤에 같은 FIELD면 언제나
-같은 무리가 나온다.
+**FIELD** on JELLY, CELL and CHLORO is a seed, not an amount. The layout comes from this
+number, so dragging it redraws only the arrangement while the ink and the paper tooth stay the
+same. NEW ROLL, by contrast, changes everything. FIELD lets you keep a print state you like and
+browse compositions.
+
+FIELD is mixed with the paper's roll, so NEW ROLL still changes the layout. The same roll with
+the same FIELD always gives the same layout. JELLY mixes them like this:
 
 ```js
 const layout = makeRng((page.seed ^ Math.imul(knobs.field + 1, 0x9e3779b9)) >>> 0);
 ```
 
-### 세기와 빠르기
+### Strength and speed
 
-움직임을 손잡이로 뺄 때는 세기와 빠르기를 따로 둔다. JELLY의 종은 PULSE로 얼마나 크게
-뛸지, THROB로 한 바퀴에 몇 번 뛸지를 따로 정한다. 크게 한 번 천천히 뛰는 것과 작게 여러
-번 떠는 것은 같은 값으로 묶일 수 없다.
+When you turn a motion into knobs, keep strength and speed separate. JELLY's bell has PULSE for
+how hard it beats and THROB for how many times it beats per loop. One big, slow beat and many
+small shivers can't be expressed with a single value.
 
-두 가지 경계가 있다.
+There are two limits:
 
-- **한 바퀴에 몇 번**을 세는 손잡이는 정수여야 한다. THROB가 2.5면 한 바퀴 끝에서 종이
-  제자리로 돌아오지 않는다
-- RIPPLE의 **RINGS**는 고리 수 × 잡는 프레임 ÷ 48이 0.5를 넘으면 물결이 거꾸로 돈다.
-  초당 여덟 장에서 그 경계는 여덟이다
+- A knob that counts **times per loop** must be an integer. With THROB at 2.5, the bell doesn't
+  return to its starting shape at the end of the loop.
+- RIPPLE's **RINGS** reverses the ripple once rings × frames held ÷ 48 exceeds 0.5. At eight
+  sheets a second the limit is eight rings.
 
-## 다이얼
+## Dials
 
-| 다이얼 | 하는 일 |
+| Dial | What it does |
 | --- | --- |
-| NEW ROLL | 새 롤. 같은 숫자는 언제나 같은 장을 찍는다 |
-| PLATE | 판화 고르기. 목록이 하나뿐이면 숨고 그 자리에 이름만 남는다 |
-| MOTION | 재생과 프레임 끌기 |
-| SHEETS A SECOND | 초당 24·12·8장. 시계와 루프 길이는 고정이다 |
-| PLATE KNOBS | 고른 판이 내놓은 손잡이. 판마다 다르고 값도 따로 기억한다 |
-| BOIL | HELD·TWOS·EVERY |
-| CONTACT SHEET | PLATES는 걸린 판화를, INKS는 배색 아홉 벌로, FRAMES는 한 바퀴를 |
-| HEADLINE | POSTER처럼 제목을 받는 판이 걸려 있을 때만 뜬다 |
-| INKS | 배색 아홉 벌 |
-| DRUMS | 2도와 3도 |
-| CELL | 망점 셀 크기 |
-| GRAIN | 잉크 상한과 얼룩. 0으로 내리면 얼룩 없는 깨끗한 망점이 된다 |
-| REGISTER | 판 어긋남, 픽셀 |
+| NEW ROLL | A new roll. The same number always prints the same sheet |
+| PNG | Saves the current sheet |
+| HOW IT'S MADE | Opens the page that follows a dot through the press |
+| PLATE | Picks the plate. With a single plate it hides, leaving only the name |
+| MOTION | Play, stop and scrub |
+| SHEETS A SECOND | 24, 12 or 8. The clock and the loop length stay fixed |
+| PLATE KNOBS | The knobs the chosen plate offers. Different on each plate, remembered per plate |
+| BOIL | HELD, TWOS or EVERY |
+| CONTACT SHEET | PLATES shows every hung plate, INKS the nine palettes, FRAMES one loop |
+| HEADLINE | Appears only when a plate that takes a title, such as POSTER, is hung |
+| INKS | Nine palettes |
+| DRUMS | Two or three colors |
+| CELL | Halftone cell size |
+| GRAIN | Ink ceiling and mottle. At 0 the dots are clean |
+| REGISTER | Misregistration, in pixels |
 
-설정은 전부 주소에 들어간다. 마음에 드는 장은 링크로 남는다. `SPACE` 재생, `N` 새 롤,
-`G` 콘택트 시트, `S` 저장.
+Every setting goes into the URL, so a sheet you like can be kept as a link. `SPACE` plays and
+stops, `N` rolls, `G` toggles the contact sheet and `S` saves.
 
-## 무엇으로 판단하나
+## How to judge
 
-눈에 좋아 보이는 것과 맞는 것은 다르다. 판단마다 자리가 따로 있다.
+Looking good is not the same as being right. Each question has a place to check it.
 
-| 판단할 것 | 자리 |
+| Question | Where to look |
 | --- | --- |
-| 겹침이 내는 색 | GARDEN 판화 |
-| 어두운 바탕에서 밝은 것을 내는 법 | JELLY 판화 |
-| 계조와 녹아웃 | MOON 판화 |
-| 이 배색에서 무너지는 판화가 있는지 | CONTACT SHEET · PLATES |
-| 이 판화가 아홉 배색을 다 견디는지 | CONTACT SHEET · INKS |
-| 루프가 이어지는지, 어디서 비는지 | CONTACT SHEET · FRAMES |
-| 이음매가 정말 이어졌는지 | 이웃 프레임의 픽셀 차이를 한 바퀴 재서, 마지막 걸음이 ±2σ 안인지 |
-| 망점만 따로 | GRAIN을 0으로 |
+| What colors overlaps make | GARDEN, and CHLORO's green |
+| How to make light things on a dark ground | JELLY |
+| Tone steps and knockouts | MOON |
+| Whether any plate breaks in this palette | CONTACT SHEET · PLATES |
+| Whether a plate survives all nine palettes | CONTACT SHEET · INKS |
+| Whether the loop flows, and where it goes empty | CONTACT SHEET · FRAMES |
+| Whether a seam really joins | `t = 1 − 1e−9` printed against `t = 0`, then neighbor steps within ±2σ |
+| Whether a new press prints the same sheet, and how much faster | `bench/`, against an old commit on one page |
+| The dots on their own | GRAIN at 0 |
 
-스크린 자체를 판단하는 자리는 MEDIUM이 맡는다. 목록에 없으므로, 필요하면 되돌려 쓴다.
+MEDIUM is the plate for judging the screen itself. It isn't in the list, so add it back when
+you need it.
 
-## 파일
+## Files
 
-| 파일 | 맡은 것 |
+| File | Role |
 | --- | --- |
-| `src/rng.js` | 시드 난수와 값 노이즈. 재현성의 뿌리 |
-| `src/palette.js` | 잉크 아홉 벌, 종이색, 통 수 자르기 |
-| `src/screen.js` | 망점과 종이결. 리소처럼 보이게 하는 부분 |
-| `src/press.js` | 분판과 인쇄기 |
-| `src/shapes.js` | 유기적 덩어리와 멤피스 장식 |
-| `src/type.js` | 글자 재기, 줄바꿈, 판 맞추기 |
-| `src/plates/` | 판화들. 한 장이 함수 하나. RIPPLE이 시간을 쓰는 본보기다 |
-| `src/main.js` | 다이얼, 콘택트 시트, 필름 굽기와 재생, 주소, PNG |
-| `serve.mjs` | 정적 서버. 모듈 URL에 부팅 도장을 찍어 옛 모듈이 남지 않게 한다 |
-| `MAP.md` | 이름과 말. 이 판이 놓인 자리 |
+| `src/rng.js` | Seeded random numbers and value noise. The root of reproducibility |
+| `src/palette.js` | The nine palettes, the paper color, trimming to the drum count |
+| `src/screen.js` | Halftone, paper tooth and multiply, all in the shader. The part that makes it look like riso |
+| `src/press.js` | Separations and the press. Draws separations on canvases, uploads them as textures and prints in one pass |
+| `src/shapes.js` | Organic blobs, Memphis ornaments, bands of varying width |
+| `src/mask.js` | Masks. Knocks everything outside one shape out of every drum, whether a circle or any shape made of points |
+| `src/roundel.js` | The round frame. A circle mask plus a rim that looks drawn by hand |
+| `src/scope.js` | The microscope field that CELL and CHLORO share: light falloff, floating debris, the reticle |
+| `src/type.js` | Measuring text, line breaks, fitting type to the plate |
+| `src/plates/` | The plates, one function per sheet. RIPPLE is the model for using time |
+| `src/main.js` | Dials, contact sheet, playback clock, URL, PNG |
+| `serve.mjs` | Static server. Stamps module URLs with the boot time so no stale module survives a reload |
+| `bench/` | The bench that measures two presses side by side, and its results |
+| `how.html` · `src/how.js` | The page that follows a dot through the press. Its figures are printed live |
+| `MAP.md` | Names and terms: where this kind of print sits |
 
-## 비어 있는 종이가 물이다
+## Blank paper is the water (RIPPLE)
 
-RIPPLE은 고리 몇 개와 다 그려지지 않은 호, 가운데 점 하나가 전부다. 면을 채우면 물결은
-무늬가 되고, 무늬가 되면 퍼지는 것으로 보이지 않는다.
+RIPPLE is just a few rings, some unfinished arcs and one dot in the middle. There is no ground:
+the white paper is the water. Fill the areas and the ripple becomes a pattern, and a pattern
+doesn't read as spreading.
 
-한 가지 함정이 있다. 망점 셀보다 가는 선은 살아남지 못한다. 선의 대부분이 가장자리라
-스크린이 점선으로 부숴 버리고, 실선으로 읽히지 않는다. 그래서 가늘어 보이는 선도 한 셀은
-너끈히 덮을 굵기로 긋는다. 리소 실선이 실제로 그만큼 굵기도 하다.
+There is one trap. A line thinner than a halftone cell doesn't survive. Most of the line is
+edge, so the screen breaks it into a dotted line that no longer reads as solid. Even lines
+meant to look thin are drawn wide enough to cover a cell comfortably, and real riso solid lines
+are that heavy anyway.
 
-가운데 점만 두 통이 겹쳐 찍는다. 종이 위에서 유일하게 색이 섞이는 자리이고, 물결이 어디서
-났는지 말해 주는 유일한 표다. 이때 겹치는 통은 가장 옅은 쪽이어야 한다. 가운데 통을 쓰면
-파랑에 노랑이 곱해져 초록이 된다.
+Only the center dot is printed with two drums. It is the one place on the sheet where colors
+mix, and the one mark that shows where the ripple started.
 
-## 형태 어휘
+The two drums print the same shape slightly apart. The dot reads as two inks only when you can
+see the two single-ink crescents and the overlap between them. Stacked exactly, it zooms into a
+blotch of two mixed screens. OFFSET sets the distance as a fraction of the dot's radius. The
+roll sets the direction, usually with the darker drum on top and its partner below. The two
+shapes differ slightly, as if cut by hand, and are a little taller than wide.
 
-두 가족을 섞는 것이 이 스타일이다.
+The partner is the middle drum. In some palettes the lightest drum is nearly the color of the
+paper, so its crescent would vanish. The overlap color depends on the palette: red or pink with
+aqua gives deep navy, and the default palette's sky and yellow give green.
 
-- **유기적** — 블롭, 잎, 물방울, 찢긴 판. 자와 컴퍼스가 닿지 않은 것들
-- **멤피스** — 물결, 지그재그, 반짝임, 나선, 마름모. 1980년대식 흩뿌리기
+## Stains and gaps (JELLY)
 
-글자를 쓰는 판이라면 잔글씨는 배색에서 가장 진한 통에만 찍는다. 크림색 종이 위에서 노랑
-잔글씨는 읽히지 않는다.
+Light things rise through dark water. There is no white ink, so everything that glows is
+carved out. The plate lays the water, carves out the bell shapes, and puts the lightest drum
+only inside them. Painting light ink over the water is impossible, because multiply only ever
+darkens.
+
+To look like rising, the water has to move, not the jellyfish. A jellyfish that really rose
+would have to jump back to its start at the end of the loop. Motes drifting downward say the
+same thing and still loop.
+
+A swarm is spread out in depth. Farther ones are smaller, fainter and higher up. The far ones
+are printed first and the near ones cover them, so the near ones' knockouts erase what's behind
+and occlusion comes for free.
+
+The water is not a single color. The two lighter drums bleed in large stains (STAIN), so the
+water shows third colors such as green or purple. The stains depend on the roll, not on time,
+and use their own random stream, so they don't disturb the swarm or the motes. JELLY prints
+full-bleed, without the round frame.
+
+Each jellyfish is carved out of the water a little wider than its body (GAP). Even with perfect
+registration, a thin line of paper stays around it, so water and body printed with the same
+drum still read as separate things. It's the reverse of a trap, which in printing overlaps two
+plates slightly so misregistration shows no gap. Tentacles are thick at the root and taper
+toward the tip, and half of them have a white core carved down the middle.
+
+## Under the microscope (CELL and CHLORO)
+
+Both plates are microscope slides. The round frame is the eyepiece's field of view, and outside
+it is paper. The field is brightest in the middle and dims toward the edge, and a faint reticle
+crosses it. `src/scope.js` draws the shared field. Its light goes down before the specimens.
+Debris and the reticle go on top of them, and the round frame comes last. Debris is drawn from
+the random stream after the specimens, so changing its count doesn't move them.
+
+**CELL** is stained cells. The cytoplasm is split between the middle and lightest drums, so a
+third color appears where two cells lean on each other. Membranes, nuclei and small organelles
+are on the darkest drum. Vesicles are white holes carved out of the cytoplasm. The nucleolus is
+carved only from the darkest drum, so the cytoplasm color shows through it. A dividing cell
+fills both of its bodies in a single path. Filled separately, the overlap in the middle would
+print twice as dark. Cells drift along small closed paths, membranes ripple in place,
+organelles circle inside, and dividing cells pull apart and come back together.
+
+**CHLORO** is chloroplasts. A chloroplast is not a cell: it has no nucleus, its body is a flat
+lens, and its inside is layered membrane.
+
+- **Envelope.** A double membrane: the outer line dark, the inner line thin and light,
+  following the outer one.
+- **Lamellae.** Stroma lamellae run the length of the body from end to end. They gather toward
+  the ends, which gives the spindle look.
+- **Grana.** Stacks of thylakoid discs, like stacked coins, sitting on the lamellae. Each disc
+  is a short bar with round ends. Each stack sits two lamellae over from the one before it, so
+  neighbors don't pile up. With a coarse screen the stacks merge into dark clumps, which is how grana look under a
+  light microscope.
+- **Stroma.** Ribosome specks, dark plastoglobuli, and starch grains carved out of every drum
+  as white ovals. The grains get a faint rim, because without it a white dot reads as a glint.
+- **Division.** A dividing chloroplast pinches at the waist into a dumbbell and tightens and
+  relaxes once per loop.
+
+There is no green ink. The plate looks at the palette and fills the stroma with the two drums
+whose overlap comes out greenest, usually a yellow and a blue. When no pair makes green, as
+with the two-drum run of MUSTARD × LEMON, it uses the greenest single drum.
+
+Stack heights, stack positions and any discs a starch grain pushes out are decided on the
+resting shape. Deciding them on the moving shape would make discs blink in and out from frame
+to frame. Each chloroplast draws the same number of random values whatever the knobs say, and
+the knobs only decide how many of the drawn parts are used.
+
+### The round frame
+
+The round frame lives in `src/roundel.js`, and any plate can add it with one call at the end of
+its paint. The composition is called a roundel or circular vignette. The frame has two parts:
+
+- **The mask**, in `src/mask.js`. A rectangle larger than the plate and the shape to keep go
+  into one path, filled with the even-odd rule. That knocks everything outside the shape out of
+  every drum. `maskCircle` keeps a circle, `maskShape` keeps a shape made of points, and `mask`
+  keeps any path. Because the fill is even-odd, the kept shape must not cross itself.
+- **The rim**, `rim`. Two circles with different wobble, one drawn thick and dark, the other
+  thin and light.
+
+To cut a plate to a shape without a rim, call only the mask.
+
+```js
+import { maskCircle, maskShape } from "../mask.js";
+
+maskCircle(S, page, width * 0.44);            // keep one circle in the middle
+maskShape(S, page, shapes.blob(R, cx, cy, r)); // keep one of the plate's own shapes
+```
+
+## Shape vocabulary
+
+The style mixes two families of shapes.
+
+- **Organic**: blobs, leaves, drops, torn plates. Shapes no ruler or compass touched.
+- **Memphis**: waves, zigzags, sparkles, spirals, diamonds. The 1980s scatter.
+
+If a plate uses type, small text prints only on the palette's darkest drum. Small yellow text
+is unreadable, even on white paper.

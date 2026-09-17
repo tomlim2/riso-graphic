@@ -2,9 +2,11 @@
 // passes, and nothing mixed before it reaches the paper. So a palette here is a short
 // list of inks in the order they are laid down, lightest drum first.
 
-// Riso paper is never white. A warm uncoated stock is what makes the inks read as ink.
-export const PAPER = "#f3efe4";
-export const PAPER_SHADE = "#e4dfd0";
+// The paper is a plain white uncoated stock. It adds no colour of its own, so the inks land
+// as themselves and an overlap is decided by the inks alone. A perfectly flat white reads as
+// a screen, though, so screen.js dusts it with a faint darker tooth in PAPER_SHADE.
+export const PAPER = "#fcfbf9";
+export const PAPER_SHADE = "#e9e7e2";
 
 export const PALETTES = [
   { name: "노랑 × 하늘 × 안개", label: "GOLD × SKY × MIST", inks: ["#f4c430", "#00a8e8", "#cfd4db"] },

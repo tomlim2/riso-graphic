@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>망점은 어떻게 찍히나 — RISO GRAPHIC</title>
+<meta name="description" content="리소 스타일 샘플 시트의 망점이 분판에서 종이까지 어떻게 찍히는지, 이 화면의 인쇄기가 지금 찍은 그림으로 열 단계를 따라간다.">
+<link rel="stylesheet" href="./styles.css">
+<style>
+  :root {
+    --accent: #00a8e8;
+    --display: "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", "Helvetica Neue", system-ui, sans-serif;
+  }
+
+  body.how { height: auto; min-height: 100%; }
+
+  /* 글을 내리면 머리줄이 글자 위에 겹치지 않게 책상색으로 받친다 */
+  .how .bar { background: linear-gradient(var(--desk) 72%, rgba(221, 216, 203, 0)); padding-bottom: 20px; }
+  .how .bar .status { opacity: 0.8; }
+
+  .article { max-width: 1120px; margin: 0 auto; padding: 72px 24px 40px; }
+
+  .kicker, .num {
+    margin: 0;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    opacity: 0.6;
+  }
+
+  .hero h1, .step h2, .prose { font-family: var(--display); letter-spacing: 0; }
+  .hero h1, .step h2, .prose, figcaption { word-break: keep-all; overflow-wrap: break-word; }
+  .hero h1 { margin: 12px 0 20px; font-size: clamp(34px, 5.4vw, 60px); line-height: 1.1; font-weight: 800; }
+  .step h2 { margin: 8px 0 16px; font-size: clamp(22px, 2.6vw, 30px); line-height: 1.3; font-weight: 800; }
+
+  .prose { max-width: 36em; font-size: 15.5px; line-height: 1.85; }
+  .prose p { margin: 0 0 12px; }
+  .prose ul { margin: 0 0 12px; padding-left: 1.1em; }
+  .prose li { margin-bottom: 6px; }
+  .prose .aside { font-size: 13px; opacity: 0.7; }
+  .prose a, footer a { color: inherit; }
+
+  .hero { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 36px; align-items: start; }
+  .live { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 12px; align-items: start; }
+  .stage { position: relative; }
+  .stage canvas { cursor: crosshair; touch-action: manipulation; }
+  .lens {
+    position: absolute;
+    border: 1.5px solid var(--ink);
+    box-shadow: 0 0 0 1.5px rgba(243, 239, 228, 0.9);
+    pointer-events: none;
+  }
+  .dials { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+
+  .toc { margin: 48px 0 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 11px; }
+  .toc a { color: inherit; text-decoration: none; opacity: 0.72; }
+  .toc a:hover { opacity: 1; text-decoration: underline; }
+
+  .step {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    gap: 36px;
+    align-items: start;
+    margin-top: 32px;
+    padding-top: 36px;
+    border-top: 1px solid var(--line);
+    scroll-margin-top: 56px;
+  }
+
+  .figures { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 14px; }
+  .figures.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .figures .wide { grid-column: 1 / -1; }
+
+  figure { margin: 0; }
+  figure canvas, figure svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    background: var(--paper);
+    box-shadow: 0 1px 2px rgba(43, 39, 36, 0.18), 0 10px 24px rgba(43, 39, 36, 0.14);
+  }
+  figure canvas { background: var(--sheet); }
+  canvas.px { image-rendering: pixelated; }
+  figcaption { margin-top: 8px; font-size: 10.5px; line-height: 1.55; letter-spacing: 0.03em; opacity: 0.72; }
+
+  svg text { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; fill: var(--ink); }
+  svg .axis { stroke: var(--ink); stroke-width: 1; opacity: 0.55; }
+  svg .guide { stroke: var(--ink); stroke-width: 1; stroke-dasharray: 3 4; opacity: 0.45; }
+  svg .plain { fill: none; stroke: var(--ink); stroke-width: 1.5; stroke-dasharray: 5 4; opacity: 0.55; }
+  svg .used { fill: none; stroke: var(--accent); stroke-width: 2.5; }
+  svg .band { fill: var(--accent); opacity: 0.12; }
+  svg .mark { fill: var(--ink); }
+  svg .cell { fill: none; stroke: var(--ink); stroke-width: 1.5; }
+  svg .dot { fill: var(--accent); opacity: 0.85; }
+
+  pre.code {
+    margin: 16px 0 0;
+    padding: 12px 14px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    overflow-x: auto;
+    font-size: 11.5px;
+    line-height: 1.6;
+    letter-spacing: 0;
+  }
+  .formula { margin: 14px 0; font-size: 13px; letter-spacing: 0.02em; }
+
+  table.numbers { width: 100%; border-collapse: collapse; font-size: 12px; margin: 16px 0 12px; }
+  table.numbers th, table.numbers td { padding: 7px 8px; border-bottom: 1px solid var(--line); text-align: right; }
+  table.numbers th:first-child, table.numbers td:first-child { text-align: left; }
+  table.numbers th { font-size: 10px; letter-spacing: 0.14em; opacity: 0.7; }
+
+  .notice { margin: 0 0 24px; padding: 12px 14px; border: 1px solid var(--ink); background: var(--paper); }
+
+  footer {
+    max-width: 1120px;
+    margin: 56px auto 0;
+    padding: 20px 24px 40px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 18px;
+    font-size: 11px;
+  }
+  footer .mark { font-weight: 700; letter-spacing: 0.18em; }
+
+  @media (max-width: 900px) {
+    .hero, .step { grid-template-columns: minmax(0, 1fr); gap: 22px; }
+  }
+
+  @media (max-width: 560px) {
+    .how .bar .sub { display: none; }
+    .article { padding: 64px 16px 32px; }
+    footer { padding: 20px 16px 32px; }
+    .figures.three { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .live { grid-template-columns: minmax(0, 1fr); }
+    .dials { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>
+</head>
+<body class="how">
+
+<header class="bar">
+  <a class="mark" href="./">RISO GRAPHIC</a>
+  <span class="sub"><span class="tag">HOW IT'S MADE</span></span>
+  <a class="status" href="./" aria-label="샘플 시트로 돌아가기">SHEET</a>
+</header>
+
+<main class="article">
+  <p class="notice" id="notice" hidden></p>
+
+  <section class="hero">
+    <div>
+      <p class="kicker">HOW IT'S MADE · 망점</p>
+      <h1>망점은 어떻게 찍히나</h1>
+      <div class="prose">
+        <p>리소는 드럼이 스크린 너머로 잉크를 밀어 넣는 기계다. 그래서 종이 위의 어떤 면도 솔리드가 아니다. 가까이 들여다보면 전부 점이다.</p>
+        <p>이 페이지는 잉크 한 통이 종이에 닿기까지를 열 단계로 따라간다. 여기 있는 그림은 모두 이 화면의 인쇄기가 방금 찍은 것이고, 코드 조각도 셰이더에서 그대로 꺼내 온 것이다. 인쇄기를 고치면 이 페이지도 함께 바뀐다.</p>
+        <p class="aside">종이 위로 커서를 옮기면 그 자리를 세 배로 본다. 휴대폰에서는 보고 싶은 자리를 누른다.</p>
+      </div>
+    </div>
+
+    <div class="live">
+      <figure class="stage">
+        <canvas id="heroSheet" width="1080" height="1080" aria-label="MOON 판화. 커서를 옮기면 그 자리를 확대한다"></canvas>
+        <div class="lens" id="heroLens"></div>
+        <figcaption>MOON · 노랑 × 하늘 × 안개 · 1080 한 장</figcaption>
+      </figure>
+      <figure>
+        <canvas id="heroLoupe" class="px" width="240" height="240" role="img" aria-label="확대경"></canvas>
+        <figcaption id="loupeNote">확대경</figcaption>
+      </figure>
+      <div class="dials">
+        <section class="card">
+          <h2>CELL <span class="out" id="cellOut">9 PX</span></h2>
+          <input id="cell" type="range" min="3" max="16" value="9" aria-label="망점 셀 크기">
+        </section>
+        <section class="card">
+          <h2>GRAIN <span class="out" id="grainOut">0.35</span></h2>
+          <input id="grain" type="range" min="0" max="60" value="35" aria-label="그레인 양">
+        </section>
+        <section class="card">
+          <h2>REGISTER <span class="out" id="registerOut">2 PX</span></h2>
+          <input id="register" type="range" min="0" max="5" value="2" aria-label="판 어긋남">
+        </section>
+      </div>
+    </div>
+  </section>
+
+  <ol class="toc" aria-label="차례">
+    <li><a href="#separation">01 분판</a></li>
+    <li><a href="#grid">02 격자</a></li>
+    <li><a href="#radius">03 반지름</a></li>
+    <li><a href="#edge">04 가장자리</a></li>
+    <li><a href="#grain-step">05 잡음</a></li>
+    <li><a href="#angles">06 각도</a></li>
+    <li><a href="#register-step">07 어긋남</a></li>
+    <li><a href="#multiply">08 곱하기</a></li>
+    <li><a href="#paper">09 종이</a></li>
+    <li><a href="#gpu">10 GPU</a></li>
+  </ol>
+
+  <section class="step" id="separation">
+    <div>
+      <p class="num">01</p>
+      <h2>분판은 색이 아니라 커버리지다</h2>
+      <div class="prose">
+        <p>판화는 색을 칠하지 않는다. 통마다 따로 있는 분판에 얼마나 덮을지를 적을 뿐이다. 분판의 검정은 검정 잉크가 아니라 100%라는 뜻이고, 회색은 그만큼의 비율이다. 색은 종이에 닿기 직전에야 정해진다.</p>
+        <p>그래서 계조를 그리면 점이 자라고 사그라드는 실제 계조가 된다. 녹아웃도 흰 잉크를 칠하는 일이 아니다. 그 자리를 찍지 않아 종이가 드러나게 하는 일이다. 흰 잉크가 없는 기계에서 밝은 것을 얻는 방법은 그것뿐이다.</p>
+        <p>분판은 2D 캔버스에 긋는다. 선과 글자와 둥근 끝은 캔버스가 가장 잘 그린다. 다 그린 분판은 텍스처로 GPU에 올라가고, 셰이더는 그중 알파만 읽는다.</p>
+      </div>
+    </div>
+    <div class="figures">
+      <figure>
+        <canvas data-fig="sep-coverage" role="img" aria-label="캔버스가 그린 분판"></canvas>
+        <figcaption>분판. 캔버스가 그린 커버리지를 흰 바탕에 올렸다. 계조 띠, 꽉 찬 원과 파낸 구멍, 50% 고리, 70% 글자</figcaption>
+      </figure>
+      <figure>
+        <canvas data-fig="sep-print" role="img" aria-label="같은 분판을 찍은 장"></canvas>
+        <figcaption>찍힌 장. 같은 분판을 가장 진한 통 하나로 찍었다</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="step" id="grid">
+    <div>
+      <p class="num">02</p>
+      <h2>격자를 기울인다</h2>
+      <div class="prose">
+        <p>망점은 격자 위에 선다. 셀 하나에 점 하나다. CELL 다이얼이 셀의 한 변이고, 기본은 종이 9픽셀이다.</p>
+        <p>드럼마다 격자를 다른 각도로 기울인다. 그래서 픽셀 자리를 먼저 그 통의 각도만큼 돌리고, 돌린 좌표를 셀 크기로 나눈 나머지로 셀 안의 자리를 구한다. 셀 한가운데가 (0, 0)이고 네 변이 −1과 +1이다.</p>
+        <p>셀을 하나씩 돌며 점을 찍지 않는다. 모든 픽셀이 같은 식을 저마다 풀 뿐이다. 옆 픽셀의 답을 기다릴 일이 없다는 것이, 나중에 이 일을 GPU로 옮기는 이유가 된다.</p>
+      </div>
+      <pre class="code" data-snippet="rotate"></pre>
+    </div>
+    <div class="figures">
+      <figure>
+        <canvas data-fig="grid-zoom" class="px" role="img" aria-label="45도로 기울인 격자를 겹친 망점"></canvas>
+        <figcaption data-caption="grid-zoom">가장 진한 통의 45° 격자</figcaption>
+      </figure>
+      <figure>
+        <svg viewBox="0 0 280 280" role="img" aria-label="셀 하나의 좌표">
+          <rect class="cell" x="40" y="40" width="200" height="200"></rect>
+          <line class="guide" x1="40" y1="140" x2="240" y2="140"></line>
+          <line class="guide" x1="140" y1="40" x2="140" y2="240"></line>
+          <line class="guide" x1="140" y1="140" x2="240" y2="40"></line>
+          <circle class="dot" cx="140" cy="140" r="66"></circle>
+          <circle class="mark" cx="140" cy="140" r="3"></circle>
+          <circle class="mark" cx="240" cy="40" r="3"></circle>
+          <text x="146" y="158">(0, 0)</text>
+          <text x="226" y="30">(1, 1)</text>
+          <text x="30" y="258">−1</text>
+          <text x="236" y="258">+1</text>
+          <text x="176" y="102">√2</text>
+          <text x="40" y="274">셀 반폭을 1로 잰 셀 하나</text>
+        </svg>
+        <figcaption>셀 안의 자리. 한가운데에서 모서리까지는 √2, 곧 1.414다</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="step" id="radius">
+    <div>
+      <p class="num">03</p>
+      <h2>덮을 만큼 점을 키운다</h2>
+      <div class="prose">
+        <p>셀 안의 픽셀이 잉크를 받는지는 셀 한가운데에서 얼마나 떨어졌는가로 정한다. 커버리지 c를 반지름으로 바꾸고, 그 안쪽이면 찍는다.</p>
+        <p>셀 반폭을 1로 치면 넓이가 c인 원의 반지름은 1.128·√c다. 그런데 그대로 쓰면 c가 1이어도 반지름이 1.128에서 멈춘다. 셀 모서리는 한가운데에서 1.414 떨어져 있으니 끝내 비고, 꽉 찬 면이 영영 막히지 않는다.</p>
+        <p>그래서 진한 쪽으로 갈수록 점을 조금씩 부풀린다. 실제 스크린이 그렇듯, 점은 <span data-value="touch">60%</span> 언저리에서 이웃과 닿고 <span data-value="close">93%</span> 언저리에서 모서리까지 막힌다.</p>
+      </div>
+      <pre class="code" data-snippet="radius"></pre>
+    </div>
+    <div class="figures three">
+      <figure class="wide">
+        <svg data-chart="radius" role="img" aria-label="커버리지에 따른 망점 반지름"></svg>
+        <figcaption>점선은 넓이만 맞춘 반지름, 파란 선이 셰이더가 쓰는 반지름이다</figcaption>
+      </figure>
+      <figure><canvas data-fig="step-0" class="px" role="img" aria-label="10% 망점"></canvas><figcaption>10%</figcaption></figure>
+      <figure><canvas data-fig="step-1" class="px" role="img" aria-label="30% 망점"></canvas><figcaption>30%</figcaption></figure>
+      <figure><canvas data-fig="step-2" class="px" role="img" aria-label="50% 망점"></canvas><figcaption>50%</figcaption></figure>
+      <figure><canvas data-fig="step-3" class="px" role="img" aria-label="70% 망점"></canvas><figcaption>70%. 점끼리 닿았다</figcaption></figure>
+      <figure><canvas data-fig="step-4" class="px" role="img" aria-label="90% 망점"></canvas><figcaption>90%. 모서리에 옅은 구멍이 남는다</figcaption></figure>
+      <figure><canvas data-fig="step-5" class="px" role="img" aria-label="100% 망점"></canvas><figcaption>100%. GRAIN 0이면 거의 막힌다</figcaption></figure>
+    </div>
+  </section>
+
+  <section class="step" id="edge">
+    <div>
+      <p class="num">04</p>
+      <h2>가장자리를 2.2픽셀에 걸쳐 흐린다</h2>
+      <div class="prose">
+        <p>점의 경계를 칼같이 자르면 픽셀 계단이 생긴다. 점이 작을 때는 한 픽셀이 켜졌다 꺼졌다 하며 깜박이기도 한다.</p>
+        <p>그래서 경계 안팎으로 1.1픽셀씩, 모두 2.2픽셀에 걸쳐 잉크를 서서히 뺀다. 이 폭은 셀이 아니라 종이 픽셀로 잰다. 셀을 키우든 콘택트 시트처럼 작게 찍든 가장자리는 같은 만큼 부드럽다.</p>
+        <p>망점 셀보다 가는 선은 거의 전부가 이 가장자리라서 점선으로 부서진다. RIPPLE이 가늘어 보이는 선도 한 셀은 너끈히 덮을 굵기로 긋는 이유다.</p>
+      </div>
+      <pre class="code" data-snippet="edge"></pre>
+    </div>
+    <div class="figures">
+      <figure>
+        <svg data-chart="edge" role="img" aria-label="경계에서 떨어진 거리에 따른 잉크 양"></svg>
+        <figcaption>경계에서 떨어진 거리와 잉크. 음수가 점 안쪽이다</figcaption>
+      </figure>
+      <figure>
+        <canvas data-fig="edge-zoom" class="px" role="img" aria-label="크게 키운 망점 하나"></canvas>
+        <figcaption>30% 면의 점 하나를 열여섯 배로. GRAIN 0</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="step" id="grain-step">
+    <div>
+      <p class="num">05</p>
+      <h2>드럼은 고르게 먹지 않는다</h2>
+      <div class="prose">
+        <p>진짜 리소의 망점은 동그랗지 않다. 종이결에 걸려 가장자리가 갉히고, 드럼이 잉크를 두껍게 먹은 자리와 얇게 지나간 자리가 번갈아 온다. 셰이더는 이것을 셋으로 흉내 낸다.</p>
+        <ul>
+          <li><strong>티끌.</strong> 픽셀마다 다른 흰 잡음이 경계를 밀고 당긴다. 기본 GRAIN에 셀 9픽셀이면 1픽셀 안팎이다.</li>
+          <li><strong>얼룩.</strong> 주기 110픽셀과 31픽셀의 값 노이즈를 섞어 커버리지를 흔든다. 판형 좌표를 따르므로 작게 찍어도 같은 얼룩을 입는다.</li>
+          <li><strong>천장.</strong> 드럼은 종이를 끝까지 덮지 못한다. GRAIN만큼 커버리지의 천장을 낮춰, 꽉 찬 면에도 셀 모서리마다 바늘구멍이 남는다. 기본 GRAIN이면 천장이 89%다.</li>
+        </ul>
+        <p>잡음은 표로 들고 있지 않다. 픽셀 자리와 롤을 정수 해시로 섞어 그 자리에서 만든다. 정수 연산은 GPU마다 같은 답을 내므로, 같은 롤은 어디서나 같은 잡음을 낸다.</p>
+        <p>GRAIN을 0으로 내리면 셋이 모두 빠지고 깨끗한 망점만 남는다. 스크린 자체를 판단할 때 그렇게 본다.</p>
+      </div>
+      <pre class="code" data-snippet="grain"></pre>
+    </div>
+    <div class="figures three">
+      <figure><canvas data-fig="grain-0" class="px" role="img" aria-label="GRAIN 0"></canvas><figcaption>GRAIN 0</figcaption></figure>
+      <figure><canvas data-fig="grain-1" class="px" role="img" aria-label="GRAIN 0.35"></canvas><figcaption>GRAIN 0.35. 기본</figcaption></figure>
+      <figure><canvas data-fig="grain-2" class="px" role="img" aria-label="GRAIN 0.6"></canvas><figcaption>GRAIN 0.6</figcaption></figure>
+      <figure class="wide">
+        <canvas data-fig="grain-wide" role="img" aria-label="GRAIN 0.6으로 찍은 넓은 면"></canvas>
+        <figcaption>GRAIN 0.6으로 찍은 70% 면, 줄이지 않은 한 조각. 얼룩은 이 정도 크기로 번진다</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="step" id="angles">
+    <div>
+      <p class="num">06</p>
+      <h2>세 각도, 30도씩</h2>
+      <div class="prose">
+        <p>통은 셋이고 각도도 셋이다. 가장 진한 통은 45°, 가운데 통은 15°, 가장 옅은 통은 75°. 인쇄가 오래 써 온 벌림이다.</p>
+        <p>두 격자의 각도가 조금만 어긋나면, 셀들이 맞물렸다 엇갈렸다를 되풀이하며 셀보다 훨씬 큰 물결이 생긴다. 무아레다. 실제 인쇄기에서는 종이가 늘고 판이 밀리므로 같은 각도로 찍어도 결국 이렇게 된다. 옆의 두 번째 그림은 두 통을 45°와 50°로 기울여 일부러 만든 무아레다.</p>
+        <p>30도씩 벌려 두면 그 물결이 셀 두어 개 크기로 줄어, 겹친 자리에 작은 꽃무늬가 뜬다. 로제트다. 눈은 그것을 무늬가 아니라 결로 읽는다.</p>
+      </div>
+    </div>
+    <div class="figures">
+      <figure><canvas data-fig="rosette" role="img" aria-label="45도와 15도로 겹친 로제트"></canvas><figcaption>45°와 15°. 로제트. 줄이지 않은 한 조각</figcaption></figure>
+      <figure><canvas data-fig="moire" role="img" aria-label="45도와 50도로 겹친 무아레"></canvas><figcaption>45°와 50°. 무아레. 셀보다 열 배쯤 큰 물결이 선다</figcaption></figure>
+      <figure><canvas data-fig="rosette-zoom" class="px" role="img" aria-label="로제트를 네 배로"></canvas><figcaption>로제트를 네 배로</figcaption></figure>
+      <figure><canvas data-fig="moire-zoom" class="px" role="img" aria-label="무아레를 네 배로"></canvas><figcaption>무아레를 네 배로. 점이 겹쳤다 비켜 갔다 한다</figcaption></figure>
+    </div>
+  </section>
+
+  <section class="step" id="register-step">
+    <div>
+      <p class="num">07</p>
+      <h2>판은 조금씩 어긋난다</h2>
+      <div class="prose">
+        <p>종이는 통마다 한 번씩 드럼을 지난다. 그래서 두 번째 통부터는 한두 픽셀씩 어긋난다. 흠이 아니라 리소의 얼굴이라 REGISTER 다이얼로 둔다.</p>
+        <p>기준은 첫 통, 곧 가장 옅은 통이다. 나중 통이 어긋나는 것이 눈에 어긋남으로 읽힌다. 어긋나는 방향과 거리는 롤이 정한다.</p>
+        <p>어긋남은 찍은 판을 옮겨 붙이는 일이 아니다. 셰이더가 통마다 어긋난 자리에서 바로 망점을 친다. 스크린 격자도 그 통과 함께 밀린다. 판 밖으로 밀려난 가장자리에는 그 통의 잉크가 없다.</p>
+        <p>끓음을 켜면 인상이 바뀔 때마다 어긋남도 새로 정해진다. 스크린의 잡음과 어긋남은 한 번의 통과에서 나오는 것이라 함께 바뀐다.</p>
+      </div>
+    </div>
+    <div class="figures">
+      <figure><canvas data-fig="register-0" class="px" role="img" aria-label="어긋남 없이"></canvas><figcaption data-caption="register-0">REGISTER 0</figcaption></figure>
+      <figure><canvas data-fig="register-5" class="px" role="img" aria-label="어긋남 5픽셀"></canvas><figcaption data-caption="register-5">REGISTER 5</figcaption></figure>
+    </div>
+  </section>
+
+  <section class="step" id="multiply">
+    <div>
+      <p class="num">08</p>
+      <h2>섞이는 곳은 종이 위뿐이다</h2>
+      <div class="prose">
+        <p>리소는 색을 섞어 찍지 않는다. 통마다 따로 찍고, 섞이는 일은 종이 위에서만 일어난다. 잉크는 빛을 걸러 낼 뿐이라 겹치면 언제나 더 어두워진다.</p>
+        <p>셰이더는 종이에서 시작해 통마다 한 번씩 곱한다. 망점이 덮은 만큼만 그 통의 잉크 쪽으로 기운다.</p>
+        <p class="formula">색 = 종이 × (1 − 망점 × (1 − 잉크))</p>
+        <p>노랑이 물빛 위에 곱해지면 초록 말고 갈 곳이 없다. 그래서 통이 하나 늘 때 색은 하나가 아니라 넷이 는다. 통이 셋이면 홀로 찍힌 셋, 둘씩 겹친 셋, 셋 다 겹친 하나까지 일곱 가지 색이 난다.</p>
+      </div>
+      <pre class="code" data-snippet="multiply"></pre>
+    </div>
+    <div class="figures">
+      <figure><canvas data-fig="mix-key" role="img" aria-label="가장 진한 통만"></canvas><figcaption data-caption="mix-key">가장 진한 통</figcaption></figure>
+      <figure><canvas data-fig="mix-body" role="img" aria-label="가운데 통만"></canvas><figcaption data-caption="mix-body">가운데 통</figcaption></figure>
+      <figure><canvas data-fig="mix-wash" role="img" aria-label="가장 옅은 통만"></canvas><figcaption data-caption="mix-wash">가장 옅은 통</figcaption></figure>
+      <figure><canvas data-fig="mix-all" role="img" aria-label="세 통을 겹친 장"></canvas><figcaption>셋을 한 장에. 물빛 × 노랑 × 분홍</figcaption></figure>
+    </div>
+  </section>
+
+  <section class="step" id="paper">
+    <div>
+      <p class="num">09</p>
+      <h2>종이는 희게, 결은 남긴다</h2>
+      <div class="prose">
+        <p>종이는 흰 무광 종이다. 종이가 색을 보태지 않아야 잉크가 제 색 그대로 앉고, 겹친 자리의 색도 잉크끼리만 정한다.</p>
+        <p>그래도 완전히 매끈한 흰색은 종이가 아니라 화면처럼 보인다. 그래서 셰이더는 흰 바탕에 한 톤 어두운 결을 아주 옅게 뿌린다. 티끌과 얼룩을 망점과 함께 쓰므로 종이결과 잉크의 거친 결이 한 몸이다.</p>
+        <p>끓음을 켜면 종이결도 인상마다 바뀐다. 매 인상이 새 종이 한 장이기 때문이다.</p>
+      </div>
+      <pre class="code" data-snippet="tooth"></pre>
+    </div>
+    <div class="figures">
+      <figure><canvas data-fig="paper-zoom" class="px" role="img" aria-label="빈 종이를 네 배로"></canvas><figcaption>아무것도 찍지 않은 종이를 네 배로</figcaption></figure>
+      <figure><canvas data-fig="paper-contrast" class="px" role="img" aria-label="같은 자리의 대비를 올린 것"></canvas><figcaption>같은 자리, 대비를 여덟 배로 올렸다</figcaption></figure>
+    </div>
+  </section>
+
+  <section class="step" id="gpu">
+    <div>
+      <p class="num">10</p>
+      <h2>그래서 GPU로 찍는다</h2>
+      <div class="prose">
+        <p>지금까지의 계산은 모두 픽셀 하나 안에서 끝난다. 옆 픽셀의 답을 기다릴 일이 없다. GPU가 가장 잘하는 모양의 일이다.</p>
+        <p>캔버스 2D로 찍던 때는 1080 한 장에 60~110밀리초가 들었고, 그 거의 전부가 망점과 곱하기였다. 초당 24프레임의 예산은 42밀리초라, 필름을 미리 구워 두고 틀어야 했다. 셰이더로 옮긴 뒤로는 한 장이 2밀리초 안팎이다. 이제 굽지 않고 프레임마다 찍는다.</p>
+        <p>셰이더 한 번은 GPU 시계로 0.2~0.3밀리초다. 지금 시간이 가장 많이 가는 곳은 망점이 아니라, 캔버스에 그린 분판을 GPU로 올리는 일이다.</p>
+        <p class="aside">M2 Max에서 2026-09-17에 잰 값이다. 재는 법과 원자료는 <a href="./bench/results/2026-09-17-canvas2d-vs-webgl2/report.md">벤치 보고서</a>에 있다.</p>
+      </div>
+    </div>
+    <div>
+      <table class="numbers">
+        <thead>
+          <tr><th>1080 한 장</th><th>캔버스 2D</th><th>WebGL2</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>RIPPLE</td><td>59 ms</td><td>1.4 ms</td></tr>
+          <tr><td>MOON</td><td>95 ms</td><td>1.7 ms</td></tr>
+          <tr><td>GARDEN</td><td>71 ms</td><td>1.5 ms</td></tr>
+          <tr><td>JELLY</td><td>106 ms</td><td>2.4 ms</td></tr>
+          <tr><td>콘택트 시트 한 벌</td><td>123 ms</td><td>14 ms</td></tr>
+        </tbody>
+      </table>
+      <table class="numbers">
+        <thead>
+          <tr><th>WebGL2 한 장의 단계</th><th>값</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>판 짜기</td><td>0.03~0.6 ms</td></tr>
+          <tr><td>분판 래스터와 업로드</td><td>0.6~1.1 ms</td></tr>
+          <tr><td>셰이더 한 번, GPU 시계로</td><td>0.2~0.3 ms</td></tr>
+          <tr><td>24fps 한 프레임 예산</td><td>42 ms</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <span class="mark">RISO GRAPHIC</span>
+  <a href="./">SHEET</a>
+  <a href="./README.md">README</a>
+  <a href="./MAP.md">MAP</a>
+  <a href="./bench/README.md">BENCH</a>
+</footer>
+
+<noscript><p class="noscript">이 페이지의 그림은 자바스크립트와 WebGL2로 찍습니다.</p></noscript>
+
+<script type="module" src="./src/how.js"></script>
+</body>
+</html>

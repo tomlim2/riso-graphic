@@ -22,6 +22,8 @@ const TYPES = {
   ".mjs": "text/javascript; charset=utf-8",
   ".css": "text/css; charset=utf-8",
   ".json": "application/json; charset=utf-8",
+  ".md": "text/plain; charset=utf-8",
+  ".jpg": "image/jpeg",
   ".svg": "image/svg+xml",
   ".png": "image/png",
   ".webp": "image/webp",

@@ -148,6 +148,45 @@ export function leaf(rng, cx, cy, size, tilt = 0, options = {}) {
   return points;
 }
 
+// 굵기가 변하는 선. 경로를 따라 양쪽 가장자리를 따로 내어 닫힌 띠로 돌려준다.
+// width(u)는 경로의 처음(0)에서 끝(1)까지의 굵기다. 끝으로 갈수록 줄이면 뾰족하게 끝난다.
+// 두 가장자리가 한 점에 겹치면 스플라인의 제어점이 뭉개지므로 아주 얇게라도 벌려 둔다.
+export function ribbon(points, width) {
+  const last = points.length - 1;
+  const left = [];
+  const right = [];
+  points.forEach(([x, y], i) => {
+    const [ax, ay] = points[Math.max(0, i - 1)];
+    const [bx, by] = points[Math.min(last, i + 1)];
+    const length = Math.hypot(bx - ax, by - ay) || 1;
+    const nx = -(by - ay) / length;
+    const ny = (bx - ax) / length;
+    const half = Math.max(0.15, width(last ? i / last : 0) / 2);
+    left.push([x + nx * half, y + ny * half]);
+    right.push([x - nx * half, y - ny * half]);
+  });
+  return [...left, ...right.reverse()];
+}
+
+// 닫힌 모양을 둘레로 amount만큼 고르게 키운다. 꼭짓점마다 이웃 둘을 보고 바깥 법선 쪽으로
+// 민다. 배율로 키우면 해파리 종처럼 밑단이 들린 모양은 밑단이 오히려 안으로 들어온다.
+export function grow(points, amount) {
+  const count = points.length;
+  let area = 0;
+  for (let i = 0; i < count; i += 1) {
+    const [x0, y0] = points[i];
+    const [x1, y1] = points[(i + 1) % count];
+    area += x0 * y1 - x1 * y0;
+  }
+  const outward = area > 0 ? amount : -amount;
+  return points.map(([x, y], i) => {
+    const [ax, ay] = points[(i - 1 + count) % count];
+    const [bx, by] = points[(i + 1) % count];
+    const length = Math.hypot(bx - ax, by - ay) || 1;
+    return [x + ((by - ay) / length) * outward, y - ((bx - ax) / length) * outward];
+  });
+}
+
 // -- memphis garnish -------------------------------------------------------------------
 
 // phase를 t에 맞춰 한 바퀴 돌리면 물결이 선 위를 흘러간다. 루프가 이어지려면 한 바퀴여야 한다.

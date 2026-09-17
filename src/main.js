@@ -1,13 +1,13 @@
 // 인쇄기 앞의 화면. 여기서 정하는 것은 다이얼뿐이고, 한 장이 어떻게 생겼는지는
 // 판화(src/plates/)가, 어떻게 찍히는지는 press.js가 정한다.
 //
-// 움직이는 판화는 미리 찍어 두고 튼다. 한 프레임을 찍는 데 재생 예산보다 오래 걸리기
-// 때문이기도 하지만, 그것이 인쇄가 실제로 하는 일이기도 하다. 필름은 미리 찍히고, 영사기는
-// 찍힌 것을 넘길 뿐이다.
+// 찍으면서 튼다. 망점과 안착을 GPU로 옮기고 나니 제 크기 한 장이 재생 예산 안에 넉넉히
+// 들어온다. 필름을 미리 굽던 일, 끄는 동안 작은 종이로 바꿔 찍던 일, 손이 멎기를 기다리던
+// 일이 모두 여기서 사라졌다. 다이얼은 다음 프레임에 닿는다.
 
 import { PALETTES } from "./palette.js";
 import { PLATES, plateById } from "./plates/index.js";
-import { printSheet, SHEET } from "./press.js";
+import { createPress, SHEET } from "./press.js";
 
 // 시계는 언제나 초당 스물네 번. 바뀌는 것은 한 장을 몇 프레임 잡아 두느냐다.
 //
@@ -19,17 +19,16 @@ import { printSheet, SHEET } from "./press.js";
 const FPS = 24;
 const FRAMES = 48; // 한 바퀴 2초. 물결의 박자가 여기 맞춰져 있다
 const RATES = [
-  { label: "24", hold: 1, title: "프레임마다 새 장. 매끄럽게 흐르고 굽는 시간이 가장 길다" },
+  { label: "24", hold: 1, title: "프레임마다 새 장. 매끄럽게 흐른다" },
   { label: "12", hold: 2, title: "두 프레임에 한 장. 손그림 애니메이션의 투스 촬영" },
   { label: "8", hold: 3, title: "세 프레임에 한 장. 박자가 또렷해진다" }
 ];
-const PLAY_SCALE = 0.62; // 재생용 종이 크기. 망점도 같이 줄어 눈에는 같은 스크린으로 보인다
-// 손잡이를 끄는 동안 쓰는 크기. 한 장을 찍는 값이 재생 예산 안에 들어와야 하므로 더 작다.
-// 굽지 않고 프레임마다 바로 찍으니, 끄는 손과 화면이 같이 움직인다.
-const PREVIEW_SCALE = 0.42;
 const GRID_SCALE = 1 / 3;
 
-const canvas = document.getElementById("sheet");
+// 종이 둘. 한 장은 인쇄기가 직접 찍는 WebGL 캔버스이고, 다른 하나는 콘택트 시트를 붙이는
+// 대지다. 캔버스 하나는 한 가지 컨텍스트만 가질 수 있어서 나눠 둔다.
+const sheet = document.getElementById("sheet");
+const contact = document.getElementById("contact");
 const status = document.getElementById("status");
 const about = document.getElementById("about");
 const plateRow = document.getElementById("plates");
@@ -50,6 +49,20 @@ const dials = {
   grain: { input: document.getElementById("grain"), out: document.getElementById("grainOut"), read: (v) => Number(v) / 100, show: (v) => v.toFixed(2) },
   register: { input: document.getElementById("register"), out: document.getElementById("registerOut"), read: (v) => Number(v), show: (v) => `${v} PX` }
 };
+
+let press;
+try {
+  press = createPress(sheet);
+} catch (error) {
+  // WebGL2가 없어서일 수도, 셰이더가 짜이지 않아서일 수도 있다. 까닭은 글이 말한다
+  status.textContent = "NO PRESS";
+  const note = document.createElement("p");
+  note.className = "noscript";
+  note.textContent = error.message;
+  sheet.replaceWith(note);
+  document.querySelector(".deck").hidden = true;
+  throw error;
+}
 
 const DEFAULTS = {
   plate: PLATES[0].id,
@@ -77,22 +90,6 @@ function knobsFor(plate) {
   }
   return knobState[plate.id];
 }
-
-const offscreen = document.createElement("canvas");
-let film = null;
-let playing = false;
-let raf = 0;
-
-// 움직이는 것이 기본이므로, 다이얼을 하나 건드렸다고 멈춘 채로 두지 않는다. wantsPlay는
-// 쓰는 사람의 뜻이고 playing은 지금 상태다. 둘을 나눠 두어야 "잠깐 정지 화면을 보여 주고
-// 다시 잇는" 것과 "멈춰 달라고 해서 멈춘 것"이 섞이지 않는다.
-let wantsPlay = false;
-let resumeTimer = 0;
-let live = false;
-let liveRaf = 0;
-
-// 굽는 도중에 다이얼이 또 움직이면 앞의 굽기를 버려야 한다. 세대 번호가 그 표다.
-let generation = 0;
 
 function readHash() {
   const raw = location.hash.replace(/^#/, "");
@@ -139,6 +136,14 @@ function writeHash() {
   history.replaceState(null, "", `#${params.toString()}`);
 }
 
+// 주소는 손이 멎은 뒤에 한 번 적는다. 끄는 내내 적으면 사파리는 30초에 백 번을 넘는 순간
+// 주소 고치기를 막아 버린다.
+let hashTimer = 0;
+function writeHashSoon() {
+  clearTimeout(hashTimer);
+  hashTimer = setTimeout(writeHash, 300);
+}
+
 function settings(plate, palette, extra = {}) {
   return {
     plate,
@@ -156,12 +161,9 @@ function settings(plate, palette, extra = {}) {
   };
 }
 
-// 찍어 둔 필름이 지금 다이얼과 맞는지. 하나라도 다르면 다시 찍는다.
-function filmKey() {
-  const current = knobsFor(plateById(state.plate));
-  const knobPart = Object.entries(current).map(([key, value]) => `${key}:${value}`).join(",");
-  return [state.plate, state.seed, state.palette, state.drums, state.cell, state.grain, state.register, state.headline, state.hold, state.boil, knobPart].join("|");
-}
+// 이 프레임에 걸리는 장. 초당 여덟 장이면 0·1·2 프레임이 모두 0번 장을 본다.
+// 멈춰서 프레임을 끌 때도 같은 장을 보여 준다 — 재생에 나오지 않는 장은 없는 장이다.
+const sheetFrame = (frame) => Math.floor(frame / state.hold) * state.hold;
 
 // -- 콘택트 시트 -------------------------------------------------------------------------
 //   PLATES — 같은 롤로 모든 판화를. 어느 장이 이 배색에서 무너지는지
@@ -188,24 +190,26 @@ function gridCells() {
   });
 }
 
-function renderGrid() {
+// 칸마다 인쇄기로 작게 찍어 대지에 옮겨 붙인다. 인쇄기의 종이가 이 동안 칸 크기로
+// 줄어들지만, 콘택트 시트가 펼쳐진 동안에는 그 종이가 걸려 있지 않다.
+function printContact() {
   const cells = gridCells();
   const columns = Math.min(3, cells.length);
   const rows = Math.ceil(cells.length / columns);
   const cellWidth = Math.round(SHEET.width * GRID_SCALE);
   const cellHeight = Math.round(SHEET.height * GRID_SCALE);
 
-  canvas.width = columns * (cellWidth + 14);
-  canvas.height = rows * (cellHeight + 26);
-  const out = canvas.getContext("2d");
+  contact.width = columns * (cellWidth + 14);
+  contact.height = rows * (cellHeight + 26);
+  const out = contact.getContext("2d");
   out.fillStyle = "#ddd8cb";
-  out.fillRect(0, 0, canvas.width, canvas.height);
+  out.fillRect(0, 0, contact.width, contact.height);
 
   cells.forEach((cell, index) => {
-    printSheet(offscreen, settings(cell.plate, cell.palette, { frame: cell.frame, scale: GRID_SCALE }));
+    press.print(settings(cell.plate, cell.palette, { frame: cell.frame, scale: GRID_SCALE }));
     const x = (index % columns) * (cellWidth + 14) + 7;
     const y = Math.floor(index / columns) * (cellHeight + 26) + 7;
-    out.drawImage(offscreen, x, y);
+    out.drawImage(sheet, x, y);
 
     out.fillStyle = cell.mark ? "#2b2724" : "rgba(43, 39, 36, 0.55)";
     out.font = "600 11px ui-monospace, SFMono-Regular, Menlo, monospace";
@@ -215,93 +219,38 @@ function renderGrid() {
   return cells.length;
 }
 
-// -- 필름 -------------------------------------------------------------------------------
-
-// 필름 한 벌은 48장 × 558×744 = 80MB쯤 된다. 다시 구우면서 옛 벌을 놓아주지 않으면
-// 다이얼을 몇 번 움직이는 것만으로 수백 MB가 쌓이고, 그때부터는 인쇄가 느려진 것처럼
-// 보인다. 실제로 느려진 것은 기계가 아니라 메모리다.
-function discard(reel) {
-  if (!reel) return;
-  for (const shot of reel.shots || reel) shot.close();
-}
-
-async function bake(mine) {
-  const key = filmKey();
-  if (film && film.key === key) return film;
-
-  discard(film);
-  film = null;
+// 한 장이든 콘택트 시트든 지금 다이얼대로 찍는다. 무엇을 찍었는지와 걸린 시간을 돌려준다.
+function draw() {
+  const started = performance.now();
   const plate = plateById(state.plate);
-  const palette = PALETTES[state.palette];
-  const shots = [];
+  let note;
 
-  const sheets = FRAMES / state.hold;
-
-  for (let index = 0; index < sheets; index += 1) {
-    printSheet(offscreen, settings(plate, palette, { frame: index * state.hold, scale: PLAY_SCALE }));
-    shots.push(await createImageBitmap(offscreen));
-    status.textContent = `PRINTING ${index + 1} / ${sheets}`;
-
-    // 창을 놓아주되 rAF로는 하지 않는다. 창이 앞에 없으면 rAF는 초당 한 번까지 조여지고,
-    // 굽는 일은 화면에 그리는 일이 아니라 그 박자를 따를 이유가 없다. 재생은 rAF가 맞다 —
-    // 거기서는 화면과 박자를 맞추는 것이 일의 전부다.
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    if (mine !== generation || filmKey() !== key) {
-      discard(shots); // 찍는 도중 다이얼이 움직였다
-      return null;
-    }
+  if (state.grid === "off") {
+    press.print(settings(plate, PALETTES[state.palette], { frame: sheetFrame(state.frame) }));
+    show(sheet);
+    about.textContent = plate.about;
+    note = `${plate.name} · ROLL ${state.seed} · ${state.drums} DRUMS · F${state.frame}`;
+  } else {
+    const count = printContact();
+    show(contact);
+    about.textContent =
+      state.grid === "plates" ? "같은 롤로 모든 판화를 나란히" : state.grid === "inks" ? "같은 판화를 배색 아홉 벌로" : "한 바퀴를 아홉 자리에서 끊어";
+    note = `GRID ${state.grid.toUpperCase()} · ${count} SHEETS · ROLL ${state.seed}`;
   }
 
-  film = { key, shots };
-  return film;
+  return { note, ms: performance.now() - started };
 }
 
-function showFrame(frame) {
-  if (!film) return false;
-  const wrapped = ((frame % FRAMES) + FRAMES) % FRAMES;
-  const shot = film.shots[Math.floor(wrapped / state.hold) % film.shots.length];
-  canvas.width = shot.width;
-  canvas.height = shot.height;
-  canvas.getContext("2d").drawImage(shot, 0, 0);
-  fitCanvas();
-  return true;
-}
+// -- 걸기 -------------------------------------------------------------------------------
 
-// 미리보기. 굽지 않고 프레임마다 바로 찍는다. 손잡이를 끄는 동안에는 필름을 다시 굽는 것이
-// 불가능하므로(한 벌에 1초 넘게 걸린다) 화질을 내주고 움직임을 지킨다. 따라가지 못하면
-// 프레임이 떨어질 뿐인데, 프레임 번호를 벽시계에서 뽑으므로 박자는 어긋나지 않는다.
-function startLive() {
-  if (live) return;
-  live = true;
-  const started = performance.now();
-
-  const step = (now) => {
-    if (!live) return;
-    const frame = Math.floor(((now - started) / 1000) * FPS) % FRAMES;
-    state.frame = frame;
-    printSheet(canvas, settings(plateById(state.plate), PALETTES[state.palette], { frame, scale: PREVIEW_SCALE }));
-    fitCanvas();
-    frameOut.textContent = `${frame} / ${FRAMES}`;
-    liveRaf = requestAnimationFrame(step);
-  };
-
-  liveRaf = requestAnimationFrame(step);
-}
-
-function stopLive() {
-  live = false;
-  cancelAnimationFrame(liveRaf);
-}
-
-// 화면에 걸리는 크기는 자리가 정한다. 그리는 크기는 끄는 동안 454, 재생 670, 멈춰 서면
-// 1080으로 바뀌는데, 그때마다 그림까지 작아졌다 커지면 무엇이 달라졌는지 알 수 없다.
-// 달라진 것은 해상도뿐이다.
+// 화면에 걸리는 크기는 자리가 정한다. 캔버스의 픽셀 수를 그대로 걸면 콘택트 시트와 한 장이
+// 번갈아 걸릴 때마다 그림이 작아졌다 커진다.
 //
 // CSS의 aspect-ratio로는 안 된다. 높이를 채우게 두면 max-width가 가로만 잘라 비율이
 // 깨지고, 둘 다 auto로 두면 캔버스가 제 픽셀 수만큼만 걸린다. 남은 자리를 재서 직접 정한다.
 const NARROW = matchMedia("(max-width: 860px)");
 
-function fitCanvas() {
+function fit(canvas) {
   // 좁은 화면에서는 가로를 가득 채우는 쪽이 맞다. 그때는 CSS에 맡긴다
   if (NARROW.matches) {
     canvas.style.width = "";
@@ -309,125 +258,130 @@ function fitCanvas() {
     return;
   }
 
-  const press = canvas.parentElement;
-  const style = getComputedStyle(press);
+  const desk = canvas.parentElement;
+  const style = getComputedStyle(desk);
   const room = {
-    width: press.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight),
-    height: press.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom)
+    width: desk.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight),
+    height: desk.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom)
   };
   if (room.width <= 0 || room.height <= 0) return;
 
-  const fit = Math.min(room.width / canvas.width, room.height / canvas.height);
-  canvas.style.width = `${Math.floor(canvas.width * fit)}px`;
-  canvas.style.height = `${Math.floor(canvas.height * fit)}px`;
+  const scale = Math.min(room.width / canvas.width, room.height / canvas.height);
+  canvas.style.width = `${Math.floor(canvas.width * scale)}px`;
+  canvas.style.height = `${Math.floor(canvas.height * scale)}px`;
 }
 
-addEventListener("resize", fitCanvas);
-
-// 멈춰 있을 때 끄는 동안. 움직이지는 않지만 손을 따라와야 하므로 작게 한 장만 찍는다.
-function sketch() {
-  printSheet(canvas, settings(plateById(state.plate), PALETTES[state.palette], { frame: state.frame, scale: PREVIEW_SCALE }));
-  fitCanvas();
-  status.textContent = `${plateById(state.plate).name} · DRAFT · F${state.frame}`;
-  writeHash();
+function show(canvas) {
+  sheet.hidden = canvas !== sheet;
+  contact.hidden = canvas !== contact;
+  fit(canvas);
 }
 
-// 기계를 세운다. 쓰는 사람의 뜻은 건드리지 않는다.
-function stop() {
-  generation += 1;
-  playing = false;
-  clearTimeout(resumeTimer);
-  cancelAnimationFrame(raf);
-  playButton.textContent = "PLAY 24FPS";
-  playButton.classList.remove("on");
+addEventListener("resize", () => fit(state.grid === "off" ? sheet : contact));
+
+// -- 시계 -------------------------------------------------------------------------------
+
+// 움직이는 것이 기본이다. wantsPlay는 쓰는 사람의 뜻이고, 실제로 도는지는 콘택트 시트가
+// 펼쳐져 있는지까지 보고 정한다. 둘을 나눠 두어야 시트를 닫는 순간 하던 재생이 이어진다.
+let wantsPlay = false;
+const playing = () => wantsPlay && state.grid === "off";
+
+let raf = 0;
+let running = false;
+let anchor = { time: 0, frame: 0 };
+let version = 0; // 다이얼이 움직일 때마다 하나씩
+let shown = ""; // 지금 걸려 있는 것
+let counted = -1; // 프레임 표시가 마지막으로 가리킨 프레임
+const meter = { since: 0, frames: 0, prints: 0, ms: 0 };
+
+// 지금 다이얼과 프레임이면 무엇이 걸려 있어야 하는가. 걸린 것과 같으면 다시 찍지 않는다.
+const wanted = () =>
+  state.grid === "off" ? `${version}:sheet:${sheetFrame(state.frame)}` : `${version}:${state.grid}:${state.frame}`;
+
+// 프레임 번호는 벽시계에서 뽑는다. 한 장이 늦게 나와도 다음 장은 제 박자에 온다.
+function clockFrame(now) {
+  const elapsed = Math.floor(((now - anchor.time) / 1000) * FPS);
+  return (((anchor.frame + elapsed) % FRAMES) + FRAMES) % FRAMES;
 }
 
-// 멈춰 달라고 해서 멈춘다. 다음 다이얼에도 다시 돌지 않는다.
-function halt() {
-  wantsPlay = false;
-  stop();
-  stopLive();
+function loop(now) {
+  raf = 0;
+  const on = playing();
+
+  // 도는 쪽으로 넘어가는 순간 시계를 지금 프레임에 맞춘다. 멈췄던 자리에서 이어진다
+  if (on !== running) {
+    running = on;
+    playButton.textContent = on ? "STOP" : "PLAY 24FPS";
+    playButton.classList.toggle("on", on);
+    if (on) {
+      anchor = { time: now, frame: state.frame };
+      Object.assign(meter, { since: now, frames: 0, prints: 0, ms: 0 });
+      status.textContent = `${plateById(state.plate).name} · PLAYING`;
+    } else {
+      shown = ""; // 멈춘 장의 적바림을 다시 쓴다
+      writeHashSoon();
+    }
+  }
+
+  if (on) {
+    const frame = clockFrame(now);
+    if (frame !== state.frame) {
+      state.frame = frame;
+      meter.frames += 1;
+    }
+  }
+
+  const want = wanted();
+  if (want !== shown) {
+    shown = want;
+    const { note, ms } = draw();
+    meter.prints += 1;
+    meter.ms += ms;
+    if (!on) status.textContent = `${note} · ${ms.toFixed(1)} MS`;
+  }
+
+  if (state.frame !== counted) {
+    counted = state.frame;
+    frameOut.textContent = `${state.frame} / ${FRAMES}`;
+    scrub.value = String(state.frame);
+  }
+
+  if (on) {
+    if (now - meter.since >= 1000) {
+      const fps = Math.round((meter.frames * 1000) / (now - meter.since));
+      const cost = meter.prints ? (meter.ms / meter.prints).toFixed(1) : "—";
+      status.textContent = `${plateById(state.plate).name} · ${fps} FPS · ${FPS / state.hold} SHEETS A SECOND · ${(FRAMES / FPS).toFixed(1)}S LOOP · BOIL ${state.boil.toUpperCase()} · ${cost} MS A SHEET`;
+      Object.assign(meter, { since: now, frames: 0, prints: 0, ms: 0 });
+    }
+    raf = requestAnimationFrame(loop);
+  }
 }
 
-// 손이 멎은 뒤에 할 일. 움직이던 중이었으면 구워서 잇고, 멈춰 있었으면 제 크기로 다시 찍는다.
-// 끄는 동안에는 둘 다 못 한다 — 굽는 데 1초, 제 크기 한 장에 100밀리초가 넘게 든다.
-function resume(delay = 0) {
-  clearTimeout(resumeTimer);
-  if (state.grid !== "off") return;
-  resumeTimer = setTimeout(() => (wantsPlay ? play() : render()), delay);
+function wake() {
+  if (!raf) raf = requestAnimationFrame(loop);
 }
 
-async function play() {
+// 다이얼이 움직였다. 다음 프레임에 새로 찍는다 — 도는 중이면 도는 채로, 멈춰 있으면 멈춘 채로.
+function changed() {
+  version += 1;
+  writeHashSoon();
+  wake();
+}
+
+function play() {
   if (state.grid !== "off") {
     state.grid = "off";
     mark(gridRow, gridItems, (item) => item.kind === state.grid);
+    changed();
   }
-
   wantsPlay = true;
-  stop();
-  stopLive();
-  const mine = generation;
-
-  playButton.textContent = "PRINTING…";
-  const reel = await bake(mine);
-  if (!reel || mine !== generation) return;
-
-  playing = true;
-  playButton.textContent = "STOP";
-  playButton.classList.add("on");
-
-  const started = performance.now();
-  let shown = -1;
-  let ticks = 0;
-  let mark0 = started;
-
-  const tick = (now) => {
-    if (!playing) return;
-    const frame = Math.floor(((now - started) / 1000) * FPS) % FRAMES;
-    if (frame !== shown) {
-      showFrame(frame);
-      state.frame = frame;
-      scrub.value = String(frame);
-      frameOut.textContent = `${frame} / ${FRAMES}`;
-      shown = frame;
-      ticks += 1;
-    }
-    if (now - mark0 >= 1000) {
-      status.textContent = `${plateById(state.plate).name} · ${ticks} FPS · ${FPS / state.hold} SHEETS A SECOND · ${(FRAMES / FPS).toFixed(1)}S LOOP · BOIL ${state.boil.toUpperCase()}`;
-      ticks = 0;
-      mark0 = now;
-    }
-    raf = requestAnimationFrame(tick);
-  };
-
-  raf = requestAnimationFrame(tick);
+  wake();
 }
 
-// -- 그리기 -----------------------------------------------------------------------------
-
-function render() {
-  if (playing) return;
-  const started = performance.now();
-  const plate = plateById(state.plate);
-  let note;
-
-  if (state.grid === "off") {
-    if (!(film && film.key === filmKey() && showFrame(state.frame))) {
-      printSheet(canvas, settings(plate, PALETTES[state.palette], { frame: state.frame, scale: 1 }));
-    }
-    note = `${plate.name} · ROLL ${state.seed} · ${state.drums} DRUMS · F${state.frame}`;
-    about.textContent = plate.about;
-  } else {
-    const count = renderGrid();
-    note = `GRID ${state.grid.toUpperCase()} · ${count} SHEETS · ROLL ${state.seed}`;
-    about.textContent =
-      state.grid === "plates" ? "같은 롤로 모든 판화를 나란히" : state.grid === "inks" ? "같은 판화를 배색 아홉 벌로" : "한 바퀴를 아홉 자리에서 끊어";
-  }
-
-  fitCanvas();
-  frameOut.textContent = `${state.frame} / ${FRAMES}`;
-  status.textContent = `${note} · ${Math.round(performance.now() - started)} MS`;
-  writeHash();
+// 멈춰 달라고 해서 멈춘다. 다이얼을 건드려도 저 혼자 다시 돌지 않는다.
+function halt() {
+  wantsPlay = false;
+  wake();
 }
 
 // -- 다이얼 -----------------------------------------------------------------------------
@@ -446,16 +400,12 @@ function buildRow(row, items, isOn, onPick, decorate) {
     button.addEventListener("click", () => {
       onPick(item);
       mark(row, items, isOn);
-      nudged(); // 슬라이더와 같은 길 — 바로 가벼운 한 장, 잠시 뒤 제 것으로
+      changed();
     });
     row.append(button);
   }
   mark(row, items, isOn);
 }
-
-// 슬라이더는 끄는 내내 값이 바뀐다. 손이 멎고 이만큼 지나야 다시 굽는다.
-// 한 칸 움직일 때마다 굽기 시작하면 아무것도 못 한다.
-const SETTLE = 500;
 
 // 고른 판의 손잡이만 조절칸으로 짓는다. 판을 바꾸면 칸도 통째로 바뀐다 — 남의 판에 없는
 // 값을 띄워 두면 무엇을 돌리는지 알 수 없게 된다.
@@ -496,7 +446,7 @@ function buildKnobs() {
     input.addEventListener("input", () => {
       values[knob.key] = Number(input.value);
       out.textContent = values[knob.key].toFixed(digits);
-      nudged();
+      changed();
     });
 
     row.append(head, input);
@@ -519,7 +469,7 @@ if (many) {
     plateRow,
     PLATES.map((plate) => ({ label: plate.name, title: plate.about, id: plate.id })),
     (item) => item.id === state.plate,
-    (item) => { stop(); state.plate = item.id; buildKnobs(); }
+    (item) => { state.plate = item.id; buildKnobs(); }
   );
 } else {
   // 고를 것이 없으면 고르개를 치우고, 그 자리에 지금 걸린 판의 이름만 남긴다
@@ -531,7 +481,7 @@ buildRow(
   paletteRow,
   PALETTES.map((palette, index) => ({ label: palette.label, title: `${palette.name} — ${palette.label}`, index, inks: palette.inks })),
   (item) => item.index === state.palette,
-  (item) => { stop(); state.palette = item.index; },
+  (item) => { state.palette = item.index; },
   (button, item) => {
     button.className = "swatch";
     button.setAttribute("aria-label", item.label);
@@ -543,16 +493,11 @@ buildRow(
   }
 );
 
-buildRow(drumsRow, [{ label: "2", count: 2 }, { label: "3", count: 3 }], (item) => item.count === state.drums, (item) => { stop(); state.drums = item.count; });
+buildRow(drumsRow, [{ label: "2", count: 2 }, { label: "3", count: 3 }], (item) => item.count === state.drums, (item) => { state.drums = item.count; });
 
-buildRow(gridRow, gridItems, (item) => item.kind === state.grid, (item) => { stop(); state.grid = item.kind; });
+buildRow(gridRow, gridItems, (item) => item.kind === state.grid, (item) => { state.grid = item.kind; });
 
-buildRow(
-  rateRow,
-  RATES,
-  (item) => item.hold === state.hold,
-  (item) => { stop(); state.hold = item.hold; }
-);
+buildRow(rateRow, RATES, (item) => item.hold === state.hold, (item) => { state.hold = item.hold; });
 
 buildRow(
   boilRow,
@@ -560,63 +505,43 @@ buildRow(
    { label: "TWOS", kind: "twos", title: "두 프레임에 한 번. 손으로 그린 애니메이션의 속도" },
    { label: "EVERY", kind: "every", title: "매 프레임. 화면 전체가 끓는다" }],
   (item) => item.kind === state.boil,
-  (item) => { stop(); state.boil = item.kind; }
+  (item) => { state.boil = item.kind; }
 );
-
-// 값이 끌리는 동안. 움직이던 중이었으면 미리보기로 계속 돌리고, 멈춰 있었으면 정지 화면만
-// 다시 찍는다. 손이 멎으면 제 크기로 구워 넘긴다.
-function nudged() {
-  stop();
-
-  if (state.grid !== "off") {
-    render();
-  } else if (wantsPlay) {
-    startLive();
-    status.textContent = `${plateById(state.plate).name} · LIVE`;
-    writeHash();
-  } else {
-    sketch();
-  }
-
-  resume(SETTLE);
-}
 
 for (const [name, dial] of Object.entries(dials)) {
   dial.input.addEventListener("input", () => {
     state[name] = dial.read(dial.input.value);
     dial.out.textContent = dial.show(state[name]);
-    nudged();
+    changed();
   });
 }
 
 headlineInput.addEventListener("input", () => {
   state.headline = headlineInput.value;
-  nudged();
+  changed();
 });
 
 // 프레임을 직접 끄는 것은 "이 한 장을 보겠다"는 뜻이다. 멈춘 채로 둔다.
 scrub.addEventListener("input", () => {
   halt();
   state.frame = Number(scrub.value);
-  render();
+  writeHashSoon();
 });
 
-playButton.addEventListener("click", () => {
-  if (playing) {
-    halt();
-    render();
-  } else {
-    play();
-  }
-});
+playButton.addEventListener("click", () => (playing() ? halt() : play()));
 
 document.getElementById("reroll").addEventListener("click", () => {
   state.seed = (Math.random() * 0xffffffff) >>> 0;
-  nudged();
+  changed();
 });
 
+// 저장하는 것이 지금 다이얼과 같은 장이도록 그 자리에서 한 번 더 찍는다. 콘택트 시트를
+// 닫은 직후라면 인쇄기의 종이에는 아직 칸 하나가 남아 있을 수 있다.
 document.getElementById("save").addEventListener("click", () => {
-  canvas.toBlob((blob) => {
+  draw();
+  shown = wanted();
+  const target = state.grid === "off" ? sheet : contact;
+  target.toBlob((blob) => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -634,8 +559,14 @@ addEventListener("keydown", (event) => {
   if (event.key === "g" || event.key === "G") {
     state.grid = state.grid === "off" ? gridItems[1].kind : "off";
     mark(gridRow, gridItems, (item) => item.kind === state.grid);
-    nudged();
+    changed();
   }
+});
+
+// GPU가 기계를 잃었다가 되찾으면 걸려 있던 것을 다시 찍는다
+press.onRestore(() => {
+  shown = "";
+  wake();
 });
 
 // -- 시동 -------------------------------------------------------------------------------
@@ -651,6 +582,7 @@ if (state.rawKnobs) {
     const value = Number(raw);
     if (Number.isFinite(value)) values[key] = Math.max(knob.min, Math.min(knob.max, value));
   }
+  delete state.rawKnobs;
 }
 buildKnobs();
 
@@ -664,10 +596,9 @@ for (const [name, dial] of Object.entries(dials)) {
   dial.input.value = name === "grain" ? String(Math.round(state.grain * 100)) : String(state[name]);
   dial.out.textContent = dial.show(state[name]);
 }
-render();
 
 // 판화는 기본으로 움직인다. 열면 바로 찍고 튼다 — 정지된 한 장은 t를 안 보는 판화일 뿐이다.
 // 쓰는 사람이 움직임을 줄여 달라고 해 두었으면 그러지 않는다. 콘택트 시트를 펼친 채로
 // 들어왔으면 뜻만 세워 두고, 시트를 닫는 순간 이어진다.
 wantsPlay = !matchMedia("(prefers-reduced-motion: reduce)").matches;
-resume();
+wake();

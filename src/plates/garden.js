@@ -27,8 +27,9 @@ export const garden = {
     // 바람. 줄기마다 박자를 조금씩 어긋나게 주면 한 덩어리로 흔들리지 않는다
     const turn = t * Math.PI * 2;
 
-    S.wash.block(0, 0, width, height, { tone: 0.13 });
-    S.key.block(0, 0, width, 26);
+    // 틀도 바탕도 두르지 않는다. 흰 종이 위에 잎만 앉는다. 머리띠와 바닥 블록은 이 판에 글자가
+    // 있던 때 제목과 문장을 받치던 것이라, 글자를 뺀 뒤로는 받칠 것이 없었다. 판 전체에 깔던
+    // 옅은 통 한 겹은 노랑 계열 배색에서 흰 종이를 도로 누렇게 덮었다.
 
     const rootX = width * 0.5;
     const rootY = height * 0.83;
@@ -82,8 +83,5 @@ export const garden = {
       const along = R.float(0.55, 1.05);
       S.key.disc(rootX + (sprig.tipX - rootX) * along, rootY + (sprig.tipY - rootY) * along, R.float(7, 17), { tone: R.float(0.8, 1) });
     }
-
-    // 바닥을 받치는 블록. 글자는 없다 — 움직이는 그림 위의 잔글씨는 아무것도 말하지 않는다
-    S.body.block(-40, height - 128, width + 80, 180, { corners: [110, 0, 0, 0] });
   }
 };
