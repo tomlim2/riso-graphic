@@ -112,6 +112,12 @@ float dotRadius(float c) {
 // 따로 판단할 수 있다.
 //
 // 가장자리는 종이 2.2픽셀에 걸쳐 흐린다. 계단을 막는다.
+//
+// 흐림에는 바닥이 있다. 가장자리에서 반쯤 칠하므로, 반지름이 0인 점도 가운데는 반쯤 칠해진 원뿔로
+// 남는다. 칸이 작아 흐림 폭이 칸에 견줄 만하면(CELL 3에서 칸의 7%쯤) 잉크가 1/255만 있어도 칸이
+// 그만큼 한 번에 덮이고, 옅어지다 0이 되는 얼룩의 윤곽이 칼로 그은 듯 선다. 그래서 그 원뿔이 칸에서
+// 덮는 몫(least)을 셈해 두고, 잉크가 그보다 옅으면 그 비율만큼 옅게 찍는다. 원뿔은 높이 0.5, 밑반지름
+// 1.1/halfCell이고 칸의 넓이는 반폭 단위로 4다. 그보다 진한 자리는 예전과 같다.
 const SCREEN = `
 float screen(sampler2D sep, vec2 q, vec2 turn) {
   vec2 s = q + 0.5;
@@ -129,7 +135,10 @@ float screen(sampler2D sep, vec2 q, vec2 turn) {
   vec2 uv = mod(r, u_cell) / halfCell - 1.0;
 
   float edge = length(uv) - dotRadius(c) + (speck(floor(s)) - 0.5) * u_grain * 1.4;
-  return clamp(0.5 - edge * halfCell / 2.2, 0.0, 1.0);
+  float ink = clamp(0.5 - edge * halfCell / 2.2, 0.0, 1.0);
+
+  float least = 3.14159265 * 1.21 / (24.0 * halfCell * halfCell);
+  return ink * min(1.0, c / least);
 }
 `;
 

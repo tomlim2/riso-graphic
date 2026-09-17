@@ -133,7 +133,7 @@ const plates = {
 const SNIPPETS = {
   rotate: ["vec2 r = vec2(", 3],
   radius: ["float dotRadius(float c)", 3],
-  edge: ["float edge =", 2],
+  edge: ["float edge =", 5],
   grain: ["float c = alpha", 1],
   multiply: ["if (u_count > 0)", 3],
   tooth: ["float tooth =", 2]

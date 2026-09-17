@@ -115,6 +115,17 @@ Integer math gives the same answer on every GPU, so a roll makes the same noise 
 separations, though, are drawn by the browser's canvas, and browsers smooth edges differently.
 Pixel-identical sheets are promised only within one browser.
 
+### The faintest ink fades in
+
+A dot's edge is softened over 2.2 paper pixels, and the softening leaves half the ink right on
+the boundary. So even a dot of radius zero keeps a small cone of ink in the middle of its cell.
+On a fine screen that cone is a real share of the cell: about 7% at CELL 3, under 1% at CELL 9.
+Left alone, any ink at all, even 1/255, covers that share at once, and a soft stain that fades
+to nothing shows a hard edge right where it reaches zero. The shader works out the cone's share
+(`least` in `src/screen.js`) and prints ink fainter than that at the matching fraction, so
+coverage grows from zero. Anything darker prints exactly as before. [how.html](how.html) walks
+through it.
+
 ### The paper is white
 
 The stock is plain white uncoated paper (`PAPER` in `src/palette.js`). It adds no color, so the
@@ -352,9 +363,9 @@ knobs.
 | Plate | Knobs |
 | --- | --- |
 | RIPPLE | RINGS · REACH · EASE · ARCS · WEIGHT · SQUASH · DOT · OFFSET · DROPS · FIELD |
-| MOON | MOON · HORIZON · RISE · SKY · STARS · GLINTS |
+| MOON | MOON · HORIZON · RISE · SKY · STARS · GLINTS · HAND |
 | GARDEN | STEMS · REACH · LEAF · SWAY · SIDE · BERRIES |
-| JELLY | COUNT · FIELD · BELL · DEPTH · PULSE · THROB · DRIFT · TENTACLES · TRAIL · WOBBLE · ARMS · MOTES · DEEP · STAIN · GAP |
+| JELLY | COUNT · FIELD · BELL · DEPTH · PULSE · THROB · DRIFT · TENTACLES · TRAIL · WOBBLE · ARMS · MOTES · DEEP · STAIN · FEATHER · GAP · HAND · HEM |
 | CELL | COUNT · FIELD · SIZE · SPIKES · LENGTH · CUPS · DEPTH · DRIFT · SPIN · GLOW · DARK · MOTES |
 | CHLORO | FIELD · SIZE · STRETCH · ANGLE · JITTER · WALL · DENSITY · PLASTID · DEPTH · WANDER · TINT · GROUND |
 | COSMOS | FIELD · STARS · SPIKES · TWINKLE · MILKY · NEBULA · GALAXY · TILT · ARMS · DARK |
@@ -507,6 +518,16 @@ middle and keeps using the roll's own random numbers, so adding drops never chan
 others take their own random stream: each is placed as far as possible from the drops already
 down, is a little smaller, and spreads on its own beat. FIELD reseeds those extra drops only.
 
+## A lineless moon (MOON)
+
+MOON is tone steps and knockouts: the sky is a ramp, and the moon and the moonlight on the water
+are carved holes. The plate is lineless: nothing is outlined, and nothing is cut with a compass
+or a ruler. The moon is carved with a slightly uneven edge, and the halo rings around it are
+hand-drawn. The horizon is just where the sky meets the water: the top edge of the water follows
+two layers of noise, and no line is drawn along it. HAND sets how much the edges wander (0 gives
+a true circle and a straight edge). The hand has its own random stream, so the stars and the
+moonlight stay where they were.
+
 ## Stains and gaps (JELLY)
 
 Light things rise through dark water. There is no white ink, so everything that glows is
@@ -524,14 +545,36 @@ and occlusion comes for free.
 
 The water is not a single color. The two lighter drums bleed in large stains (STAIN), so the
 water shows third colors such as green or purple. The stains depend on the roll, not on time,
-and use their own random stream, so they don't disturb the swarm or the motes. JELLY prints
-full-bleed, without the round frame.
+and use their own random stream, so they don't disturb the swarm or the motes. The stain field
+is pushed to high contrast, which on its own cuts the stains out like paper, so their edges are
+feathered afterwards (FEATHER): a box blur run three times, close to a Gaussian. The field is
+drawn wider than the sheet and cropped after the blur, so the sheet's edges blur like the
+middle. At 0 the edges stay sharp. JELLY prints full-bleed, without the round frame.
 
 Each jellyfish is carved out of the water a little wider than its body (GAP). Even with perfect
 registration, a thin line of paper stays around it, so water and body printed with the same
 drum still read as separate things. It's the reverse of a trap, which in printing overlaps two
-plates slightly so misregistration shows no gap. Tentacles are thick at the root and taper
-toward the tip, and half of them have a white core carved down the middle.
+plates slightly so misregistration shows no gap. The bell is lineless: no rim is drawn around
+it, so the paper gap and the pale fill alone make its edge. Its top wobbles a little, like the
+moon on MOON (HAND). The wobble is a scale on the angle, so it stays put while the bell pulses.
+Each bell's lower rim is its own, a row of rounded lappets like a real jellyfish's margin. How
+high the rim arches, which way the arch leans, how deep the lappets hang and how much they differ
+are drawn per jellyfish, and bigger bells get more lappets, 5 to 16. A lappet is the absolute
+sine pressed by a power below one, which rounds the lobe and narrows the notch. They come in
+whole numbers, so the rim still meets the dome cleanly at both corners, and the tentacles hang
+from the same arch. A band along the lappets is printed once more with the bell's own drum, so
+the hem reads darker (HEM, 0 leaves the band out). It is a surface, not a rim line, and it is
+clipped to the bell. The wobble and the rim each have their own random stream, so the swarm
+doesn't move. Tentacles are thick at the root and taper toward the tip, and half of
+them have a white core carved down the middle.
+
+The glow around each bell is carved lightly out of the water. The bell is filled on a coarse
+grid, a few sheet pixels to a cell, blurred, and carved out through a curve that keeps it strong
+near the bell and lets it trail off, so it fades evenly with no steps. Carving a few larger
+copies of the bell instead leaves an edge at every copy, and those edges stack above the bell
+like echoes. The glow is soft enough that scaling the grid up doesn't show. One canvas is reused
+for every bell, with a cleared border around the pattern, so a sheet never depends on what was
+printed before it.
 
 ## Under the microscope (CELL and CHLORO)
 
