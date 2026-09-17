@@ -37,6 +37,20 @@ const RIM = { lift: 0.26, lean: 1, lobes: 10, depth: 0.07, sizes: new Array(16).
 const MOST_LOBES = 16;
 const LAPPET = 26; // 가리비 하나의 폭. 판형 픽셀이고, 종이 클수록 가리비가 많아진다
 
+// 지붕의 생김새. 참고한 해파리 사진처럼 폭보다 조금 높고, 어깨가 둥글게 떨어져 옆이 곧게 내려온다.
+// 반원 대신 초타원(지수 2/SHOULDER)으로 짚는다. 종의 크기는 BELL에서 조금 덜어 머리를 작게 둔다
+const SHOULDER = 0.8;
+const TALL = 1.08; // 높이와 반폭의 비
+const HEAD = 0.8; // BELL에 곱하는 머리의 크기
+
+// 초타원 지붕에서 높이 h(밑 0, 꼭대기 1)의 반폭. 반폭에 대한 비율이다
+function domeWidth(h) {
+  return (1 - Math.min(1, Math.max(0, h)) ** (2 / SHOULDER)) ** (SHOULDER / 2);
+}
+
+// 속에 비치는 버섯 모양의 밑단. 가리비가 얕고 띠가 없다
+const CAP_RIM = { lift: 0.18, lean: 1, lobes: 6, depth: 0.08, sizes: new Array(16).fill(1), band: 0 };
+
 // 지붕의 흔들림. 각도를 받아 반지름에 곱할 배율을 준다
 function swellOf(hand) {
   if (!hand) return () => 1;
@@ -51,7 +65,9 @@ function bell(cx, cy, rx, ry, options = {}) {
   for (let i = 0; i <= steps; i += 1) {
     const angle = Math.PI - (Math.PI * i) / steps;
     const r = swell(angle);
-    points.push([cx + Math.cos(angle) * rx * r, cy - Math.sin(angle) * ry * r]);
+    const across = Math.cos(angle);
+    const up = Math.max(0, Math.sin(angle));
+    points.push([cx + Math.sign(across) * Math.abs(across) ** SHOULDER * rx * r, cy - up ** SHOULDER * ry * r]);
   }
   points.push(...hem(cx, cy, rx, ry, swell, rim, 0));
   return points;
@@ -81,6 +97,14 @@ function hem(cx, cy, rx, ry, swell, rim, rise) {
 function rimLift(u, rim, ry) {
   return Math.sin(Math.PI * u ** rim.lean) * ry * rim.lift;
 }
+
+// 수염과 다리의 자리와 흐름. 참고한 해파리 사진처럼 수염(촉수)은 밑단 가장자리에서 길게 늘어져
+// 끝으로 갈수록 벌어지고, 다리(구완)는 종 속 가운데에서 서로 꼬이듯 엇갈리며 길게 내려온다.
+const TENTACLE_REACH = 1.5; // 수염 길이의 배율. TRAIL에 곱한다
+const LEG_WOBBLE = 0.45; // 다리가 옆으로 흔들리는 폭. 수염의 WOBBLE과 따로 둔다
+const LEG_BELL = 0.13; // 다리 굵기의 기준이 되는 BELL. 이 BELL의 가까운 종에서 GIRTH가 제 굵기다
+const MOST_TENTACLES = 20; // TENTACLES의 끝값
+const MOST_ARMS = 6; // ARMS의 끝값
 
 // 물에 번진 얼룩. 옅은 두 통이 저주파 밭을 따라 크게 번진다. 판형의 1/6 크기로 밭을 그려
 // 두고 키워 붙인다. 롤마다 한 벌이면 되니, 매 프레임 새로 짓지 않도록 몇 벌만 쥔다.
@@ -245,32 +269,39 @@ export const jelly = {
   name: "JELLY",
   about: "어두운 물을 올라가는 빛들. 밝은 것은 전부 파낸 자리다",
 
+  // 손잡이는 몸의 부분별로 묶는다. 무리, 종, 수염(밑단 가장자리의 가는 촉수), 다리(종 가운데의
+  // 굵은 구완), 물. 수염과 다리는 길이와 흔들림을 따로 받는다
   knobs: [
-    { key: "count", label: "COUNT", min: 1, max: 9, step: 1, value: 5 },
+    { group: "SWARM", key: "count", label: "COUNT", min: 1, max: 9, step: 1, value: 5 },
     // 무리만 따로 굴리는 씨앗. 종이의 롤은 그대로 두고 배치와 크기만 바꾼다
-    { key: "field", label: "FIELD", min: 0, max: 199, step: 1, value: 0, hint: "밭의 씨앗. 종이의 롤은 그대로 두고 무리만 다시 뽑는다" },
-    { key: "bell", label: "BELL", min: 0.05, max: 0.26, step: 0.01, value: 0.13 },
-    { key: "depth", label: "DEPTH", min: 0, max: 0.8, step: 0.05, value: 0.55 },
-    { key: "pulse", label: "PULSE", min: 0, max: 0.35, step: 0.01, value: 0.06 },
+    { group: "SWARM", key: "field", label: "FIELD", min: 0, max: 199, step: 1, value: 0, hint: "밭의 씨앗. 종이의 롤은 그대로 두고 무리만 다시 뽑는다" },
+    { group: "SWARM", key: "depth", label: "DEPTH", min: 0, max: 0.8, step: 0.05, value: 0.55 },
+    { group: "SWARM", key: "drift", label: "DRIFT", min: 0, max: 0.06, step: 0.005, value: 0.012 },
+    { group: "BELL", key: "bell", label: "BELL", min: 0.05, max: 0.26, step: 0.01, value: 0.13 },
+    { group: "BELL", key: "pulse", label: "PULSE", min: 0, max: 0.35, step: 0.01, value: 0.06 },
     // 한 바퀴에 몇 번 뛰는가. 정수여야 한 바퀴 끝에서 제자리로 돌아온다
-    { key: "throb", label: "THROB", min: 1, max: 4, step: 1, value: 2 },
-    { key: "drift", label: "DRIFT", min: 0, max: 0.06, step: 0.005, value: 0.012 },
-    { key: "tentacles", label: "TENTACLES", min: 0, max: 20, step: 1, value: 9 },
-    { key: "trail", label: "TRAIL", min: 0.1, max: 0.7, step: 0.01, value: 0.3 },
-    { key: "wobble", label: "WOBBLE", min: 0, max: 1.6, step: 0.05, value: 0.45 },
-    { key: "arms", label: "ARMS", min: 0, max: 6, step: 1, value: 3 },
-    { key: "motes", label: "MOTES", min: 0, max: 120, step: 5, value: 45 },
-    { key: "deep", label: "DEEP", min: 0.2, max: 1, step: 0.05, value: 0.85 },
-    { key: "stain", label: "STAIN", min: 0, max: 1, step: 0.05, value: 0.8, hint: "물에 번진 얼룩. 옅은 두 통이 큰 얼룩으로 겹쳐 제3의 색이 된다" },
-    { key: "feather", label: "FEATHER", min: 0, max: 1, step: 0.05, value: 0.6, hint: "얼룩 가장자리가 번지는 폭. 0이면 오려 낸 듯 또렷하다" },
-    { key: "gap", label: "GAP", min: 0, max: 6, step: 0.5, value: 0.5, hint: "해파리 둘레의 흰 틈. 물을 해파리보다 이만큼 넓게 파낸다" },
-    { key: "hand", label: "HAND", min: 0, max: 1, step: 0.05, value: 0.1, hint: "종 윗선이 보름달처럼 손으로 오린 듯 흔들리는 정도. 0이면 반듯한 반원이다" },
-    { key: "hem", label: "HEM", min: 0, max: 1, step: 0.05, value: 0.6, hint: "종 밑단 띠의 진하기. 가리비를 따라 종과 같은 통으로 한 번 더 찍는다. 0이면 띠 없이 가리비 모양만 남는다" }
+    { group: "BELL", key: "throb", label: "THROB", min: 1, max: 4, step: 1, value: 2 },
+    { group: "BELL", key: "hand", label: "HAND", min: 0, max: 1, step: 0.05, value: 0.1, hint: "종 윗선이 보름달처럼 손으로 오린 듯 흔들리는 정도. 0이면 반듯한 반원이다" },
+    { group: "BELL", key: "hem", label: "HEM", min: 0, max: 1, step: 0.05, value: 0.6, hint: "종 밑단 띠의 진하기. 가리비를 따라 종과 같은 통으로 한 번 더 찍는다. 0이면 띠 없이 가리비 모양만 남는다" },
+    { group: "BELL", key: "inner", label: "INNER", min: 0, max: 1, step: 0.05, value: 0.6, hint: "종 속이 비치는 정도. 꼭대기 아래의 옅은 버섯 모양과 기둥, 꼭대기로 모이는 세로 결. 0이면 속이 비치지 않는다" },
+    { group: "WHISKERS", key: "tentacles", label: "TENTACLES", min: 0, max: 20, step: 1, value: 9, hint: "수염의 수. 밑단 가장자리에서 늘어지는 가는 촉수다" },
+    { group: "WHISKERS", key: "trail", label: "TRAIL", min: 0.1, max: 0.7, step: 0.01, value: 0.3, hint: "수염의 길이. 판 높이에 대한 비율이다" },
+    { group: "WHISKERS", key: "wobble", label: "WOBBLE", min: 0, max: 1.6, step: 0.05, value: 0.45, hint: "수염이 옆으로 흔들리는 폭" },
+    { group: "WHISKERS", key: "sway", label: "SWAY", min: 0, max: 1, step: 0.05, value: 0.35, hint: "수염이 흐느적거리는 몫. 낮을수록 제 자세를 지킨 채 천천히 흔들리고, 1이면 파동이 수염을 통째로 훑는다" },
+    { group: "LEGS", key: "arms", label: "ARMS", min: 0, max: 6, step: 1, value: 5, hint: "다리의 수. 종 가운데에서 늘어지는 굵은 구완이다" },
+    { group: "LEGS", key: "reach", label: "REACH", min: 1, max: 10, step: 0.1, value: 4.3, hint: "다리의 길이. 종 크기의 몇 배인가 — BELL을 키우면 다리도 길어진다" },
+    { group: "LEGS", key: "girth", label: "GIRTH", min: 0.5, max: 3, step: 0.1, value: 1.6, hint: "다리의 굵기. 종 크기를 따라 함께 굵어진다" },
+    { group: "LEGS", key: "swing", label: "SWING", min: 0, max: 1, step: 0.05, value: 0.35, hint: "다리가 흐느적거리는 몫. 낮을수록 제 자세를 지킨 채 천천히 흔들리고, 1이면 파동이 다리를 통째로 훑는다" },
+    { group: "WATER", key: "deep", label: "DEEP", min: 0.2, max: 1, step: 0.05, value: 0.85 },
+    { group: "WATER", key: "stain", label: "STAIN", min: 0, max: 1, step: 0.05, value: 0.8, hint: "물에 번진 얼룩. 옅은 두 통이 큰 얼룩으로 겹쳐 제3의 색이 된다" },
+    { group: "WATER", key: "feather", label: "FEATHER", min: 0, max: 1, step: 0.05, value: 0.6, hint: "얼룩 가장자리가 번지는 폭. 0이면 오려 낸 듯 또렷하다" },
+    { group: "WATER", key: "gap", label: "GAP", min: 0, max: 6, step: 0.5, value: 0.5, hint: "해파리 둘레의 흰 틈. 물을 해파리보다 이만큼 넓게 파낸다" },
+    { group: "WATER", key: "motes", label: "MOTES", min: 0, max: 120, step: 5, value: 45 }
   ],
 
   paint(S, R, page) {
     const { width, height, t, knobs } = page;
-    const { count, pulse, throb, drift, tentacles, arms, motes, deep, wobble, stain, feather, gap } = knobs;
+    const { count, pulse, throb, drift, tentacles, arms, motes, deep, wobble, stain, feather, gap, sway, swing, girth } = knobs;
 
     const turn = t * Math.PI * 2;
 
@@ -285,6 +316,11 @@ export const jelly = {
     const hands = makeRng((page.seed ^ Math.imul(knobs.field + 1, 0x9e3779b9) ^ 0x2b992ddf) >>> 0);
     // 밑단의 생김새도 따로. 마리마다 같은 수만큼 뽑아, 마리 수를 바꿔도 앞의 놈들은 그대로다
     const rims = makeRng((page.seed ^ Math.imul(knobs.field + 1, 0x9e3779b9) ^ 0x5be0cd19) >>> 0);
+    // 촉수가 벌어지는 정도와 구완의 꼬임도 따로. 역시 마리마다 같은 수를 뽑는다
+    const sways = makeRng((page.seed ^ Math.imul(knobs.field + 1, 0x9e3779b9) ^ 0x1f83d9ab) >>> 0);
+    // 다리 하나하나의 값도 따로. 촉수와 구완은 손잡이의 끝값만큼 늘 뽑고 앞에서부터 쓴다. 무리의
+    // 흐름에 끼워 두면 TENTACLES나 ARMS를 바꾸는 것만으로 뒤에 놓이는 놈들의 자리가 밀린다
+    const legs = makeRng((page.seed ^ Math.imul(knobs.field + 1, 0x9e3779b9) ^ 0xa54ff53a) >>> 0);
 
     // 물. 위가 깊고 아래로 갈수록 옅어진다
     S.key.ramp(0, 0, width, height, { from: deep, to: deep * 0.22 });
@@ -350,7 +386,7 @@ export const jelly = {
       const raw = coarse * 0.68 + fine * 0.32;
       const grain = Math.min(1, Math.max(0, (raw - 0.5) * 2.2 + 0.5));
       const far = 1 - grain;
-      const size = width * knobs.bell * (1 - far * knobs.depth) * layout.float(0.88, 1.12);
+      const size = width * knobs.bell * HEAD * (1 - far * knobs.depth) * layout.float(0.88, 1.12);
 
       const spec = {
         far,
@@ -368,33 +404,49 @@ export const jelly = {
           sizes: Array.from({ length: MOST_LOBES }, () => rims.float(0.7, 1.25)),
           band: rims.float(0.07, 0.12)
         },
+        splay: sways.float(0.2, 0.45),
+        twists: Array.from({ length: MOST_ARMS }, () => ({ turns: sways.float(1.6, 3.2), phase: sways.float(0, Math.PI * 2) })),
         strands: [],
         ribbons: []
       };
 
-      const strandCount = Math.round(tentacles * (1 - far * 0.35));
-      for (let k = 0; k < strandCount; k += 1) {
-        spec.strands.push({
-          at: strandCount === 1 ? 0.5 : k / (strandCount - 1),
-          length: height * knobs.trail * layout.float(0.45, 1.3) * (1 - far * 0.4),
-          amp: wobble * layout.float(0.35, 0.95),
-          phase: layout.float(0, Math.PI * 2),
-          curl: layout.float(3.2, 6.4),
-          lean: layout.float(-0.5, 0.5),
-          weight: layout.float(1.6, 3) * (1 - far * 0.45)
-        });
-      }
+      const strandPool = Array.from({ length: MOST_TENTACLES }, () => ({
+        length: legs.float(0.45, 1.3),
+        amp: legs.float(0.35, 0.95),
+        phase: legs.float(0, Math.PI * 2),
+        curl: legs.float(3.2, 6.4),
+        lean: legs.float(-0.5, 0.5),
+        weight: legs.float(1.6, 3)
+      }));
+      const armPool = Array.from({ length: MOST_ARMS }, () => ({
+        length: legs.float(0.3, 0.55),
+        amp: legs.float(0.3, 0.7),
+        phase: legs.float(0, Math.PI * 2)
+      }));
 
-      const ribbonCount = Math.round(arms * (1 - far * 0.4));
-      for (let k = 0; k < ribbonCount; k += 1) {
-        spec.ribbons.push({
-          offset: ribbonCount === 1 ? 0 : (k / (ribbonCount - 1) - 0.5) * 1.1,
-          length: height * knobs.trail * layout.float(0.3, 0.55) * (1 - far * 0.4),
-          amp: wobble * layout.float(0.3, 0.7),
-          phase: layout.float(0, Math.PI * 2),
-          weight: (7 - 3 * (k % 2)) * (1 - far * 0.45)
-        });
-      }
+      const strandCount = Math.round(tentacles * (1 - far * 0.35));
+      spec.strands = strandPool.slice(0, strandCount).map((drawn, k) => ({
+        at: strandCount === 1 ? 0.5 : k / (strandCount - 1),
+        length: height * knobs.trail * drawn.length * (1 - far * 0.4),
+        amp: wobble * drawn.amp,
+        phase: drawn.phase,
+        curl: drawn.curl,
+        lean: drawn.lean,
+        weight: drawn.weight * (1 - far * 0.45)
+      }));
+
+      // 구완은 멀어도 하나만 덜어 낸다. ARMS 5면 가까운 놈은 다섯, 먼 놈은 넷이다
+      const ribbonCount = Math.round(arms * (1 - far * 0.2));
+      // 다리는 종을 따라 자란다. 길이는 종 크기에 REACH를 곱하고(0.7배에서 1.3배로 흩뜨린다), 굵기는
+      // 기본 BELL의 가까운 종에 견준 크기만큼 굵어진다. 먼 놈은 종이 작으니 다리도 짧고 가늘다
+      spec.grow = size / (width * LEG_BELL * HEAD);
+      spec.ribbons = armPool.slice(0, ribbonCount).map((drawn, k) => ({
+        offset: ribbonCount === 1 ? 0 : (k / (ribbonCount - 1) - 0.5) * 1.1,
+        length: size * knobs.reach * (drawn.length / 0.425),
+        amp: LEG_WOBBLE * drawn.amp,
+        phase: drawn.phase,
+        weight: (7 - 3 * (k % 2)) * spec.grow
+      }));
 
       swarm.push(spec);
     }
@@ -407,7 +459,7 @@ export const jelly = {
       const cx = one.x;
       const cy = one.y + Math.sin(turn + one.phase) * height * drift;
       const rx = one.size * (1 - pulse * beat);
-      const ry = one.size * 0.94 * (1 + pulse * beat * 0.9);
+      const ry = one.size * TALL * (1 + pulse * beat * 0.9);
 
       const dome = bell(cx, cy, rx, ry, { hand: one.hand, rim: one.rim });
       const show = one.show;
@@ -433,20 +485,30 @@ export const jelly = {
         for (const ink of inks) ink.knockout((sep) => sep.shape(band, { tone: show }));
       };
 
-      // 촉수. 파동이 아래로 번져 가므로 끝이 말린다. 뿌리에서 굵고 끝으로 가며 가늘어지고,
-      // 비틀리듯 굵기가 오르내린다. 절반은 속에 흰 줄을 판다.
+      // 수염(촉수). 밑단 가장자리에서 길게 늘어진다. 긴 S자로 흔들리고, 끝으로 갈수록 바깥으로 벌어져 서로
+      // 엇갈린다. 뿌리에서 굵고 끝으로 가며 가늘어지고, 비틀리듯 굵기가 오르내린다. 절반은 속에 흰
+      // 줄을 판다. 뽑아 둔 말림과 기울기는 긴 몸에 맞게 줄여 쓴다.
+      //
+      // 흔들림은 두 겹이다. 멈춰 있는 S자 자세(pose)와, 한 바퀴에 한 번 아래로 흐르는 파동(flow).
+      // 루프가 2초라 파동을 더 느리게 돌릴 수는 없으니, 파동의 몫(SWAY)을 줄여 움직이는 폭을
+      // 덜어 낸다. 그러면 제 자세를 지킨 채 천천히 흐느적거린다. t=0에서는 두 겹이 같아서
+      // SWAY와 상관없이 첫 장의 모양이 같다. 다리(구완)도 같은 식으로 흔들리되, 몫은 SWING이 정한다.
       //
       // 촉수는 물과 같은 통이라 틈이 없으면 물에 묻힌다. 그렇다고 틈을 종만큼 벌리면 흰 끈이
       // 되고 만다. 틈은 종의 절반으로 좁히고, 몸은 물보다 진하게 꽉 채워 찍는다.
       for (const strand of one.strands) {
-        const x0 = cx + (strand.at * 2 - 1) * rx * 0.94;
+        const side = strand.at * 2 - 1;
+        const x0 = cx + side * rx * 0.94;
         const y0 = cy - rimLift(strand.at, one.rim, ry);
+        const length = strand.length * TENTACLE_REACH;
         const points = [];
-        for (let s = 0; s <= 26; s += 1) {
-          const along = s / 26;
-          const wave = Math.sin(turn - along * strand.curl + strand.phase + one.phase) * rx * strand.amp * Math.pow(along, 1.5);
-          const sweep = strand.lean * rx * along * along;
-          points.push([x0 + wave + sweep, y0 + along * strand.length]);
+        for (let s = 0; s <= 40; s += 1) {
+          const along = s / 40;
+          const pose = Math.sin(-along * strand.curl * 0.7 + strand.phase + one.phase);
+          const flow = Math.sin(turn - along * strand.curl * 0.7 + strand.phase + one.phase);
+          const wave = ((1 - sway) * pose + sway * flow) * rx * strand.amp * Math.pow(along, 1.2);
+          const sweep = (strand.lean * 0.5 + side * one.splay) * rx * along * along;
+          points.push([x0 + wave + sweep, y0 + along * length]);
         }
         const twist = strand.curl * 0.9;
         const thick = (u) =>
@@ -459,24 +521,84 @@ export const jelly = {
         }
       }
 
-      // 구완. 가운데에서 내려오는 두꺼운 주름. 끝으로 가며 조금 좁아진다
-      for (const ribbon of one.ribbons) {
+      // 다리(구완). 종 속 가운데에서 내려오는 두꺼운 주름. 종 속에서 시작하므로 뿌리는 종에 가려
+      // 밑단 아래로 흘러나온 것처럼 보인다. 가운데로 모여 서로 꼬이듯 엇갈리며 길게 내려오고,
+      // 끝으로 가며 조금 좁아진다. 길이는 REACH, 굵기는 GIRTH, 흐느적이는 몫은 SWING이다
+      one.ribbons.forEach((ribbon, k) => {
+        const twist = one.twists[k];
+        const top = cy - ry * 0.35;
+        const length = ribbon.length;
         const points = [];
-        for (let s = 0; s <= 18; s += 1) {
-          const along = s / 18;
-          const swing = Math.sin(turn - along * 2.8 + ribbon.phase + one.phase) * rx * ribbon.amp * Math.pow(along, 1.3);
-          points.push([cx + ribbon.offset * rx + swing, cy + along * ribbon.length]);
+        for (let s = 0; s <= 36; s += 1) {
+          const along = s / 36;
+          const pose = Math.sin(-along * 2.8 + ribbon.phase + one.phase);
+          const flow = Math.sin(turn - along * 2.8 + ribbon.phase + one.phase);
+          const lilt = ((1 - swing) * pose + swing * flow) * rx * ribbon.amp * Math.pow(along, 1.3);
+          const cross = Math.cos(along * twist.turns + twist.phase) * ribbon.offset * rx * 0.35;
+          points.push([cx + cross + lilt, top + along * length]);
         }
-        const thick = (u) => ribbon.weight * 1.5 * (1 - 0.5 * u);
+        const thick = (u) => ribbon.weight * 1.5 * girth * (1 - 0.5 * u);
         clear(points, (u) => thick(u) + 2 * gap * (1 - 0.5 * u));
         S.body.shape(shapes.ribbon(points, thick), { tone: 0.55 * show });
-        S.key.line(points, { w: 2 * (1 - one.far * 0.4), tone: 0.5 * show });
-      }
+        S.key.line(points, { w: 2 * one.grow, tone: 0.5 * show });
+      });
 
       // 종. 둘레를 물에서 조금 넓게 파내 흰 틈을 두고, 그 안에 옅은 통만 얹는다. 테는 긋지 않는다
       const hollow = gap > 0 ? shapes.grow(dome, gap) : dome;
       for (const ink of inks) ink.knockout((sep) => sep.shape(hollow, { tone: show }));
-      S.body.shape(dome, { tone: 0.32 * show });
+
+      // 종의 살. 사진처럼 꼭대기가 옅고 밑단으로 갈수록 진하다
+      S.body.draw((g) => {
+        const ramp = g.createLinearGradient(0, cy - ry, 0, cy);
+        ramp.addColorStop(0, `rgba(0, 0, 0, ${0.18 * show})`);
+        ramp.addColorStop(1, `rgba(0, 0, 0, ${0.46 * show})`);
+        g.fillStyle = ramp;
+        shapes.splinePath(g, dome, true);
+        g.fill();
+      });
+
+      // 속. 꼭대기 아래에 옅은 버섯 모양과 그 밑의 기둥이 비치고, 세로 결이 꼭대기로 모인다.
+      // 모두 종의 살을 옅게 파낸 자리다. 결은 지붕의 경선이라 높이마다 지붕의 폭을 따라 좁아진다.
+      // 결의 자리는 마리마다 조금씩 돈다 — 새 난수 없이 마리의 위상에서 얻는다. 밑단 아래로
+      // 삐지지 않게 종 모양으로 오린다
+      if (knobs.inner > 0) {
+        const inner = knobs.inner * show;
+        const capBase = cy - ry * 0.42;
+        const cap = bell(cx, capBase, rx * 0.34, ry * 0.3, { rim: CAP_RIM });
+        const stalk = shapes.ribbon([[cx, capBase - ry * 0.05], [cx, cy]], (u) => rx * (0.16 - 0.07 * u));
+        const ribs = [];
+        const turnOf = one.phase / (Math.PI * 2);
+        for (let k = 0; k < 7; k += 1) {
+          const at = ((k + turnOf) / 7) * 2 - 1;
+          if (Math.abs(at) > 0.85) continue;
+          const left = [];
+          const right = [];
+          for (let j = 0; j <= 12; j += 1) {
+            const h = 0.02 + (0.96 * j) / 12;
+            const half = domeWidth(h) * rx;
+            left.push([cx + (at - 0.03) * half, cy - h * ry]);
+            right.push([cx + (at + 0.03) * half, cy - h * ry]);
+          }
+          ribs.push([...left, ...right.reverse()]);
+        }
+        S.body.knockout((sep) =>
+          sep.draw((g) => {
+            shapes.splinePath(g, dome, true);
+            g.clip();
+            g.globalAlpha = Math.min(1, 0.35 * inner);
+            for (const rib of ribs) {
+              shapes.splinePath(g, rib, true);
+              g.fill();
+            }
+            g.globalAlpha = Math.min(1, 0.45 * inner);
+            shapes.splinePath(g, stalk, true);
+            g.fill();
+            g.globalAlpha = Math.min(1, 0.8 * inner);
+            shapes.splinePath(g, cap, true);
+            g.fill();
+          })
+        );
+      }
 
       // 밑단 띠. 가리비를 따라 같은 통으로 한 번 더 찍어 진하게 한다. 둘레를 긋는 테가 아니라
       // 밑단이라는 면이다. 양 끝이 지붕 밖으로 삐지지 않게 종 모양으로 오린다

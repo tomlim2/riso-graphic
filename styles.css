@@ -187,6 +187,17 @@ input[type="range"] {
 
 .knobHead .out { font-weight: 500; opacity: 0.85; }
 
+/* 손잡이 묶음의 작은 제목. 첫 묶음 말고는 위를 조금 띄운다 */
+.knobGroup {
+  margin: 0 0 7px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  opacity: 0.4;
+}
+
+.knob + .knobGroup { margin-top: 16px; }
+
 .hint { margin: 2px 0 0; opacity: 0.45; font-size: 10px; letter-spacing: 0.1em; }
 
 .noscript { padding: 80px 24px; text-align: center; }

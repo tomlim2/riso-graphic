@@ -437,7 +437,17 @@ function fillKnobs(container, list, values) {
   container.replaceChildren();
   const places = (step) => (String(step).includes(".") ? String(step).split(".")[1].length : 0);
 
+  // 손잡이에 group이 있으면 묶음이 바뀌는 자리마다 작은 제목을 단다. 손잡이가 많은 판이
+  // 몸의 부분별로 나눠 보이게 한다
+  let group = null;
   for (const knob of list) {
+    if (knob.group && knob.group !== group) {
+      const title = document.createElement("p");
+      title.className = "knobGroup";
+      title.textContent = knob.group;
+      container.append(title);
+    }
+    group = knob.group || null;
     const digits = places(knob.step);
     const row = document.createElement("div");
     row.className = "knob";

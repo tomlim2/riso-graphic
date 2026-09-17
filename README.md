@@ -365,7 +365,7 @@ knobs.
 | RIPPLE | RINGS · REACH · EASE · ARCS · WEIGHT · SQUASH · DOT · OFFSET · DROPS · FIELD |
 | MOON | MOON · HORIZON · RISE · SKY · STARS · GLINTS · HAND |
 | GARDEN | STEMS · REACH · LEAF · SWAY · SIDE · BERRIES |
-| JELLY | COUNT · FIELD · BELL · DEPTH · PULSE · THROB · DRIFT · TENTACLES · TRAIL · WOBBLE · ARMS · MOTES · DEEP · STAIN · FEATHER · GAP · HAND · HEM |
+| JELLY | SWARM: COUNT · FIELD · DEPTH · DRIFT — BELL: BELL · PULSE · THROB · HAND · HEM · INNER — WHISKERS: TENTACLES · TRAIL · WOBBLE · SWAY — LEGS: ARMS · REACH · GIRTH · SWING — WATER: DEEP · STAIN · FEATHER · GAP · MOTES |
 | CELL | COUNT · FIELD · SIZE · SPIKES · LENGTH · CUPS · DEPTH · DRIFT · SPIN · GLOW · DARK · MOTES |
 | CHLORO | FIELD · SIZE · STRETCH · ANGLE · JITTER · WALL · DENSITY · PLASTID · DEPTH · WANDER · TINT · GROUND |
 | COSMOS | FIELD · STARS · SPIKES · TWINKLE · MILKY · NEBULA · GALAXY · TILT · ARMS · DARK |
@@ -411,6 +411,11 @@ the same FIELD always gives the same layout. JELLY mixes them like this:
 ```js
 const layout = makeRng((page.seed ^ Math.imul(knobs.field + 1, 0x9e3779b9)) >>> 0);
 ```
+
+Everything else a jellyfish draws, from the bell's wobble and rim to its legs, comes from
+streams of its own, mixed the same way with a different constant. Each stream draws the same
+amount per jellyfish whatever the knobs say, taking the maximum and using as much as it needs.
+So TENTACLES and ARMS change the legs and never move the swarm.
 
 ### Strength and speed
 
@@ -555,8 +560,16 @@ Each jellyfish is carved out of the water a little wider than its body (GAP). Ev
 registration, a thin line of paper stays around it, so water and body printed with the same
 drum still read as separate things. It's the reverse of a trap, which in printing overlaps two
 plates slightly so misregistration shows no gap. The bell is lineless: no rim is drawn around
-it, so the paper gap and the pale fill alone make its edge. Its top wobbles a little, like the
-moon on MOON (HAND). The wobble is a scale on the angle, so it stays put while the bell pulses.
+it, so the paper gap and the pale fill alone make its edge.
+
+The head follows a photo of a real jellyfish. The dome is a superellipse rather than a half
+ellipse, a little taller than its half-width, so the shoulders round off and the sides drop
+straight. It is drawn at 0.8 of BELL, which keeps the head small against the long legs. Its
+flesh is a ramp, pale at the top and denser toward the rim. Inside, a pale mushroom with a
+stalk shows under the crown, and faint ribs run up along the dome's meridians and meet at the
+top (INNER, 0 hides them). All three are carved out of the bell's own ink and clipped to the
+bell, and the ribs turn a little from one jellyfish to the next with its phase, so no new random
+numbers are drawn. The top wobbles a little, like the moon on MOON (HAND). The wobble is a scale on the angle, so it stays put while the bell pulses.
 Each bell's lower rim is its own, a row of rounded lappets like a real jellyfish's margin. How
 high the rim arches, which way the arch leans, how deep the lappets hang and how much they differ
 are drawn per jellyfish, and bigger bells get more lappets, 5 to 16. A lappet is the absolute
@@ -567,6 +580,29 @@ the hem reads darker (HEM, 0 leaves the band out). It is a surface, not a rim li
 clipped to the bell. The wobble and the rim each have their own random stream, so the swarm
 doesn't move. Tentacles are thick at the root and taper toward the tip, and half of
 them have a white core carved down the middle.
+
+The legs hang the way they do in a photo of a real jellyfish. Tentacles fall long from the rim
+in slow S-curves and fan outward toward the tips, so neighbors cross. The oral arms start inside
+the bell, so their roots are hidden and they seem to pour out from under the rim; they gather
+near the middle and cross each other on the way down, like a loose braid. There are five by
+default, and a far jellyfish loses only one of them. Only the layout of the legs follows the
+photo, not how they are drawn.
+
+The whiskers (the thin tentacles on the rim) and the legs (the thick oral arms in the middle)
+are two parts with their own knobs. Whiskers take TENTACLES, TRAIL, WOBBLE and SWAY. Legs take
+ARMS, REACH, GIRTH and SWING. The legs grow with the bell: REACH is a multiple of the bell's
+size, and their width scales with the bell against a near bell at the default BELL, so a far or
+small jellyfish has short, thin legs. Whisker length still follows the sheet (TRAIL). Knobs that
+belong to one part never move the other.
+
+Both parts sway in two layers: a still S-shaped pose, and a wave that runs down them once per
+loop. The loop is two seconds, so the wave can't run any slower. Instead SWAY (whiskers) and
+SWING (legs) set how much of the wave goes in: lower values keep the pose and let them drift
+lazily, and 1 is the full wave. Both layers agree at t = 0, so the first frame is the same
+whatever the share.
+
+A knob in a plate's list can carry a `group`. The panel then puts a small title wherever the
+group changes, which is how JELLY's knobs read as swarm, bell, whiskers, legs and water.
 
 The glow around each bell is carved lightly out of the water. The bell is filled on a coarse
 grid, a few sheet pixels to a cell, blurred, and carved out through a curve that keeps it strong
