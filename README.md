@@ -150,9 +150,14 @@ Break either rule and the picture jumps between the last frame and the first. Ch
 measuring, not by eye. There are two checks.
 
 **Print just before the end.** Print a sheet at `t = 1 − 1e−9` and compare it with `t = 0`. If
-every period is whole, the two are the same sheet. Every hung plate passes to the pixel, except
-JELLY, which differs in one byte from floating-point rounding. This is the check that caught
+every period is whole, the two are the same sheet. RIPPLE, MOON, GARDEN and CELL pass to the
+pixel, and JELLY differs in one byte from floating-point rounding. This is the check that caught
 RIPPLE's 1.5 turns, with about 34,000 bytes different.
+
+CHLORO draws thousands of small ellipses, and the canvas moves a few hundred bytes for a 1e−9
+nudge in either direction: `t = 1e−9` differs from `t = 0` as much as `t = 1 − 1e−9` does. That
+is the rasterizer, not a seam. For a plate like that, compare `t = 1` with `t = 0` instead, and
+lean on the step measurement below. CHLORO's `t = 1` matches `t = 0` exactly.
 
 **Measure the steps.** Measure the pixel difference between each pair of neighboring frames
 around the whole loop, and see whether the last step stands out from the rest.
@@ -166,43 +171,48 @@ the standard deviation itself is unsteady, and some seeds will pass z = 2 with n
 **Measure five or six seeds. If the signs are mixed and scattered, it is noise. If z comes out
 large and positive whatever the seed, the loop is broken.** JELLY's swarm, measured over six
 seeds, scattered from +2.07 to −1.90: noise. Step sizes that rise smoothly into the seam and
-fall away after it, as CHLORO's do, are the motion's own speed, not a break.
+fall away after it are the motion's own speed, not a break.
 
 ### Printing while playing
 
 Printing one frame used to take longer than the playback budget allows, so the film was baked
 first and the projector only flipped through it. Almost all of that time went to halftoning
-and multiplying. That per-pixel work moved into the shader, and a full-size sheet now costs
-less than a tenth of a frame's budget. Nothing is baked: every frame is printed as it plays.
+and multiplying. That per-pixel work moved into the shader. Now even the heaviest full-size
+sheet, CHLORO, takes about a seventh of a frame's budget, and most take far less. Nothing is
+baked: every frame is printed as it plays.
 
 | One sheet | Canvas 2D | WebGL2 |
 | --- | --- | --- |
-| RIPPLE, 1080 | 28 ms | 1.3 ms |
-| MOON, 1080 | 97 ms | 1.8 ms |
+| RIPPLE, 1080 | 27 ms | 1.3 ms |
+| MOON, 1080 | 96 ms | 1.7 ms |
 | GARDEN, 1080 | 35 ms | 1.4 ms |
-| JELLY, 1080 | 123 ms | 3.8 ms |
-| CELL, 1080 | 72 ms | 1.9 ms |
-| CHLORO, 1080 | 71 ms | 2.5 ms |
-| One contact sheet | 126 ms | 15 ms |
+| JELLY, 1080 | 120 ms | 3.8 ms |
+| CELL, 1080 | 72 ms | 1.8 ms |
+| CHLORO, 1080 | 99 ms | 6.1 ms |
+| One contact sheet | 126 ms | 14 ms |
 
 Where one WebGL2 sheet's time goes:
 
 | Stage | Time |
 | --- | --- |
-| Composing the plate | 0.04–1.3 ms |
-| Rasterizing and uploading separations | 0.6–1.5 ms |
-| One shader pass, by GPU timer | 0.1–0.3 ms |
+| Composing the plate | 0.03–3.6 ms |
+| Rasterizing and uploading separations | 0.6–1.8 ms |
+| One shader pass, by GPU timer | 0.1–0.7 ms |
 | One frame's budget at 24 fps | 42 ms |
 
 These are means on an M2 Max. Each sheet's time includes waiting for the GPU to finish, forced
 by reading back one pixel. Without that wait, you time only the composing. Boil barely changes
-the numbers. Most of the time now goes to moving separations to the GPU, not to halftoning.
+the numbers. Most of the time now goes to moving separations to the GPU, not to halftoning. The
+exception is CHLORO, where drawing a few thousand chloroplasts on the canvas is the largest
+share.
 
 The Canvas 2D press worked harder where a sheet carried more ink. RIPPLE and GARDEN have since
 lost their background washes, and the old press got about twice as fast on both. The first run
 measured 59 ms and 71 ms. The raw data and side-by-side images are in
-[the six-plate run](bench/results/2026-09-17-canvas2d-vs-webgl2-six-plates/report.md) and
-[the first run](bench/results/2026-09-17-canvas2d-vs-webgl2/report.md).
+[the latest run](bench/results/2026-09-17-canvas2d-vs-webgl2-leaf-tissue/report.md). The
+earlier runs, [six plates](bench/results/2026-09-17-canvas2d-vs-webgl2-six-plates/report.md)
+with the first CHLORO and [the first run](bench/results/2026-09-17-canvas2d-vs-webgl2/report.md)
+with four plates, stay as records.
 
 The milliseconds in the top bar count main-thread time only. The GPU finishes its part
 afterwards, so the bar reads lower than the tables. The FPS figure on the same bar shows whether
@@ -342,7 +352,7 @@ knobs.
 | GARDEN | STEMS · REACH · LEAF · SWAY · SIDE · BERRIES |
 | JELLY | COUNT · FIELD · BELL · DEPTH · PULSE · THROB · DRIFT · TENTACLES · TRAIL · WOBBLE · ARMS · MOTES · DEEP · STAIN · GAP |
 | CELL | COUNT · FIELD · SIZE · DRIFT · WOBBLE · DIVIDE · TINT · GRANULES · DEBRIS · VIGNETTE · RETICLE · FRAME |
-| CHLORO | COUNT · FIELD · SIZE · LENS · GRANA · STACK · LAMELLAE · DIVIDE · DRIFT · WOBBLE · TINT · STROMA · DEBRIS · VIGNETTE · RETICLE · FRAME |
+| CHLORO | FIELD · SIZE · STRETCH · ANGLE · JITTER · WALL · DENSITY · PLASTID · DEPTH · STREAM · DRIFT · TINT · GROUND · VIGNETTE · RETICLE · FRAME |
 
 Don't confuse the CELL plate with the CELL dial. The dial sets the halftone cell size for every
 plate. The plate is the microscope sheet.
@@ -427,7 +437,7 @@ you need it.
 | `src/shapes.js` | Organic blobs, Memphis ornaments, bands of varying width |
 | `src/mask.js` | Masks. Knocks everything outside one shape out of every drum, whether a circle or any shape made of points |
 | `src/roundel.js` | The round frame. A circle mask plus a rim that looks drawn by hand |
-| `src/scope.js` | The microscope field that CELL and CHLORO share: light falloff, floating debris, the reticle |
+| `src/scope.js` | The microscope field: light falloff, floating debris, the reticle. CELL and CHLORO use it |
 | `src/type.js` | Measuring text, line breaks, fitting type to the plate |
 | `src/plates/` | The plates, one function per sheet. RIPPLE is the model for using time |
 | `src/main.js` | Dials, contact sheet, playback clock, URL, PNG |
@@ -490,9 +500,9 @@ toward the tip, and half of them have a white core carved down the middle.
 
 Both plates are microscope slides. The round frame is the eyepiece's field of view, and outside
 it is paper. The field is brightest in the middle and dims toward the edge, and a faint reticle
-crosses it. `src/scope.js` draws the shared field. Its light goes down before the specimens.
-Debris and the reticle go on top of them, and the round frame comes last. Debris is drawn from
-the random stream after the specimens, so changing its count doesn't move them.
+can cross it. `src/scope.js` draws the shared field. Its light goes down before the specimen.
+Debris and the reticle go on top of it, and the round frame comes last. CELL draws its debris
+from the random stream after the cells, so changing the debris count doesn't move them.
 
 **CELL** is stained cells. The cytoplasm is split between the middle and lightest drums, so a
 third color appears where two cells lean on each other. Membranes, nuclei and small organelles
@@ -502,30 +512,37 @@ fills both of its bodies in a single path. Filled separately, the overlap in the
 print twice as dark. Cells drift along small closed paths, membranes ripple in place,
 organelles circle inside, and dividing cells pull apart and come back together.
 
-**CHLORO** is chloroplasts. A chloroplast is not a cell: it has no nucleus, its body is a flat
-lens, and its inside is layered membrane.
+**CHLORO** is leaf tissue, as a light microscope shows an Elodea or moss leaf: elongated
+hexagonal cells, wall to wall, each packed with green chloroplasts.
 
-- **Envelope.** A double membrane: the outer line dark, the inner line thin and light,
-  following the outer one.
-- **Lamellae.** Stroma lamellae run the length of the body from end to end. They gather toward
-  the ends, which gives the spindle look.
-- **Grana.** Stacks of thylakoid discs, like stacked coins, sitting on the lamellae. Each disc
-  is a short bar with round ends. Each stack sits two lamellae over from the one before it, so
-  neighbors don't pile up. With a coarse screen the stacks merge into dark clumps, which is how grana look under a
-  light microscope.
-- **Stroma.** Ribosome specks, dark plastoglobuli, and starch grains carved out of every drum
-  as white ovals. The grains get a faint rim, because without it a white dot reads as a glint.
-- **Division.** A dividing chloroplast pinches at the waist into a dumbbell and tightens and
-  relaxes once per loop.
+- **Cells.** A staggered hexagonal lattice is jittered (JITTER) and split into Voronoi cells.
+  The cells are then stretched (STRETCH) and turned (ANGLE). Because the stretch comes after
+  the split, neighboring walls always meet.
+- **Walls.** Walls are left over, not drawn. Each cell's inside is inset by half the wall
+  thickness (WALL), filled pale blue and outlined dark. The outlines of two neighboring cells
+  become the two edges of one wall, and the band between them is tinted pale yellow.
+- **Chloroplasts.** Discs with a dark rim and a few darker specks, which is how grana look under
+  a light microscope. They sit in three layers. Within a layer they barely overlap, because a
+  layer is filled as one path and an overlap wouldn't darken anyway. Across layers they may
+  overlap deeply, and those overlaps print darker. Out-of-focus ones (DEPTH) go down first,
+  larger and lighter, with no rim.
+- **Motion.** Cytoplasmic streaming. In each cell a wave circles the center a whole number of
+  times per loop and pushes the chloroplasts back and forth. Those pressed against a wall move
+  less. Each chloroplast also trembles and tilts in place. The whole slide drifts along a small
+  ellipse under the fixed eyepiece. The two axes share one phase, so the drift never stalls on
+  a straight line.
 
-There is no green ink. The plate looks at the palette and fills the stroma with the two drums
-whose overlap comes out greenest, usually a yellow and a blue. When no pair makes green, as
-with the two-drum run of MUSTARD × LEMON, it uses the greenest single drum.
+There is no green ink. The chloroplasts are filled with the two drums whose overlap comes out
+greenest, usually a yellow and a blue. When no pair makes green, as with the two-drum run of
+MUSTARD × LEMON, it uses the greenest single drum. The cell insides take the bluest drum, the
+wall bands the yellowest, and the rims and wall edges the darkest.
 
-Stack heights, stack positions and any discs a starch grain pushes out are decided on the
-resting shape. Deciding them on the moving shape would make discs blink in and out from frame
-to frame. Each chloroplast draws the same number of random values whatever the knobs say, and
-the knobs only decide how many of the drawn parts are used.
+The tissue doesn't change over time, so it is built once and reused from frame to frame. The
+plate keeps a few built versions so that dragging a knob back and forth stays quick. Every
+lattice point has its own seed, so widening or narrowing the field (FRAME) keeps the cells that
+remain. Each cell draws the same number of chloroplast candidates, and DENSITY and PLASTID only
+decide which of them are placed. FRAME above about 0.72 makes the field cover the whole sheet,
+the way the photograph fills its frame.
 
 ### The round frame
 
