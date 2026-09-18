@@ -8,14 +8,15 @@
 //   속도선     머리에서 뻗어 나가듯 벌어지는 어두운 바늘
 //   보조 광선  주 광선과 조금 다른 각도로 나란히 뻗는 가는 띠. 분홍과 푸름
 //   주 광선    머리에서 꼬리 끝까지 뻗는 넓은 노란 띠. 속에 흰 심이 있다
-//   연기      축을 따라 길게 늘인 어두운 얼룩. 광선 위를 덮어 깊이를 만든다
+//   연기      머리 바로 뒤에서 크게 태어나 광선을 따라 흐르며 작아지는 납작한 어두운 타원. 머리 뒤에
+//             한 덩이가 되고 그 뒤로 구슬이 줄지어 선다. 광선 위에 얹는다
 //   파편      모서리가 선 조각이 돌면서 흘러간다
 //   별        네 갈래 반짝이와 그 뒤를 따르는 점선 꼬리
 //   불티      머리 언저리의 짧고 밝은 줄기
-//   큰 가시    머리 앞으로 솟은 큰 결정 하나
-//   갈고리 가시 안쪽이 오목하게 휜 흰 가시. 머리에서 뒤로 뻗는다
-//   결정 조각  부채꼴로 돋는 작은 조각. 갈고리 가시와 함께 색끼리 한 번에 찍는다
-//   머리 매듭  가장 앞의 분홍 심과 그 뒤의 노란 타원
+//   긴 가시    곧고 긴 흰 가시. 머리 원에서 부채꼴의 양쪽 가장자리를 따라 날아간다
+//   결정 조각  머리 원에서 부채꼴 안으로 곧게 뻗어 나가는 작은 조각. 긴 가시와 함께 색끼리 한 번에
+//             찍는다. 부채꼴(SPIKE)은 그리지 않는다 — 파편이 지나간 자리가 부채꼴을 그린다
+//   머리      머리 원점을 가운데 둔 흰 원 하나
 //
 // 이펙트 작화의 문법은 넷이다.
 //
@@ -50,13 +51,15 @@ import { dim } from "../scope.js";
 
 const TAU = Math.PI * 2;
 const MOST_DUST = 120;
-const MOST_SMOKE = 12;
+const MOST_SMOKE = 60; // 한 번에 보이는 연기 점의 끝값
+const SMOKE_EARLY = 12; // 연기 점 가운데 예전 연기가 뽑던 자리에서 뽑는 수
+const LOOP_SECONDS = 2; // 화면의 시계는 한 바퀴 48프레임, 초당 24프레임이다. 연기 이미터의 값은 초로 적는다
 const MOST_BEAMS = 4;
 const MOST_STREAKS = 30;
 const MOST_CHIPS = 14;
 const MOST_SPARKS = 40;
 const MOST_EMBERS = 12;
-const MOST_BARBS = 8; // 갈고리 가시는 둘씩 짝이라 쌍은 넷이다
+const MOST_BARBS = 8; // 긴 가시는 둘씩 짝이라 쌍은 넷이다
 const MOST_SHARDS = 24;
 const FLASH_FRAMES = 2; // 임팩트 프레임이 머무는 프레임 수. 시계는 한 바퀴 48프레임이다
 
@@ -85,29 +88,6 @@ function flowing(phase, t, speed) {
   return { p, fade: Math.pow(Math.sin(Math.PI * p), 0.6) };
 }
 
-// 머리의 법선. 머리 원점(HEAD 0)을 지나 축에 수직인 선이다. 머리에 딸린 것 — 큰 결정, 갈고리 가시,
-// 결정 조각, 불티, 매듭, 임팩트 프레임 — 은 모두 이 선의 뒤, 꼬리 쪽 반평면에만 있다. 축에서
-// 양쪽으로 90°씩, 모두 180°를 넘지 않는다. 이펙트 작화로 치면 이미터의 방출 원뿔이 반각 90°인
-// 반구다. 앞으로 튀는 조각이 하나라도 있으면 별똥별이 어느 쪽으로 가는지 흐려진다.
-//
-// 조각은 제 뿌리에서 축과 turn만큼 기운다(캔버스의 각, 라디안). points는 뿌리를 원점으로 조각이
-// 향하는 쪽을 +로 잰 꼭짓점이다. 돌린 뒤에도 꼭짓점이 모두 법선 안에 들도록 turn을 좁힌다. 뿌리가
-// 법선 위나 뒤에 있으면 조각 전체가 법선 뒤에 남는다. 180°에 들지 않을 만큼 넓은 조각은 곧장
-// 뒤를 향한다. 법선 안에 든 조각은 turn이 그대로다
-const RIGHT_ANGLE = Math.PI / 2;
-function withinNormal(turn, points) {
-  let low = -Infinity;
-  let high = Infinity;
-  for (const [a, b] of points) {
-    if (!a && !b) continue;
-    const angle = Math.atan2(b, a);
-    low = Math.max(low, -RIGHT_ANGLE - angle);
-    high = Math.min(high, RIGHT_ANGLE - angle);
-  }
-  if (low > high) return 0;
-  return Math.min(high, Math.max(low, turn));
-}
-
 // 흐린 무늬는 모양 손잡이(LENGTH · ANGLE · CORE)가 같으면 다시 짓지 않는다. 롤과는 상관이 없다.
 // 공용 캔버스(src/blur.js)의 것을 제 캔버스로 옮겨 쥔다
 const keepMask = keeper(8);
@@ -132,17 +112,25 @@ export const meteor = {
     { group: "BEAM", key: "core", label: "CORE", min: 0.3, max: 2.5, step: 0.05, value: 1.3, hint: "주 광선의 굵기" },
     { group: "BEAM", key: "beams", label: "BEAMS", min: 0, max: 4, step: 1, value: 2, hint: "조금 다른 각도로 나란히 뻗는 보조 광선의 수" },
     { group: "BEAM", key: "glow", label: "GLOW", min: 0, max: 1, step: 0.05, value: 0.6, hint: "광선 둘레의 번짐. 납작한 면만 있으면 붙인 색종이가 된다" },
-    { group: "HEAD", key: "spike", label: "SPIKE", min: 0, max: 1.6, step: 0.05, value: 1, hint: "머리 끝에서 뒤로 가늘게 벌어지는 V 결정의 크기" },
-    { group: "HEAD", key: "barbs", label: "BARBS", min: 0, max: MOST_BARBS, step: 2, value: 2, hint: "뒤로 휜 흰 가시의 수. 좌우 한 쌍씩 같은 모양이다" },
-    { group: "HEAD", key: "shards", label: "SHARDS", min: 0, max: MOST_SHARDS, step: 1, value: 12, hint: "머리에서 뿜어 나가는 조각의 수. 한 번에 보이는 수다" },
-    { group: "HEAD", key: "spread", label: "SPREAD", min: 0.2, max: 1.4, step: 0.05, value: 0.85, hint: "조각이 뿜어 나가는 부채꼴의 반각(라디안)이자 가시가 벌어지는 정도. 머리의 법선을 넘지 않는다" },
+    { group: "HEAD", key: "spike", label: "SPIKE", min: 0.2, max: 1.6, step: 0.05, value: 1, hint: "파편이 머리에서 부채꼴로 뻗어 나가는 거리. 부채꼴의 크기다" },
+    { group: "HEAD", key: "barbs", label: "BARBS", min: 0, max: MOST_BARBS, step: 2, value: 2, hint: "부채꼴의 양쪽 가장자리를 따라 날아가는 긴 흰 가시의 수. 좌우 한 쌍씩 같은 모양이다" },
+    { group: "HEAD", key: "shards", label: "SHARDS", min: 0, max: MOST_SHARDS, step: 1, value: 12, hint: "머리에서 부채꼴로 뻗어 나가는 조각의 수. 한 번에 보이는 수다" },
+    { group: "HEAD", key: "spread", label: "SPREAD", min: 0.2, max: 1.4, step: 0.05, value: 0.85, hint: "파편이 뻗어 나가는 부채꼴의 반각(라디안). 끝값(80°)에서도 파편은 꼬리 쪽으로만 날아간다" },
     { group: "HEAD", key: "flicker", label: "FLICKER", min: 0, max: 1, step: 0.05, value: 0.8, hint: "박자마다 두 자세를 오가는 정도. 투스로 끓이는 작화다. 0이면 가만히 있다" },
-    { group: "FLOW", key: "smoke", label: "SMOKE", min: 0, max: 12, step: 1, value: 7, hint: "광선을 덮는 어두운 연기 덩어리의 수" },
     { group: "FLOW", key: "streaks", label: "STREAKS", min: 0, max: 30, step: 1, value: 14, hint: "머리에서 뻗어 나가는 어두운 속도선의 수" },
     { group: "FLOW", key: "chips", label: "CHIPS", min: 0, max: 14, step: 1, value: 7, hint: "흘러가는 각진 파편의 수" },
     { group: "FLOW", key: "sparks", label: "SPARKS", min: 0, max: 40, step: 1, value: 14, hint: "점선 꼬리를 단 별의 수" },
     // 한 바퀴에 몇 번 흘러가는가. 정수여야 한 바퀴 끝에서 제자리로 돌아온다
-    { group: "FLOW", key: "speed", label: "SPEED", min: 1, max: 3, step: 1, value: 1, hint: "둘레가 흘러가는 빠르기. 한 바퀴에 몇 번 지나가는가" },
+    { group: "FLOW", key: "speed", label: "SPEED", min: 1, max: 3, step: 1, value: 1, hint: "둘레가 흘러가는 빠르기. 한 바퀴에 몇 번 지나가는가. 연기는 제 손잡이(SMOKE 칸)를 따른다" },
+    // 연기 이미터. 이펙트 툴의 이미터 값을 그대로 둔다 — 뿜는 빈도, 수명, 빠르기와 끌림, 크기와 수명에 따른 크기
+    { group: "SMOKE", key: "freq", label: "FREQ", min: 0, max: 60, step: 1, value: 24, hint: "뿜는 빈도(spawn rate). 1초에 몇 개를 뿜는가. 한 번에 보이는 점은 FREQ × LIFETIME개이고 60개까지다. 0이면 연기가 없다" },
+    { group: "SMOKE", key: "lifetime", label: "LIFETIME", min: 0.2, max: 2, step: 0.05, value: 1, hint: "점 하나가 사는 시간(초). 루프가 닫히도록 한 바퀴(2초)를 똑같이 나눈 값(2 · 1 · 0.67 · 0.5 …)으로 맞춰진다. 길수록 오래 남아 멀리 간다" },
+    { group: "SMOKE", key: "velocity", label: "VELOCITY", min: 0.05, max: 1.5, step: 0.05, value: 0.45, hint: "흐르는 빠르기. 1초에 광선 길이의 몇 배를 가는가. 구슬 줄의 길이는 VELOCITY × LIFETIME이다" },
+    { group: "SMOKE", key: "drag", label: "DRAG", min: 0, max: 1, step: 0.05, value: 0, hint: "끌림. 0이면 고른 빠르기로 흐르고, 올릴수록 갓 난 점이 빠르게 튀어 나갔다가 느려져 구슬이 꼬리 쪽에 몰린다" },
+    { group: "SMOKE", key: "size", label: "SIZE", min: 0.3, max: 2, step: 0.05, value: 1, hint: "갓 난 타원의 크기. 머리 뒤 덩이의 크기다" },
+    { group: "SMOKE", key: "shrink", label: "SHRINK", min: 0, max: 6, step: 0.1, value: 3, hint: "사는 동안 작아지는 모양(size over life). 0이면 고르게 줄고, 높을수록 덩이를 벗어나자마자 작아져 구슬이 떨어져 선다" },
+    { group: "SMOKE", key: "stretch", label: "STRETCH", min: 0, max: 2, step: 0.05, value: 1, hint: "갓 난 타원이 축을 따라 길쭉한 정도. 흐르며 동그래져 끝에서는 원이 된다. 0이면 처음부터 원이다" },
+    { group: "SMOKE", key: "scatter", label: "SCATTER", min: 0, max: 1, step: 0.05, value: 0.25, hint: "옆으로 벌어지는 정도. 0이면 구슬이 광선과 한 줄로 선다" },
     // 한 바퀴를 몇 장으로 그리는가. 시계는 한 바퀴 48프레임이므로 12면 네 프레임에 한 장이다
     { group: "BEAT", key: "beat", label: "BEAT", min: 4, max: 48, step: 1, value: 12, hint: "한 바퀴를 몇 장으로 그리는가. 낮을수록 뚝뚝 끊기고, 48이면 프레임마다 다시 그린다" },
     { group: "BEAT", key: "flash", label: "FLASH", min: 0, max: 1, step: 0.05, value: 0.6, hint: "임팩트 프레임. 한 바퀴에 한 번 두 프레임 동안 머리에서 흰빛이 터진다. 0이면 터지지 않는다" }
@@ -194,14 +182,17 @@ export const meteor = {
       beat: layout.int(1, 3),
       phase: layout.float(0, TAU)
     })).slice(0, knobs.dust);
-    const smoke = Array.from({ length: MOST_SMOKE }, () => ({
-      phase: layout.next(),
-      off: layout.float(-0.05, 0.05),
-      long: layout.float(0.14, 0.34),
-      thick: layout.float(0.05, 0.11),
-      lean: layout.float(-0.12, 0.12),
-      deep: layout.float(0.45, 0.8)
-    })).slice(0, knobs.smoke);
+    // 연기 점 하나. 언제나 여섯 번 뽑는다. 앞의 열둘은 여기서, 나머지는 맨 뒤에서 뽑는다 — 예전 연기가
+    // 이 자리에서 여섯 번씩 열둘을 뽑았으므로, 점을 늘려도 뒤의 층들이 제자리에 있다
+    const smokeDot = () => ({
+      born: layout.next(),
+      reach: layout.next(),
+      size: layout.next(),
+      off: layout.float(-1, 1),
+      drift: layout.float(-1, 1),
+      stretch: layout.next()
+    });
+    const smokeEarly = Array.from({ length: SMOKE_EARLY }, smokeDot);
     const beams = Array.from({ length: MOST_BEAMS }, (_, i) => ({
       lean: layout.float(0.03, 0.12) * (i % 2 === 0 ? 1 : -1),
       off: layout.float(0.005, 0.04) * (i % 2 === 0 ? 1 : -1),
@@ -249,11 +240,10 @@ export const meteor = {
       half: layout.float(1.5, 4),
       kind: layout.chance(0.6) ? "yellow" : "pink"
     }));
-    // 갈고리 가시는 좌우 한 쌍씩 같은 모양이다. 안쪽 쌍부터 뽑는다
+    // 긴 가시는 좌우 한 쌍씩 같은 모양이다. 바깥 쌍부터 뽑는다
     const hooks = Array.from({ length: MOST_BARBS / 2 }, () => ({
-      spread: layout.float(0.75, 1),
+      born: layout.float(0, 1),
       len: layout.float(0.12, 0.18),
-      bow: layout.float(0.06, 0.1),
       thick: layout.float(0.012, 0.02)
     })).slice(0, Math.floor(knobs.barbs / 2));
     // 뿜어 나가는 조각. 빗살 하나에 하나씩 앉는다. aim은 칸 안에서의 흔들림, born은 태어나는 때의
@@ -266,12 +256,16 @@ export const meteor = {
       wide: layout.float(0.22, 0.3),
       accent: layout.chance(0.16)
     })).slice(0, knobs.shards);
-    const spike = {
-      tip: layout.float(0.1, 0.17),
-      wing: layout.float(0.05, 0.085),
-      back: layout.float(0.03, 0.07),
-      notch: layout.float(0.2, 0.45)
-    };
+    // 부채꼴의 반지름(축 길이에 대한 비율)
+    const spike = { reach: layout.float(0.13, 0.2) };
+    // 연기 점의 나머지. 맨 마지막 뽑기라 빼거나 바꿔도 다른 자리는 그대로다
+    const smokeAll = [...smokeEarly, ...Array.from({ length: MOST_SMOKE - SMOKE_EARLY }, smokeDot)];
+
+    // 연기 이미터. 점 하나는 한 바퀴에 lives번 다시 태어나므로 수명은 한 바퀴의 1/lives다. 정수여야 루프가
+    // 닫힌다. 1초에 FREQ개를 뿜으려면 한 번에 FREQ × 수명개가 살아 있어야 한다
+    const lives = Math.max(1, Math.round(LOOP_SECONDS / knobs.lifetime));
+    const lifetime = LOOP_SECONDS / lives;
+    const smoke = smokeAll.slice(0, Math.min(MOST_SMOKE, Math.round(knobs.freq * lifetime)));
 
     // 통 나누기. 빛은 가장 노란 통 하나이고 나머지는 모두 밤이다(src/drums.js). 통이 둘 이하면
     // 모두 밤이고, 노란 빛은 가장 옅은 밤을 조금 남겨 낸다
@@ -302,6 +296,32 @@ export const meteor = {
     };
     const every = (list) => (g) => {
       for (const paint of list) paint(g);
+    };
+
+    // 머리의 채비. 머리의 층과 연기가 함께 쓰므로 찍기 전에 정한다.
+    //
+    // 머리의 피벗은 머리 원점(HEAD 0), 광선이 시작하는 자리다. 머리에 딸린 것은 모두 이 점에 뿌리를
+    // 두고 이 점을 잡고 늘고 준다. 광선은 늘고 줄지 않으므로, 다른 점을 잡고 키우면 머리가 광선 위에서
+    // 앞뒤로 미끄러진다
+
+    // 머리의 자세. 박자마다 두 자세를 번갈아 오간다 — 이펙트 작화가 투스로 끓이는 방식이다. 조각마다
+    // 따로 흔들면 장마다 윤곽이 제멋대로 바뀐다. 한 바퀴의 장 수가 짝수면 이음매에서도 번갈아 든다
+    const drawing = Math.round(held * beat) % beat;
+    const pose = (drawing % 2 === 0 ? 1 : -1) * knobs.flicker;
+
+    // 유성의 머리는 머리 원점을 가운데 둔 원이다. 부채꼴과 흰 원이 같은 반지름을 쓴다
+    const pulse = 1 + 0.12 * Math.sin(turn * 2 + trailPhase);
+    const headRadius = width * 0.026 * pulse;
+
+    // 파편의 부채꼴. 부채꼴은 그려 두는 모양이 아니라 파편이 날아가는 궤적이다. 파편은 머리 원의
+    // 가장자리에서 튀어나와 머리 원점을 가운데 둔 부채꼴 안에서 곧게 뻗어 나가고, 그 지나간 자리가
+    // 부채꼴을 그린다. 둥근 앞쪽은 곧 머리의 원이다. 반각은 SPREAD, 반지름은 SPIKE다. 파편은 한 바퀴에
+    // 2 × SPEED번 태어나 루프가 닫히고, 태어나서 빠르게 튀어 나갔다가 느려지며 작아져 사라진다
+    const rate = 2 * Math.max(1, Math.round(knobs.speed));
+    const flight = L * spike.reach * knobs.spike * (1 + 0.08 * pose) * (1 + 0.3 * burst);
+    const lifeOf = (born) => {
+      const age = (((born + held * rate) % 1) + 1) % 1;
+      return { age, out: 1 - (1 - age) * (1 - age), grow: Math.min(1, age / 0.12) * Math.pow(1 - age, 0.7) };
     };
 
     // 하늘. 밤의 통을 깔고 노란 통을 옅게 깔아 푸르스름한 회색을 만든다. 가장자리를 조금 누른다.
@@ -371,17 +391,52 @@ export const meteor = {
     const heartEnd = L * (0.45 + 0.06 * Math.sin(turn + trailPhase));
     glowWith("white", poly(facet(at, L * 0.01, heartEnd, 0, (s) => coreWidth * 0.5 * Math.pow(Math.sin(Math.PI * s), 0.6) * swell, { steps: 6 })), 0.9);
 
-    // 연기. 축을 따라 길게 늘인 어두운 얼룩이 광선 위를 덮으며 흘러간다. 가장 진한 통만 옅게 얹어
-    // 검정이 아니라 짙은 남보라로 남는다
-    for (const s of smoke) {
-      const { p, fade } = flowing(s.phase, held, knobs.speed);
-      const [x, y] = at(-L * 0.05 + p * L * 1.15, s.off * width);
-      const long = width * s.long * (0.6 + 0.4 * fade);
-      const thick = width * s.thick * fade;
-      deepest.draw((g) => {
-        g.globalAlpha = s.deep * fade;
+    // 연기. 받은 분해 장면의 Dots 이미터다(0:13~0:14). 점은 모두 머리 바로 뒤에서 크고 길쭉한 타원으로
+    // 태어나 고른 빠르기로 꼬리 쪽으로 흐르며 작아지고 동그래져, 끝에서는 원이 된다. 그래서 머리 뒤에는
+    // 갓 난 큰 타원이 늘 겹쳐 한 덩이를 이루고, 그 뒤로 점점 작아지는 구슬이 광선을 따라 거의 한 줄로
+    // 선다. 점마다 축을 따라 눕고 옆으로는 거의 벌어지지 않는다. 덩이를 벗어나자마자 빠르게 작아져
+    // 구슬이 서로 떨어져 선다.
+    //
+    // 피벗은 가장 컸을 때의 진행 방향 맨 앞 끝이다. 작아지고 동그래지면서 그 점으로 오므라드므로, 원이
+    // 되어도 느려 보이지 않는다. 머리 쪽 끝에 두었을 때는 줄어드는 만큼 모양이 뒤로 끌려, 원이 될 때
+    // 느려 보였다. 가장 클 때 머리 쪽 끝이 머리 원점 바로 뒤에 닿으므로 머리 앞으로 나오지 않는다.
+    //
+    // 값은 이펙트 툴의 이미터처럼 둔다(SMOKE 칸) — 뿜는 빈도(FREQ), 수명(LIFETIME), 흐르는 빠르기와
+    // 끌림(VELOCITY · DRAG), 갓 난 크기와 수명에 따른 크기(SIZE · SHRINK), 길쭉함(STRETCH), 옆으로
+    // 벌어짐(SCATTER). 기본은 1초에 스물네 개를 뿜어 1초 산다. 기본 박자(BEAT 12)에서 여섯 장쯤이다.
+    // 세 장만 살 때는 점이 흐르기보다 깜빡이다 사라졌다.
+    //
+    // 겹친 자리가 더 진해지지 않게 한 길에 모아 한 번에 찍는다. 광선 위에 얹는다 — 구슬이 광선과 한
+    // 줄이라 광선 밑에 깔면 다 가려진다. 색은 분해 장면의 완성본처럼 어둠이다. 흰 타원이면 흰 조각과
+    // 가시가 덩이에 묻히고 머리의 흰 원이 덩이와 한 덩어리가 된다
+    // 연기 점 하나가 가장 클 때의 반지름(긴 축)에 대한 비율. 크기는 자라기를 마치는 나이 0.04에서 가장
+    // 크고, 박자의 자세(FLICKER)만큼 더 부푼다
+    const smokePeak = 0.96 * Math.exp(-0.04 * knobs.shrink) * (1 + 0.06 * knobs.flicker);
+    const smokeReach = L * knobs.velocity * lifetime;
+    if (smoke.length) {
+      const count = smoke.length;
+      darken((g) => {
         g.beginPath();
-        g.ellipse(x, y, long, thick, tilt + s.lean, 0, TAU);
+        smoke.forEach((d, i) => {
+          const age = (((i * 0.6180339887 + d.born / count + held * lives) % 1) + 1) % 1;
+          // 수명에 따른 크기. 끝으로 갈수록 0이라 되감기는 자리에서 튀지 않는다
+          const shrink = Math.min(1, age / 0.04) * (1 - age) * Math.exp(-knobs.shrink * age);
+          if (shrink <= 0.01) return;
+          const full = width * (0.06 + 0.04 * d.size) * knobs.size;
+          const long = full * shrink * (1 + 0.06 * pose);
+          // 갓 난 것은 길쭉하고 흐르며 동그래져, 끝에서는 원이다
+          const thick = long / (1 + knobs.stretch * (3 + 0.6 * d.stretch) * Math.pow(1 - age, 1.5));
+          // 피벗은 가장 컸을 때의 진행 방향 맨 앞 끝(꼬리 쪽 끝)이다. 점은 이 점을 따라 흐르고, 작아지며
+          // 이 점으로 오므라들어 원이 된다. 가장 클 때 머리 쪽 끝이 머리 원점 바로 뒤에 닿는다
+          const flow = 1 - Math.pow(1 - age, 1 + 3 * knobs.drag);
+          const lead = headRadius * 0.2 + 2 * full * smokePeak + smokeReach * (0.78 + 0.44 * d.reach) * flow;
+          const middle = lead - long;
+          const lean = d.drift * 0.16 * knobs.scatter;
+          const [x, y] = at(middle, d.off * headRadius * 1.6 * knobs.scatter + middle * lean);
+          const tip = tilt + lean;
+          g.moveTo(x + Math.cos(tip) * long, y + Math.sin(tip) * long);
+          g.ellipse(x, y, long, thick, tip, 0, TAU);
+        });
         g.fill();
       });
     }
@@ -446,7 +501,7 @@ export const meteor = {
         every(
           mine.map((e) => {
             const { p, fade } = flowing(e.phase, held, knobs.speed * 2);
-            const u0 = p * L * 0.4; // 법선에서 태어나 꼬리 쪽으로 튄다
+            const u0 = -L * 0.06 + p * L * 0.4;
             const len = width * e.len;
             return poly(facet(at, u0, u0 + len, e.off * width, (s) => e.half * fade * Math.pow(Math.sin(Math.PI * s), 0.7), { steps: 5 }));
           })
@@ -454,108 +509,60 @@ export const meteor = {
       );
     }
 
-    // 머리의 피벗은 머리 원점(HEAD 0), 광선이 시작하는 자리다. 머리에 딸린 것은 모두 이 점을
-    // 붙박이로 두고 늘고 준다. 광선은 늘고 줄지 않으므로, 다른 점을 잡고 키우면 머리가 광선 위에서
-    // 앞뒤로 미끄러진다
-    const fromHead = (x, y, grow) => [hx + (x - hx) * grow, hy + (y - hy) * grow];
-
-    // 머리의 자세. 박자마다 두 자세를 번갈아 오간다 — 이펙트 작화가 투스로 끓이는 방식이다. 조각마다
-    // 따로 흔들면 장마다 윤곽이 제멋대로 바뀐다. 한 바퀴의 장 수가 짝수면 이음매에서도 번갈아 든다
-    const drawing = Math.round(held * beat) % beat;
-    const pose = (drawing % 2 === 0 ? 1 : -1) * knobs.flicker;
-
-    // 머리 끝의 결정. 꼭짓점이 머리 원점에 닿고 뒤로 가늘게 벌어지는 V다. 속을 깊이 파서 두 날만
-    // 남긴다. 통째로 크면 매듭과 조각을 삼켜 머리가 한 덩어리가 된다
-    if (knobs.spike > 0) {
-      const size = knobs.spike * (1 + 0.08 * pose) * (1 + 0.3 * burst);
-      const reach = L * (spike.tip + spike.back) * 0.65 * size;
-      const wing = width * spike.wing * 0.55 * size;
-      glowWith("cyan", poly([at(0, 0), at(reach, wing), at(reach * (0.5 + 0.3 * spike.notch), 0), at(reach, -wing)]));
-    }
-
-    // 갈고리 가시. 좌우 한 쌍씩 같은 모양으로 머리에서 뒤로 뻗고, 안쪽이 오목하게 휜다. 안쪽 쌍이 길고
-    // 바깥 쌍일수록 짧고 더 벌어진다. 기울기는 법선 안으로 좁힌다
+    // 머리에 딸린 조각은 색끼리 모아 한 번에 찍는다
     const pieces = { yellow: [], cyan: [], white: [], pink: [] };
+    // 머리 원점에서 방향 angle로 거리 r만큼 간 자리에, 그 방향으로 누운 조각 하나(제 좌표 a · b)를 놓는다
+    const place = (points, angle, r) => {
+      const cos = Math.cos(angle);
+      const sin = Math.sin(angle);
+      return poly(points.map(([a, b]) => at((r + a) * cos - b * sin, (r + a) * sin + b * cos)));
+    };
+
+    // 긴 가시. 부채꼴의 양쪽 가장자리 궤적을 따라 좌우 한 쌍씩 같은 모양으로 날아간다. 바깥 쌍이
+    // 가장자리에 붙고 안쪽 쌍일수록 조금씩 안으로 든다. 쌍마다 태어나는 때가 다르다. 조각과 같이 곧다 —
+    // 피벗은 밑동, 노말은 머리 원점에서 곧게 뻗는 쪽이다. 끝을 꼬리 쪽으로 휘게 두었더니 몸통이 머리
+    // 원점을 향하지 않아, 곧게 뻗는 조각들 사이에서 미묘하게 어긋나 보였다
     hooks.forEach((h, pair) => {
-      const len = L * h.len * (1 - 0.16 * pair) * (1 + 0.06 * pose);
-      const bow = width * h.bow;
-      const thick = width * h.thick;
-      const shape = [[0, 0], [len * 0.45, thick + bow * 0.35], [len, bow], [len * 0.5, bow * 0.45], [len * 0.2, thick * 0.2]];
-      const lean = h.spread * knobs.spread * (0.8 + 0.2 * pair) * (1 + 0.05 * pose);
-      for (const side of [1, -1]) {
-        const hook = shape.map(([u, v]) => [u, v * side]);
-        // axis(lean)은 캔버스에서 −lean만큼 돈다
-        const hookAt = axis(-withinNormal(-side * lean, hook));
-        pieces.white.push(poly(hook.map(([u, v]) => hookAt(u, v))));
-      }
+      const { out, grow } = lifeOf(pair * 0.6180339887 + h.born);
+      if (grow <= 0.02) return;
+      const len = L * h.len * 0.8 * grow * (1 + 0.06 * pose);
+      const thick = width * h.thick * grow;
+      const angle = knobs.spread * (1 - 0.14 * pair);
+      const blade = [[0, 0], [len * 0.3, thick], [len, 0], [len * 0.3, -thick]];
+      for (const side of [1, -1]) pieces.white.push(place(blade, side * angle, headRadius + out * flight));
     });
 
-    // 뿜어 나가는 조각. 머리 원점에서 태어나 제 빗살의 방향으로 날아가며 작아지고, 꼬리 쪽으로 처져
-    // 휘어 나간다. 별똥별은 제자리에 있고 세상이 흐르므로, 뿜어 낸 것은 뒤에 남는다.
-    //
-    // 빗살: SPREAD를 반각으로 한 부채꼴을 조각 수만큼 고르게 나누고 칸 안에서 조금 흔든다. 가운데(꼬리
-    // 축 쪽)가 길고 멀리 가며 바깥으로 갈수록 짧다. 태어나는 때는 황금비로 흩어 늘 고른 흐름이 서고,
-    // 이웃한 빗살이 함께 태어나지 않는다. 한 바퀴에 정수 번 태어나 루프가 닫힌다.
+    // 조각. 조각 수만큼 고르게 나눈 칸(lane)마다 하나씩, 칸 안에서 조금 흔들린 방향으로 뻗어 나간다.
+    // 가운데(꼬리 축 쪽)가 길고 멀리 가며 바깥으로 갈수록 짧다. 태어나는 때는 황금비로 흩어 늘 고른
+    // 흐름이 서고, 이웃한 칸이 함께 태어나지 않는다.
     //
     // 색은 나이를 따른다. 갓 태어나면 희고, 노랗다가, 끝에서 분홍으로 식는다. 여섯에 하나쯤은 내내 푸른
     // 강조다. 임팩트 프레임에는 분홍 말고는 모두 희다
     const count = shards.length;
-    const rate = 2 * Math.max(1, Math.round(knobs.speed));
-    const fling = width * 0.2;
-    const lag = L * 0.14;
     shards.forEach((s, i) => {
       const slot = count > 1 ? -1 + (2 * i + 1) / count : 0;
-      const aim = knobs.spread * (slot + s.aim / Math.max(1, count));
-      const age = (((i * 0.6180339887 + s.born / Math.max(1, count) + held * rate) % 1) + 1) % 1;
-      const grow = Math.min(1, age / 0.12) * Math.pow(1 - age, 0.7);
+      const angle = knobs.spread * (slot + s.aim / Math.max(1, count));
+      const { age, out, grow } = lifeOf(i * 0.6180339887 + s.born / Math.max(1, count));
       if (grow <= 0.02) return;
-      const out = 1 - (1 - age) * (1 - age);
-      const far = fling * s.reach * (1 - 0.25 * slot * slot);
       const len = width * 0.085 * s.size * (1 - 0.45 * slot * slot) * grow * (1 + 0.1 * pose) * (1 + 0.5 * burst);
       const half = len * s.wide * 0.5;
-      // 자리와 방향. 방향은 날아가는 쪽이다 — 처음엔 제 빗살을 따르고, 느려지면서 꼬리 쪽으로 눕는다
-      const cu = out * far * Math.cos(aim) + age * lag;
-      const cv = out * far * Math.sin(aim);
-      const heading = Math.atan2(2 * (1 - age) * far * Math.sin(aim), 2 * (1 - age) * far * Math.cos(aim) + lag);
-      const du = Math.cos(heading);
-      const dv = Math.sin(heading);
-      const kite = [
-        [cu - du * len * 0.35, cv - dv * len * 0.35],
-        [cu + du * len * 0.1 - dv * half, cv + dv * len * 0.1 + du * half],
-        [cu + du * len * 0.65, cv + dv * len * 0.65],
-        [cu + du * len * 0.1 + dv * half, cv + dv * len * 0.1 - du * half]
-      ];
-      // 갓 태어나 꼬리가 법선 앞으로 나온 조각은 그만큼 뒤로 민다
-      const shift = Math.max(0, -Math.min(...kite.map(([u]) => u)));
+      // 피벗은 밑동(머리 쪽 끝)이고, 노말은 머리 원점에서 곧게 뻗는 쪽이다. 모든 조각이 같다 — 몸통
+      // 가운데를 잡고 키우면 자라면서 꼬리가 머리 원 안으로 파고들어, 가장자리에서 돋는 것으로 보이지 않는다
+      const kite = [[0, 0], [len * 0.45, half], [len, 0], [len * 0.45, -half]];
       const hue = s.accent ? "cyan" : age < 0.22 ? "white" : age < 0.6 ? "yellow" : "pink";
-      pieces[burst > 0 && hue !== "pink" ? "white" : hue].push(poly(kite.map(([u, v]) => at(u + shift, v))));
+      pieces[burst > 0 && hue !== "pink" ? "white" : hue].push(place(kite, angle, headRadius + out * flight * s.reach * (1 - 0.25 * slot * slot)));
     });
 
-    // 임팩트 프레임. 머리 원점에서 흰빛이 세 갈래 — 꼬리 쪽으로 길게 하나, 법선을 따라 짧게 둘 — 로
-    // 터진다. 앞쪽은 법선에서 끊긴다. 옆 갈래까지 길면 법선을 따라 흰 벽이 선다. 둥근 섬광도 앞끝이
-    // 법선에 닿게 뒤로 물린다
+    // 임팩트 프레임. 머리 원점에서 흰빛이 네 갈래로 사방에 터진다. 머리가 뿜어 내는 조각이 아니라 두
+    // 프레임 동안 번쩍하는 빛이라, 앞으로도 터져야 무언가에 부딪힌 것처럼 보인다
     if (burst > 0) {
-      const reach = width * 0.3 * burst;
-      const flank = reach * 0.55;
-      const waist = reach * 0.12;
       pieces.white.push((g) => {
-        const [ax, ay] = at(0, -flank);
-        const [bx, by] = at(reach, 0);
-        const [cx, cy] = at(0, flank);
-        const [px, py] = at(waist, -waist);
-        const [qx, qy] = at(waist, waist);
-        g.beginPath();
-        g.moveTo(ax, ay);
-        g.quadraticCurveTo(px, py, bx, by);
-        g.quadraticCurveTo(qx, qy, cx, cy);
-        g.closePath();
+        shapes.sparkle(g, hx, hy, width * 0.3 * burst, 0.12);
         g.fill();
       });
       pieces.white.push((g) => {
-        const r = width * 0.055 * burst;
-        const [x, y] = at(r, 0);
         g.beginPath();
-        g.arc(x, y, r, 0, TAU);
+        g.arc(hx, hy, width * 0.055 * burst, 0, TAU);
         g.fill();
       });
     }
@@ -563,38 +570,25 @@ export const meteor = {
       if (list.length) glowWith(kind, every(list));
     }
 
-    // 머리 매듭. 가장 앞의 분홍 심과 그 뒤의 노란 타원. 분홍 심의 앞끝이 법선에 닿는다. 이것도 머리
-    // 원점을 잡고 뛰므로, 부풀어도 앞끝은 법선에 붙어 있다
-    const knot = 1 + 0.12 * Math.sin(turn * 2 + trailPhase);
-    const lead = width * 0.032; // 분홍 심의 축 방향 반지름
-    const beads = [
-      ["pink", at(lead, 0), lead, width * 0.02],
-      ["yellow", at(lead + L * 0.047, 0), width * 0.032, width * 0.013],
-      ["white", at(lead + L * 0.012, 0), width * 0.012, width * 0.012]
-    ];
-    for (const [kind, spot, rx, ry] of beads) {
-      const [x, y] = fromHead(spot[0], spot[1], knot);
-      glowWith(
-        kind,
-        (g) => {
-          g.beginPath();
-          g.ellipse(x, y, rx * knot, ry * knot, tilt, 0, TAU);
-          g.fill();
-        },
-        kind === "white" ? 0.9 : 1
-      );
-    }
+    // 유성의 머리. 머리 원점을 가운데 둔 흰 원 하나면 된다. 여러 모양을 겹쳐 머리를 지으면 어느 것이
+    // 머리인지 흐려진다. 광선보다 조금 넓어 머리로 읽히고, 부채꼴의 둥근 앞끝에 꼭 맞게 앉아 가시의
+    // 뿌리와 조각이 태어나는 자리를 덮는다. 머리 원점을 잡고 부풀었다 가라앉는다
+    glowWith("white", (g) => {
+      g.beginPath();
+      g.arc(hx, hy, headRadius, 0, TAU);
+      g.fill();
+    });
 
     // 이 장의 뼈대. 인쇄기가 안내선(guides)에 넘긴다. 안내선이 판을 다시 계산하지 않고 이 장이 쓴
     // 값을 그대로 본다
-    return { at, L, hx, hy, coreWidth, beat, held, clock, flashFrame, burst, span };
+    return { at, L, hx, hy, coreWidth, beat, held, clock, flashFrame, burst, span, smoke: { count: smoke.length, lifetime, end: headRadius * 0.2 + 2 * width * 0.08 * knobs.size * smokePeak + smokeReach } };
   },
 
   // 안내선. 인쇄된 픽셀은 건드리지 않고 화면 위에 겹쳐 그린다 — 축이 어디를 지나는지, 머리에 딸린
   // 것이 어느 점을 붙박이로 늘고 주는지, 광선이 어디까지 뻗는지를 눈으로 잡기 위한 것이다
   guides(page, sketch) {
     if (!sketch) return [];
-    const { at, L, hx, hy, coreWidth, beat, held, clock, flashFrame, burst, span } = sketch;
+    const { at, L, hx, hy, coreWidth, beat, held, clock, flashFrame, burst, span, smoke } = sketch;
     const marks = [];
 
     // 축. 머리 앞에서 꼬리 끝까지. 흐르는 것이 도는 구간과 같다
@@ -603,20 +597,20 @@ export const meteor = {
     // 주 광선의 윤곽. 납작한 면이 어디까지 부푸는지
     marks.push({ kind: "path", points: facet(at, 0, L, 0, (s) => coreWidth * taper(s), { steps: 9 }), dash: true });
 
-    // 법선. 머리 원점을 지나 축에 수직이다. 머리에 딸린 것은 모두 이 선의 뒤(꼬리 쪽)에 있다
-    const edge = page.width * 0.22;
-    marks.push({ kind: "line", from: at(0, -edge), to: at(0, edge), dash: true, hot: true });
-    marks.push({ kind: "text", at: at(0, edge + 14), text: "NORMAL · 180°", hot: true });
-
     // 머리 원점. 광선이 여기서 시작하고, 머리에 딸린 것들의 피벗도 여기다
     marks.push({ kind: "dot", at: [hx, hy], r: 5, ring: 22, label: "PIVOT · HEAD 0", hot: true });
 
-    // 박자. 지금 몇 번째 장인지, 임팩트 프레임이 언제 서는지. 그림을 가리지 않게 모서리에 적는다
+    // 연기 점의 피벗(가장 컸을 때의 앞 끝)이 사는 동안 가는 끝. 구슬 줄이 여기쯤에서 원이 되어 사라진다
+    if (smoke.count) marks.push({ kind: "dot", at: at(smoke.end, 0), r: 3, label: "SMOKE END" });
+
+    // 박자. 지금 몇 번째 장인지, 임팩트 프레임이 언제 서는지. 연기가 실제로 뿜는 빈도와 수명 — 루프가
+    // 닫히도록 맞춘 값이라 손잡이와 조금 다를 수 있다. 그림을 가리지 않게 모서리에 적는다
     const drawn = Math.round(held * beat);
+    const puffs = smoke.count ? ` · SMOKE ${Math.round(smoke.count / smoke.lifetime)}/S × ${smoke.lifetime.toFixed(2)}S = ${smoke.count}` : "";
     marks.push({
       kind: "text",
       at: [page.margin, page.height - page.margin],
-      text: `BEAT ${drawn}/${beat} · F${clock} · FLASH @${flashFrame}${burst > 0 ? " BURST" : ""}`,
+      text: `BEAT ${drawn}/${beat} · F${clock} · FLASH @${flashFrame}${burst > 0 ? " BURST" : ""}${puffs}`,
       hot: burst > 0
     });
     return marks;
