@@ -388,7 +388,7 @@ knobs.
 | COSMOS | FIELD · STARS · SPIKES · TWINKLE · MILKY · NEBULA · GALAXY · TILT · ARMS · DARK |
 | FLAKE | FIELD · SIZE · HABIT · BRANCH · RIDGE · BUBBLE · GLINT · FLURRY · DARK |
 | KALEIDO | FIELD · MIRRORS · PIECES · SIZE · TUMBLE · TINT |
-| METEOR | SKY: FIELD · DARK · DUST — BEAM: ANGLE · LENGTH · CORE · BEAMS · GLOW — HEAD: SPIKE · BARBS · SHARDS · SPREAD · FLICKER — FLOW: STREAKS · CHIPS · SPARKS · SPEED — SMOKE: FREQ · LIFETIME · VELOCITY · DRAG · SIZE · SHRINK · STRETCH · SCATTER — BEAT: BEAT · FLASH |
+| METEOR | SKY: FIELD · DARK · DUST — BEAM: ANGLE · LENGTH · CORE · BEAMS · GLOW — HEAD: SPIKE · BARBS · SHARDS · SPREAD · FLICKER — FLOW: STREAKS · CHIPS · SPARKS · SPEED — SMOKE: FREQ · LIFETIME · VELOCITY · DRAG · SIZE · SHRINK · STRETCH · SCATTER — STARS: FREQ · LIFETIME · VELOCITY · DRAG · SIZE · SHRINK · TRAIL · SCATTER — BEAT: BEAT · FLASH |
 
 Don't confuse the CELL plate with the CELL dial. The dial sets the halftone cell size for every
 plate. The plate is the microscope sheet.
@@ -659,6 +659,10 @@ whatever the share.
 A knob in a plate's list can carry a `group`. The panel then puts a small title wherever the
 group changes, which is how JELLY's knobs read as swarm, bell, whiskers, legs and water.
 
+A knob can also carry a `panel`. Those knobs leave the PLATE KNOBS card for a card of their own,
+titled with the panel's name, right under it. Their values still belong to the plate, so the
+address is the same. METEOR puts its two emitters there, SMOKE and STARS.
+
 The glow around each bell is carved lightly out of the water. The bell is filled on a coarse
 grid, a few sheet pixels to a cell, blurred, and carved out through a curve that keeps it strong
 near the bell and lets it trail off, so it fades evenly with no steps. Carving a few larger
@@ -862,10 +866,11 @@ written as the same stack, printed back to front. Nothing is outlined.
 | Speed lines | Dark needles that fan away from the head (STREAKS) |
 | Second beams | Thin pink and blue bands at slightly different angles (BEAMS) |
 | Main beam | The wide yellow band from the head to the tail's end, with a white heart and a blue face at its end (CORE, LENGTH) |
-| Smoke | Flat dark ellipses after the breakdown's Dots emitter. Every one is born big and long right behind the head, then flows down the beam, shrinking and rounding until it ends as a circle. Each dot pivots on its leading tip at full size, so it shrinks into that point and keeps its pace as it rounds; pivoting on the head-side end dragged the shape back and made it seem to slow down. So new ones always overlap into one dark lump behind the head, and a string of ever smaller beads runs along the beam. It takes an effects emitter's values: spawn rate (FREQ, per second), lifetime (LIFETIME, seconds, snapped to an even share of the 2 s loop so the loop closes), velocity and drag (VELOCITY, DRAG), start size and size over life (SIZE, SHRINK), elongation (STRETCH) and sideways spread (SCATTER). FREQ × LIFETIME dots live at once, up to 60. Printed over the main beam, since the beads line up with it |
+| Smoke | Flat dark ellipses after the breakdown's Dots emitter. Every one is born big and long right behind the head, then flows down the beam, shrinking and rounding until it ends as a circle. Each dot pivots on its leading tip at full size, so it shrinks into that point and keeps its pace as it rounds; pivoting on the head-side end dragged the shape back and made it seem to slow down. So new ones always overlap into one dark lump behind the head, and a string of ever smaller beads runs along the beam. It takes an effects emitter's values: spawn rate (FREQ, per second), lifetime (LIFETIME, seconds, snapped to an even share of the 2 s loop so the loop closes), velocity and drag (VELOCITY, DRAG), start size and size over life (SIZE, SHRINK), elongation (STRETCH) and sideways spread (SCATTER). FREQ × LIFETIME dots live at once, up to 60. These knobs sit in a SMOKE card of their own. Printed over the main beam, since the beads line up with it |
 | Chips | Angular debris that spins as it flows (CHIPS) |
 | Stars | Four-point sparkles, each trailing a dotted tail (SPARKS) |
 | Embers | Short bright strokes that fly back from the head |
+| Tail stars | Four-point stars the head throws back, after the breakdown's Stars emitter. Each leaves the rim of the head's circle, flies down the beam and shrinks, trailing a hairline tail back toward the head that is longer the faster it flies. Yellow, pink, blue or white, one color each; they blink between two sizes on alternate drawings (FLICKER). The same emitter values as the smoke plus TRAIL, the tail's length, in a STARS card of their own |
 | Spike | The fan the fragments fly along. It isn't drawn: the hooks and shards leave the rim of the head's circle and shoot straight out inside a sector whose half-angle is SPREAD and whose radius is SPIKE, so their paths trace the fan, its round front being the head itself (SPIKE) |
 | Barbs | Long white blades in mirrored pairs that fly out along the fan's two edges, the outer pair on the edge and inner pairs a little inside. Straight like the shards: each pivots on its base and points out from the head's pivot (BARBS) |
 | Shards | Crystals the head emits (SHARDS, SPREAD). Each leaves the head's rim in its own lane of an even comb, shoots straight out, slows and shrinks away. Every shard pivots on its base, the end nearest the head, and points straight out from the head's pivot, so it grows outward from the rim. White when young, then yellow, cooling to pink at the end; about one in six stays blue. Barbs and shards print together, one pass per color |
@@ -928,7 +933,7 @@ follows those four rules, which is what separates it from a comet photograph.
 | Timing on twos or threes | BEAT splits the loop into that many drawings, and nothing is inbetweened. At 12 a drawing holds for four of the loop's 48 frames; at 48 the plate redraws every frame and the effect goes soft. The sheet rate still decides which frames print, so at 8 sheets a second a drawing shows for three or six. The head boils between two poses on alternate drawings (FLICKER), all its pieces together, instead of each piece flickering on its own |
 | Flat colour, not gradients | The tail is flat faces: a yellow body, a white heart inside it, a blue face at the tail's end. Only one soft glow layer is laid under them, so they don't read as cut paper |
 | Iconic shapes | Edges are few-jointed, so they break in straight lines like crystal. Debris is angular chips that spin (CHIPS), not round droplets |
-| Impact frames | Once per loop, for two frames, a four-point star of white light bursts from the head every way, forward too; every shard but the pink ones turns white and the sky itself lightens (FLASH). It starts on a multiple of six, a frame that 24, 12 and 8 sheets a second all print. Starting anywhere, one roll in three hid it between printed frames at 8 sheets a second |
+| Impact frames | Once per loop, for two frames, a round white light bursts from the head every way, forward too; every shard but the pink ones turns white and the sky itself lightens (FLASH). It starts on a multiple of six, a frame that 24, 12 and 8 sheets a second all print. Starting anywhere, one roll in three hid it between printed frames at 8 sheets a second |
 
 The beat is a floor of the loop's time, so `t = 1` gives the same drawing as `t = 0` and the loop
 still closes. The impact frame is kept away from the loop's seam, so the seam's step stays an

@@ -439,7 +439,7 @@ function fillKnobs(container, list, values) {
     input.max = String(knob.max);
     input.step = String(knob.step);
     input.value = String(values[knob.key]);
-    input.setAttribute("aria-label", knob.label);
+    input.setAttribute("aria-label", knob.panel ? `${knob.panel} ${knob.label}` : knob.label);
     if (knob.hint) input.title = knob.hint;
 
     input.addEventListener("input", () => {
@@ -453,16 +453,40 @@ function fillKnobs(container, list, values) {
   }
 }
 
+// 판이 따로 빼 둔 손잡이 칸들. 판을 바꿀 때마다 걷고 새로 짓는다
+let panelCards = [];
+
 // 고른 판의 손잡이만 조절칸으로 짓는다. 판을 바꾸면 칸도 통째로 바뀐다 — 남의 판에 없는
 // 값을 띄워 두면 무엇을 돌리는지 알 수 없게 된다. 시야의 공통 손잡이는 그 아래 따로 한 칸이다.
+//
+// 손잡이에 panel이 있으면 판 손잡이 칸에서 빼, 그 이름의 칸을 따로 지어 바로 아래에 둔다. 값은 판의
+// 손잡이 값 그대로라 주소도 그대로다
 function buildKnobs() {
   const plate = plateById(state.plate);
   const own = plate.knobs || [];
   const scope = plate.scope || [];
-  knobsCard.hidden = own.length === 0;
+  const main = own.filter((knob) => !knob.panel);
+  knobsCard.hidden = main.length === 0;
   scopeCard.hidden = scope.length === 0;
-  fillKnobs(knobsRow, own, knobsFor(plate));
+  fillKnobs(knobsRow, main, knobsFor(plate));
   fillKnobs(scopeRow, scope, scopeFor(plate));
+
+  for (const card of panelCards) card.remove();
+  const panels = new Map();
+  for (const knob of own) {
+    if (knob.panel) panels.set(knob.panel, [...(panels.get(knob.panel) || []), knob]);
+  }
+  panelCards = [...panels].map(([name, list]) => {
+    const card = document.createElement("section");
+    card.className = "card";
+    const title = document.createElement("h2");
+    title.textContent = name;
+    const row = document.createElement("div");
+    card.append(title, row);
+    scopeCard.before(card);
+    fillKnobs(row, list, knobsFor(plate));
+    return card;
+  });
 }
 
 if (many) {
