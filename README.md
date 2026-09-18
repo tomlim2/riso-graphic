@@ -865,16 +865,33 @@ written as the same stack, printed back to front. Nothing is outlined.
 | Smoke | Long dark ellipses that drift over the beam and give it depth (SMOKE) |
 | Chips | Angular debris that spins as it flows (CHIPS) |
 | Stars | Four-point sparkles, each trailing a dotted tail (SPARKS) |
-| Embers | Short bright strokes near the head |
-| Spike | One large crystal in front of the head, notched at the back (SPIKE) |
-| Barbs | White hooks, hollow on the inside, thrown back from the head (BARBS) |
-| Shards | The small crystals that fan out (SHARDS, SPREAD). Barbs and shards print together, one pass per color |
-| Knot | The pink core at the very front and the yellow ellipse behind it |
+| Embers | Short bright strokes that fly back from the head |
+| Spike | A slim V of crystal whose point is the head's origin, hollowed so only two blades trail back (SPIKE) |
+| Barbs | White hooks in mirrored pairs, hollow on the inside, thrown back from the head. Inner pairs are longer, outer ones splay wider (BARBS) |
+| Shards | Crystals the head emits (SHARDS, SPREAD). Each is born at the head on one tooth of an even comb, flies out along it, slows, sweeps back toward the tail and shrinks away. White when young, then yellow, cooling to pink at the end; about one in six stays blue. Barbs and shards print together, one pass per color |
+| Knot | The pink core at the very front, touching the normal, and the yellow ellipse behind it |
 
-Everything in the head — the spike, the barbs, the shards, the knot and the impact burst — grows
-and shrinks about the head's origin, HEAD 0, where the beams start. The beams don't grow and
+The spike, the barbs, the knot and the impact burst are rooted at the head's origin, HEAD 0, where
+the beams start, and grow and shrink about it; the shards are born there. The beams don't grow and
 shrink, so scaling about any other point slides the head back and forth along the beam. GUIDES
 marks that pivot, the axis and the beam's outline.
+
+The shards are what make the head read as an emitter. They used to sit on the head and pulse in
+place, each on its own beat, side and color, so every drawing showed a different jumble. Now the
+fan is a comb: SPREAD is its half-angle, split evenly into as many teeth as there are shards, with
+a little jitter inside each tooth. The teeth near the axis are longer and fly farther than the
+outer ones. Births are spread by the golden ratio, so the stream stays even and neighboring teeth
+never fire together, and each shard is born a whole number of times per loop. The star stays put
+while the world streams past, so what it throws out is left behind and sweeps back.
+
+Nothing attached to the head crosses the normal through HEAD 0, the line through the pivot square
+to the axis. Every piece stays in the half-plane behind it, the tail's side: up to 90° either way
+from the axis, 180° in all. In effects terms the head is a hemisphere emitter, an emission cone
+with a 90° half-angle. A shard or hook that flew forward muddied which way the star was going, so
+each piece's tilt is narrowed until its whole outline fits (`withinNormal` in the plate), and a
+shard just born with its tail ahead of the normal is pushed back by that much. The spike's point is
+the pivot itself and it opens backward, the knot's front touches the normal, embers are born on it,
+and the impact burst is cut flat along it. GUIDES draws the normal.
 
 The dark sky works like COSMOS: the night drums lay the sky and whatever glows is carved out.
 Here, though, night is every drum except the yellowest one. Counting only the non-yellow drums as
@@ -908,10 +925,10 @@ follows those four rules, which is what separates it from a comet photograph.
 
 | Rule | Here |
 | --- | --- |
-| Timing on twos or threes | BEAT splits the loop into that many drawings, and nothing is inbetweened. At 12 a drawing holds for four of the loop's 48 frames; at 48 the plate redraws every frame and the effect goes soft. The sheet rate still decides which frames print, so at 8 sheets a second a drawing shows for three or six |
+| Timing on twos or threes | BEAT splits the loop into that many drawings, and nothing is inbetweened. At 12 a drawing holds for four of the loop's 48 frames; at 48 the plate redraws every frame and the effect goes soft. The sheet rate still decides which frames print, so at 8 sheets a second a drawing shows for three or six. The head boils between two poses on alternate drawings (FLICKER), all its pieces together, instead of each piece flickering on its own |
 | Flat colour, not gradients | The tail is flat faces: a yellow body, a white heart inside it, a blue face at the tail's end. Only one soft glow layer is laid under them, so they don't read as cut paper |
 | Iconic shapes | Edges are few-jointed, so they break in straight lines like crystal. Debris is angular chips that spin (CHIPS), not round droplets |
-| Impact frames | Once per loop, for two frames, white light bursts at the head, every shard but the pink ones turns white and the sky itself lightens (FLASH). It starts on a multiple of six, a frame that 24, 12 and 8 sheets a second all print. Starting anywhere, one roll in three hid it between printed frames at 8 sheets a second |
+| Impact frames | Once per loop, for two frames, white light bursts back from the head in three arms, one down the tail and two short ones along the normal; every shard but the pink ones turns white and the sky itself lightens (FLASH). It starts on a multiple of six, a frame that 24, 12 and 8 sheets a second all print. Starting anywhere, one roll in three hid it between printed frames at 8 sheets a second |
 
 The beat is a floor of the loop's time, so `t = 1` gives the same drawing as `t = 0` and the loop
 still closes. The impact frame is kept away from the loop's seam, so the seam's step stays an

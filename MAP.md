@@ -57,6 +57,7 @@
 | **마스크** | 모양대로 오린 종이를 대고 찍는 것. 모양 바깥은 찍히지 않아 종이로 남는다 | [`src/mask.js`](src/mask.js) |
 | **라운델 · 원형 비네트** | 그림을 둥근 틀 안에 가두는 구성. 미술사에서는 둥근 그림을 톤도라고 한다 | [`src/roundel.js`](src/roundel.js) · SCOPE 칸의 FRAME (CELL · CHLORO · COSMOS · FLAKE · KALEIDO) |
 | **라인리스** | 테두리를 긋지 않고 면의 경계만으로 형태를 그리는 것. 일러스트에서 온 말이다. 동양화에서는 몰골법이라 하고, 테두리를 긋고 안을 칠하는 것은 구륵법이다 | MOON · JELLY의 종 · METEOR — [`src/plates/moon.js`](src/plates/moon.js) · [`src/plates/jelly.js`](src/plates/jelly.js) · [`src/plates/meteor.js`](src/plates/meteor.js) |
+| **반구 방출 · 방출 원뿔** | 이미터가 한쪽 반구로만 조각을 내보내는 것. 원뿔의 반각이 90°이고, 경계는 이미터를 지나는 법선이다. 이펙트 작화의 말이다 | METEOR의 머리 — 머리 원점을 지나는 법선 뒤로만, 모두 180° 안에 (`withinNormal`) — [`src/plates/meteor.js`](src/plates/meteor.js) |
 | **안내선 · 가이드** | 인쇄되지 않는 보조선. 판을 짜는 동안만 보고 찍을 때는 지운다 | GUIDES 다이얼 · 판의 `guides(page, sketch)` — [`src/guides.js`](src/guides.js) |
 | **트랩** | 이웃한 두 판을 살짝 겹쳐, 판이 어긋나도 틈이 보이지 않게 하는 것. 여기서는 거꾸로 틈을 일부러 낸다 | JELLY의 GAP |
 | **보일** | 인상이 바뀌며 화면 전체가 끓는 것 | BOIL 다이얼 |

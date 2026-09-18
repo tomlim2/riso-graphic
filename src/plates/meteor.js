@@ -56,7 +56,7 @@ const MOST_STREAKS = 30;
 const MOST_CHIPS = 14;
 const MOST_SPARKS = 40;
 const MOST_EMBERS = 12;
-const MOST_BARBS = 8;
+const MOST_BARBS = 8; // 갈고리 가시는 둘씩 짝이라 쌍은 넷이다
 const MOST_SHARDS = 24;
 const FLASH_FRAMES = 2; // 임팩트 프레임이 머무는 프레임 수. 시계는 한 바퀴 48프레임이다
 
@@ -85,6 +85,29 @@ function flowing(phase, t, speed) {
   return { p, fade: Math.pow(Math.sin(Math.PI * p), 0.6) };
 }
 
+// 머리의 법선. 머리 원점(HEAD 0)을 지나 축에 수직인 선이다. 머리에 딸린 것 — 큰 결정, 갈고리 가시,
+// 결정 조각, 불티, 매듭, 임팩트 프레임 — 은 모두 이 선의 뒤, 꼬리 쪽 반평면에만 있다. 축에서
+// 양쪽으로 90°씩, 모두 180°를 넘지 않는다. 이펙트 작화로 치면 이미터의 방출 원뿔이 반각 90°인
+// 반구다. 앞으로 튀는 조각이 하나라도 있으면 별똥별이 어느 쪽으로 가는지 흐려진다.
+//
+// 조각은 제 뿌리에서 축과 turn만큼 기운다(캔버스의 각, 라디안). points는 뿌리를 원점으로 조각이
+// 향하는 쪽을 +로 잰 꼭짓점이다. 돌린 뒤에도 꼭짓점이 모두 법선 안에 들도록 turn을 좁힌다. 뿌리가
+// 법선 위나 뒤에 있으면 조각 전체가 법선 뒤에 남는다. 180°에 들지 않을 만큼 넓은 조각은 곧장
+// 뒤를 향한다. 법선 안에 든 조각은 turn이 그대로다
+const RIGHT_ANGLE = Math.PI / 2;
+function withinNormal(turn, points) {
+  let low = -Infinity;
+  let high = Infinity;
+  for (const [a, b] of points) {
+    if (!a && !b) continue;
+    const angle = Math.atan2(b, a);
+    low = Math.max(low, -RIGHT_ANGLE - angle);
+    high = Math.min(high, RIGHT_ANGLE - angle);
+  }
+  if (low > high) return 0;
+  return Math.min(high, Math.max(low, turn));
+}
+
 // 흐린 무늬는 모양 손잡이(LENGTH · ANGLE · CORE)가 같으면 다시 짓지 않는다. 롤과는 상관이 없다.
 // 공용 캔버스(src/blur.js)의 것을 제 캔버스로 옮겨 쥔다
 const keepMask = keeper(8);
@@ -109,11 +132,11 @@ export const meteor = {
     { group: "BEAM", key: "core", label: "CORE", min: 0.3, max: 2.5, step: 0.05, value: 1.3, hint: "주 광선의 굵기" },
     { group: "BEAM", key: "beams", label: "BEAMS", min: 0, max: 4, step: 1, value: 2, hint: "조금 다른 각도로 나란히 뻗는 보조 광선의 수" },
     { group: "BEAM", key: "glow", label: "GLOW", min: 0, max: 1, step: 0.05, value: 0.6, hint: "광선 둘레의 번짐. 납작한 면만 있으면 붙인 색종이가 된다" },
-    { group: "HEAD", key: "spike", label: "SPIKE", min: 0, max: 1.6, step: 0.05, value: 1, hint: "머리 앞으로 솟은 큰 결정의 크기" },
-    { group: "HEAD", key: "barbs", label: "BARBS", min: 0, max: 8, step: 1, value: 4, hint: "안쪽이 오목하게 휜 흰 가시의 수" },
-    { group: "HEAD", key: "shards", label: "SHARDS", min: 0, max: 24, step: 1, value: 10, hint: "부채꼴로 돋는 작은 조각의 수" },
-    { group: "HEAD", key: "spread", label: "SPREAD", min: 0.2, max: 1.4, step: 0.05, value: 0.85, hint: "조각과 가시가 벌어지는 정도" },
-    { group: "HEAD", key: "flicker", label: "FLICKER", min: 0, max: 1, step: 0.05, value: 0.8, hint: "가시와 조각이 돋았다 사그라드는 정도. 0이면 가만히 있다" },
+    { group: "HEAD", key: "spike", label: "SPIKE", min: 0, max: 1.6, step: 0.05, value: 1, hint: "머리 끝에서 뒤로 가늘게 벌어지는 V 결정의 크기" },
+    { group: "HEAD", key: "barbs", label: "BARBS", min: 0, max: MOST_BARBS, step: 2, value: 2, hint: "뒤로 휜 흰 가시의 수. 좌우 한 쌍씩 같은 모양이다" },
+    { group: "HEAD", key: "shards", label: "SHARDS", min: 0, max: MOST_SHARDS, step: 1, value: 12, hint: "머리에서 뿜어 나가는 조각의 수. 한 번에 보이는 수다" },
+    { group: "HEAD", key: "spread", label: "SPREAD", min: 0.2, max: 1.4, step: 0.05, value: 0.85, hint: "조각이 뿜어 나가는 부채꼴의 반각(라디안)이자 가시가 벌어지는 정도. 머리의 법선을 넘지 않는다" },
+    { group: "HEAD", key: "flicker", label: "FLICKER", min: 0, max: 1, step: 0.05, value: 0.8, hint: "박자마다 두 자세를 오가는 정도. 투스로 끓이는 작화다. 0이면 가만히 있다" },
     { group: "FLOW", key: "smoke", label: "SMOKE", min: 0, max: 12, step: 1, value: 7, hint: "광선을 덮는 어두운 연기 덩어리의 수" },
     { group: "FLOW", key: "streaks", label: "STREAKS", min: 0, max: 30, step: 1, value: 14, hint: "머리에서 뻗어 나가는 어두운 속도선의 수" },
     { group: "FLOW", key: "chips", label: "CHIPS", min: 0, max: 14, step: 1, value: 7, hint: "흘러가는 각진 파편의 수" },
@@ -226,37 +249,28 @@ export const meteor = {
       half: layout.float(1.5, 4),
       kind: layout.chance(0.6) ? "yellow" : "pink"
     }));
-    const barbs = Array.from({ length: MOST_BARBS }, () => ({
-      side: layout.sign(),
-      spread: layout.float(0.2, 1),
-      len: layout.float(0.12, 0.3),
-      bow: layout.float(0.08, 0.2),
-      thick: layout.float(0.018, 0.045),
-      beat: layout.int(1, 2),
-      phase: layout.float(0, TAU)
-    })).slice(0, knobs.barbs);
-    const shards = Array.from({ length: MOST_SHARDS }, () => {
-      const kind = layout.next();
-      return {
-        side: layout.sign(),
-        spread: layout.float(0.15, 1),
-        forward: layout.chance(0.3),
-        base: layout.float(-0.015, 0.06),
-        offset: layout.float(-0.018, 0.018),
-        len: layout.float(0.06, 0.16),
-        wide: layout.float(0.16, 0.32),
-        beat: layout.int(1, 2),
-        phase: layout.float(0, TAU),
-        kind: kind < 0.42 ? "yellow" : kind < 0.78 ? "cyan" : kind < 0.93 ? "white" : "pink"
-      };
-    }).slice(0, knobs.shards);
+    // 갈고리 가시는 좌우 한 쌍씩 같은 모양이다. 안쪽 쌍부터 뽑는다
+    const hooks = Array.from({ length: MOST_BARBS / 2 }, () => ({
+      spread: layout.float(0.75, 1),
+      len: layout.float(0.12, 0.18),
+      bow: layout.float(0.06, 0.1),
+      thick: layout.float(0.012, 0.02)
+    })).slice(0, Math.floor(knobs.barbs / 2));
+    // 뿜어 나가는 조각. 빗살 하나에 하나씩 앉는다. aim은 칸 안에서의 흔들림, born은 태어나는 때의
+    // 흔들림이다(둘 다 칸과 간격에 대한 비율)
+    const shards = Array.from({ length: MOST_SHARDS }, () => ({
+      aim: layout.float(-0.35, 0.35),
+      born: layout.float(-0.25, 0.25),
+      size: layout.float(0.75, 1.15),
+      reach: layout.float(0.8, 1.2),
+      wide: layout.float(0.22, 0.3),
+      accent: layout.chance(0.16)
+    })).slice(0, knobs.shards);
     const spike = {
       tip: layout.float(0.1, 0.17),
       wing: layout.float(0.05, 0.085),
       back: layout.float(0.03, 0.07),
-      notch: layout.float(0.2, 0.45),
-      beat: layout.int(1, 2),
-      phase: layout.float(0, TAU)
+      notch: layout.float(0.2, 0.45)
     };
 
     // 통 나누기. 빛은 가장 노란 통 하나이고 나머지는 모두 밤이다(src/drums.js). 통이 둘 이하면
@@ -432,7 +446,7 @@ export const meteor = {
         every(
           mine.map((e) => {
             const { p, fade } = flowing(e.phase, held, knobs.speed * 2);
-            const u0 = -L * 0.06 + p * L * 0.4;
+            const u0 = p * L * 0.4; // 법선에서 태어나 꼬리 쪽으로 튄다
             const len = width * e.len;
             return poly(facet(at, u0, u0 + len, e.off * width, (s) => e.half * fade * Math.pow(Math.sin(Math.PI * s), 0.7), { steps: 5 }));
           })
@@ -444,89 +458,104 @@ export const meteor = {
     // 붙박이로 두고 늘고 준다. 광선은 늘고 줄지 않으므로, 다른 점을 잡고 키우면 머리가 광선 위에서
     // 앞뒤로 미끄러진다
     const fromHead = (x, y, grow) => [hx + (x - hx) * grow, hy + (y - hy) * grow];
-    const growAbout = (points, grow) => points.map(([x, y]) => fromHead(x, y, grow));
 
-    // 머리의 큰 결정. 앞으로 솟고 뒤가 오목하게 파인다. 다 자란 모양을 먼저 짓고 머리 원점을 잡고
-    // 늘고 준다
+    // 머리의 자세. 박자마다 두 자세를 번갈아 오간다 — 이펙트 작화가 투스로 끓이는 방식이다. 조각마다
+    // 따로 흔들면 장마다 윤곽이 제멋대로 바뀐다. 한 바퀴의 장 수가 짝수면 이음매에서도 번갈아 든다
+    const drawing = Math.round(held * beat) % beat;
+    const pose = (drawing % 2 === 0 ? 1 : -1) * knobs.flicker;
+
+    // 머리 끝의 결정. 꼭짓점이 머리 원점에 닿고 뒤로 가늘게 벌어지는 V다. 속을 깊이 파서 두 날만
+    // 남긴다. 통째로 크면 매듭과 조각을 삼켜 머리가 한 덩어리가 된다
     if (knobs.spike > 0) {
-      const grow = (1 - 0.12 * knobs.flicker + 0.12 * knobs.flicker * Math.sin(turn * spike.beat + spike.phase)) * (1 + 0.3 * burst);
-      glowWith(
-        "cyan",
-        poly(
-          growAbout(
-            [
-              at(-L * spike.tip * knobs.spike, 0),
-              at(L * spike.back * knobs.spike, width * spike.wing * knobs.spike),
-              at(L * spike.back * knobs.spike * spike.notch, 0),
-              at(L * spike.back * knobs.spike, -width * spike.wing * knobs.spike)
-            ],
-            grow
-          )
-        )
-      );
+      const size = knobs.spike * (1 + 0.08 * pose) * (1 + 0.3 * burst);
+      const reach = L * (spike.tip + spike.back) * 0.65 * size;
+      const wing = width * spike.wing * 0.55 * size;
+      glowWith("cyan", poly([at(0, 0), at(reach, wing), at(reach * (0.5 + 0.3 * spike.notch), 0), at(reach, -wing)]));
     }
 
-    // 갈고리 가시. 안쪽이 오목하게 휜 흰 가시가 머리에서 뒤로 뻗는다
-    const flicker = knobs.flicker;
+    // 갈고리 가시. 좌우 한 쌍씩 같은 모양으로 머리에서 뒤로 뻗고, 안쪽이 오목하게 휜다. 안쪽 쌍이 길고
+    // 바깥 쌍일수록 짧고 더 벌어진다. 기울기는 법선 안으로 좁힌다
     const pieces = { yellow: [], cyan: [], white: [], pink: [] };
-    for (const b of barbs) {
-      const grow = 1 - flicker + flicker * Math.pow(Math.max(0, Math.sin(turn * b.beat + b.phase)), 0.6);
-      if (grow <= 0.05) continue;
-      const barbAt = axis(b.side * b.spread * knobs.spread * 0.9);
-      const len = L * b.len;
-      const bow = width * b.bow * b.side;
-      const thick = width * b.thick;
-      pieces.white.push(
-        poly(
-          growAbout(
-            [
-              barbAt(0, 0),
-              barbAt(len * 0.45, thick + bow * 0.35),
-              barbAt(len, bow),
-              barbAt(len * 0.5, bow * 0.45),
-              barbAt(len * 0.2, thick * 0.2)
-            ],
-            grow
-          )
-        )
-      );
-    }
+    hooks.forEach((h, pair) => {
+      const len = L * h.len * (1 - 0.16 * pair) * (1 + 0.06 * pose);
+      const bow = width * h.bow;
+      const thick = width * h.thick;
+      const shape = [[0, 0], [len * 0.45, thick + bow * 0.35], [len, bow], [len * 0.5, bow * 0.45], [len * 0.2, thick * 0.2]];
+      const lean = h.spread * knobs.spread * (0.8 + 0.2 * pair) * (1 + 0.05 * pose);
+      for (const side of [1, -1]) {
+        const hook = shape.map(([u, v]) => [u, v * side]);
+        // axis(lean)은 캔버스에서 −lean만큼 돈다
+        const hookAt = axis(-withinNormal(-side * lean, hook));
+        pieces.white.push(poly(hook.map(([u, v]) => hookAt(u, v))));
+      }
+    });
 
-    // 부채꼴로 돋는 작은 결정 조각
-    for (const s of shards) {
-      const grow = (1 - flicker + flicker * Math.pow(Math.max(0, Math.sin(turn * s.beat + s.phase)), 0.7)) * (1 + 0.5 * burst);
-      if (grow <= 0.02) continue;
-      const turnTo = tilt + (s.forward ? Math.PI : 0) + s.side * s.spread * knobs.spread * (s.forward ? 0.6 : 1);
-      const ux = Math.cos(turnTo);
-      const uy = Math.sin(turnTo);
-      const [bx0, by0] = at(s.base * L, s.offset * width);
-      const len = width * s.len;
+    // 뿜어 나가는 조각. 머리 원점에서 태어나 제 빗살의 방향으로 날아가며 작아지고, 꼬리 쪽으로 처져
+    // 휘어 나간다. 별똥별은 제자리에 있고 세상이 흐르므로, 뿜어 낸 것은 뒤에 남는다.
+    //
+    // 빗살: SPREAD를 반각으로 한 부채꼴을 조각 수만큼 고르게 나누고 칸 안에서 조금 흔든다. 가운데(꼬리
+    // 축 쪽)가 길고 멀리 가며 바깥으로 갈수록 짧다. 태어나는 때는 황금비로 흩어 늘 고른 흐름이 서고,
+    // 이웃한 빗살이 함께 태어나지 않는다. 한 바퀴에 정수 번 태어나 루프가 닫힌다.
+    //
+    // 색은 나이를 따른다. 갓 태어나면 희고, 노랗다가, 끝에서 분홍으로 식는다. 여섯에 하나쯤은 내내 푸른
+    // 강조다. 임팩트 프레임에는 분홍 말고는 모두 희다
+    const count = shards.length;
+    const rate = 2 * Math.max(1, Math.round(knobs.speed));
+    const fling = width * 0.2;
+    const lag = L * 0.14;
+    shards.forEach((s, i) => {
+      const slot = count > 1 ? -1 + (2 * i + 1) / count : 0;
+      const aim = knobs.spread * (slot + s.aim / Math.max(1, count));
+      const age = (((i * 0.6180339887 + s.born / Math.max(1, count) + held * rate) % 1) + 1) % 1;
+      const grow = Math.min(1, age / 0.12) * Math.pow(1 - age, 0.7);
+      if (grow <= 0.02) return;
+      const out = 1 - (1 - age) * (1 - age);
+      const far = fling * s.reach * (1 - 0.25 * slot * slot);
+      const len = width * 0.085 * s.size * (1 - 0.45 * slot * slot) * grow * (1 + 0.1 * pose) * (1 + 0.5 * burst);
       const half = len * s.wide * 0.5;
-      // 임팩트 프레임에는 조각도 흰빛이 된다
-      pieces[burst > 0 && s.kind !== "pink" ? "white" : s.kind].push(
-        poly(
-          growAbout(
-            [
-              [bx0, by0],
-              [bx0 + ux * len * 0.35 - uy * half, by0 + uy * len * 0.35 + ux * half],
-              [bx0 + ux * len, by0 + uy * len],
-              [bx0 + ux * len * 0.35 + uy * half, by0 + uy * len * 0.35 - ux * half]
-            ],
-            grow
-          )
-        )
-      );
-    }
+      // 자리와 방향. 방향은 날아가는 쪽이다 — 처음엔 제 빗살을 따르고, 느려지면서 꼬리 쪽으로 눕는다
+      const cu = out * far * Math.cos(aim) + age * lag;
+      const cv = out * far * Math.sin(aim);
+      const heading = Math.atan2(2 * (1 - age) * far * Math.sin(aim), 2 * (1 - age) * far * Math.cos(aim) + lag);
+      const du = Math.cos(heading);
+      const dv = Math.sin(heading);
+      const kite = [
+        [cu - du * len * 0.35, cv - dv * len * 0.35],
+        [cu + du * len * 0.1 - dv * half, cv + dv * len * 0.1 + du * half],
+        [cu + du * len * 0.65, cv + dv * len * 0.65],
+        [cu + du * len * 0.1 + dv * half, cv + dv * len * 0.1 - du * half]
+      ];
+      // 갓 태어나 꼬리가 법선 앞으로 나온 조각은 그만큼 뒤로 민다
+      const shift = Math.max(0, -Math.min(...kite.map(([u]) => u)));
+      const hue = s.accent ? "cyan" : age < 0.22 ? "white" : age < 0.6 ? "yellow" : "pink";
+      pieces[burst > 0 && hue !== "pink" ? "white" : hue].push(poly(kite.map(([u, v]) => at(u + shift, v))));
+    });
 
-    // 임팩트 프레임. 머리 원점에서 흰빛이 네 갈래로 터진다
+    // 임팩트 프레임. 머리 원점에서 흰빛이 세 갈래 — 꼬리 쪽으로 길게 하나, 법선을 따라 짧게 둘 — 로
+    // 터진다. 앞쪽은 법선에서 끊긴다. 옆 갈래까지 길면 법선을 따라 흰 벽이 선다. 둥근 섬광도 앞끝이
+    // 법선에 닿게 뒤로 물린다
     if (burst > 0) {
+      const reach = width * 0.3 * burst;
+      const flank = reach * 0.55;
+      const waist = reach * 0.12;
       pieces.white.push((g) => {
-        shapes.sparkle(g, hx, hy, width * 0.3 * burst, 0.12);
+        const [ax, ay] = at(0, -flank);
+        const [bx, by] = at(reach, 0);
+        const [cx, cy] = at(0, flank);
+        const [px, py] = at(waist, -waist);
+        const [qx, qy] = at(waist, waist);
+        g.beginPath();
+        g.moveTo(ax, ay);
+        g.quadraticCurveTo(px, py, bx, by);
+        g.quadraticCurveTo(qx, qy, cx, cy);
+        g.closePath();
         g.fill();
       });
       pieces.white.push((g) => {
+        const r = width * 0.055 * burst;
+        const [x, y] = at(r, 0);
         g.beginPath();
-        g.arc(hx, hy, width * 0.055 * burst, 0, TAU);
+        g.arc(x, y, r, 0, TAU);
         g.fill();
       });
     }
@@ -534,12 +563,14 @@ export const meteor = {
       if (list.length) glowWith(kind, every(list));
     }
 
-    // 머리 매듭. 가장 앞의 분홍 심과 그 뒤의 노란 타원. 이것도 머리 원점을 잡고 뛴다
+    // 머리 매듭. 가장 앞의 분홍 심과 그 뒤의 노란 타원. 분홍 심의 앞끝이 법선에 닿는다. 이것도 머리
+    // 원점을 잡고 뛰므로, 부풀어도 앞끝은 법선에 붙어 있다
     const knot = 1 + 0.12 * Math.sin(turn * 2 + trailPhase);
+    const lead = width * 0.032; // 분홍 심의 축 방향 반지름
     const beads = [
-      ["pink", at(-L * 0.012, 0), width * 0.032, width * 0.02],
-      ["yellow", at(L * 0.035, 0), width * 0.032, width * 0.013],
-      ["white", at(0, 0), width * 0.012, width * 0.012]
+      ["pink", at(lead, 0), lead, width * 0.02],
+      ["yellow", at(lead + L * 0.047, 0), width * 0.032, width * 0.013],
+      ["white", at(lead + L * 0.012, 0), width * 0.012, width * 0.012]
     ];
     for (const [kind, spot, rx, ry] of beads) {
       const [x, y] = fromHead(spot[0], spot[1], knot);
@@ -571,6 +602,11 @@ export const meteor = {
 
     // 주 광선의 윤곽. 납작한 면이 어디까지 부푸는지
     marks.push({ kind: "path", points: facet(at, 0, L, 0, (s) => coreWidth * taper(s), { steps: 9 }), dash: true });
+
+    // 법선. 머리 원점을 지나 축에 수직이다. 머리에 딸린 것은 모두 이 선의 뒤(꼬리 쪽)에 있다
+    const edge = page.width * 0.22;
+    marks.push({ kind: "line", from: at(0, -edge), to: at(0, edge), dash: true, hot: true });
+    marks.push({ kind: "text", at: at(0, edge + 14), text: "NORMAL · 180°", hot: true });
 
     // 머리 원점. 광선이 여기서 시작하고, 머리에 딸린 것들의 피벗도 여기다
     marks.push({ kind: "dot", at: [hx, hy], r: 5, ring: 22, label: "PIVOT · HEAD 0", hot: true });
