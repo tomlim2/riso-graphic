@@ -43,6 +43,7 @@ html, body {
 
 /* The sheet sits on the desk, clear of the deck on the left. */
 .press {
+  position: relative;
   height: 100%;
   padding: 52px 28px 28px 288px;
   display: flex;
@@ -62,6 +63,12 @@ html, body {
   max-height: 100%;
   background: var(--sheet);
   box-shadow: 0 1px 2px rgba(43, 39, 36, 0.18), 0 18px 44px rgba(43, 39, 36, 0.22);
+}
+
+/* 안내선. 한 장 위에 겹쳐 놓기만 한다. 손은 통과시키고, 자리와 크기는 한 장을 따라간다 */
+.guidesLayer {
+  position: absolute;
+  pointer-events: none;
 }
 
 .deck {

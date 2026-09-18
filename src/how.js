@@ -43,8 +43,14 @@ const BASE = {
 };
 
 // 한 장 찍고 인쇄기의 종이와 찍은 내역을 돌려준다. 종이는 다음 장이 덮으므로 바로 옮겨 붙인다.
+// GPU가 기계를 잃은 동안에는 찍히는 것이 없다. 그림들이 빈 종이를 옮겨 붙이지 않도록 멈추고 알린다
 function print(plate, extra = {}) {
   const info = press.print({ ...BASE, plate, ...extra });
+  if (!info) {
+    notice.hidden = false;
+    notice.textContent = "GPU가 인쇄기를 잃었다. 페이지를 다시 열면 된다";
+    throw new Error(notice.textContent);
+  }
   return { sheet: press.canvas, info };
 }
 
@@ -487,6 +493,7 @@ function drawPaper() {
 }
 
 function drawAll() {
+  notice.hidden = true; // 기계를 되찾아 다시 그리는 길이면 잃었다는 알림을 걷는다
   drawHero();
   drawSeparation();
   drawGrid();

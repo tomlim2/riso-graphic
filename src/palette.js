@@ -1,6 +1,7 @@
 // Riso prints with spot inks, not with process colour: a drum per colour, two or three
 // passes, and nothing mixed before it reaches the paper. So a palette here is a short
-// list of inks in the order they are laid down, lightest drum first.
+// list of inks. The order is not the printing order — the press sorts the drums by
+// lightness itself — but it decides which ink a two-drum run leaves out: the last.
 
 // The paper is a plain white uncoated stock. It adds no colour of its own, so the inks land
 // as themselves and an overlap is decided by the inks alone. A perfectly flat white reads as
@@ -26,10 +27,12 @@ export function inksFor(palette, count) {
   return palette.inks.slice(0, Math.max(1, Math.min(count, palette.inks.length)));
 }
 
-// The ink an element asked for, clamped to what is on the press today.
-export function inkIndex(wanted, inks) {
-  return Math.min(wanted, inks.length - 1);
-}
+// An ink as red, green and blue from 0 to 1. The shader wants it so, and the plates that pick
+// drums by colour (src/drums.js) measure it so.
+export const rgbOf = (hex) => {
+  const value = parseInt(hex.slice(1), 16);
+  return [((value >> 16) & 255) / 255, ((value >> 8) & 255) / 255, (value & 255) / 255];
+};
 
 export function luminance(hex) {
   const v = parseInt(hex.slice(1), 16);

@@ -18,6 +18,7 @@
 <main class="press">
   <canvas id="sheet" class="sheet" width="1080" height="1080" aria-label="리소 스타일로 인쇄된 샘플 시트"></canvas>
   <canvas id="contact" class="sheet" width="1122" height="1158" aria-label="콘택트 시트" hidden></canvas>
+  <canvas id="marks" class="guidesLayer" width="1080" height="1080" aria-hidden="true" hidden></canvas>
 </main>
 
 <aside class="deck">
@@ -25,6 +26,7 @@
     <h2>SHEET</h2>
     <button id="reroll" class="wide" type="button">NEW ROLL</button>
     <button id="save" class="wide mt" type="button">PNG</button>
+    <button id="guides" class="wide mt" type="button" title="판이 어떻게 짜였는지 안내선으로 겹쳐 본다 (D)">GUIDES</button>
     <a class="link wide mt" href="./how.html">HOW IT'S MADE</a>
   </section>
 
@@ -96,7 +98,7 @@
     <input id="register" type="range" min="0" max="5" value="2" aria-label="판 어긋남">
   </section>
 
-  <p class="hint">SPACE 재생 · N 새 롤 · G 콘택트 시트 · S 저장</p>
+  <p class="hint">SPACE 재생 · N 새 롤 · G 콘택트 시트 · D 안내선 · S 저장</p>
 </aside>
 
 <noscript><p class="noscript">이 페이지는 자바스크립트로 그립니다.</p></noscript>

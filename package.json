@@ -1,6 +1,6 @@
 {
   "name": "riso-graphic",
-  "version": "0.35.0",
+  "version": "0.36.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -8,6 +8,7 @@
   },
   "scripts": {
     "start": "node serve.mjs",
-    "bench": "node bench/serve.mjs"
+    "bench": "node bench/serve.mjs",
+    "test": "node --test test/*.test.mjs"
   }
 }

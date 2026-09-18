@@ -28,6 +28,12 @@ export function makeRng(roll) {
   return rng;
 }
 
+// The seed of a plate with a FIELD knob. The paper's roll (page.seed) is mixed with the plate's own
+// salt and with FIELD, so turning FIELD re-draws the layout while the inks and the paper's grain stay
+// put. Saved links carry FIELD, so the formula must not change. RIPPLE predates it and mixes FIELD
+// without the +1 on its own line; JELLY passes its own multiplier.
+export const fieldSeed = (page, salt, mix = 0x85ebca6b) => (page.seed ^ salt ^ Math.imul(page.knobs.field + 1, mix)) >>> 0;
+
 // 1D value noise. Used to make a line wobble the way a hand draws it — neighbouring
 // samples stay close, so the wobble reads as one unsteady stroke and not as jitter.
 export function makeNoise(rng, size = 256) {

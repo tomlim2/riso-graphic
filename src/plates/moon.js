@@ -109,18 +109,18 @@ export const moon = {
     const glints = [];
     const rows = knobs.glints;
     for (let i = 0; i < rows; i += 1) {
-      const t = i / rows;
-      const y = horizon + 12 + t * (height - horizon - 40);
-      const spread = (46 + t * 150) * R.float(0.55, 1.25);
+      const depth = i / rows; // 수평선에서 0, 판 아래로 갈수록 1
+      const y = horizon + 12 + depth * (height - horizon - 40);
+      const spread = (46 + depth * 150) * R.float(0.55, 1.25);
       for (let k = 0, pieces = R.int(2, 4); k < pieces; k += 1) {
         // 물빛은 제자리에서 좌우로 흔들린다. 흐르는 것이 아니라 물이 일렁이는 것이다.
         // 흔들리는 폭은 아래로 갈수록 커진다 — 시간이 아니라 자리에 따라. t에 비례시키면
         // 한 바퀴 끝에서 폭이 제자리로 튀고, 그 튐이 곧 이음매가 된다.
-        const sway = swing(R.float(0, Math.PI * 2)) * (6 + (i / rows) * 10);
+        const sway = swing(R.float(0, Math.PI * 2)) * (6 + depth * 10);
         const x = cx + R.float(-spread, spread) + sway;
-        const length = R.float(14, 52) * (0.5 + i / rows);
+        const length = R.float(14, 52) * (0.5 + depth);
         glints.push({
-          points: shapes.wave(x - length / 2, y, x + length / 2, y, { amplitude: 1.6, cycles: 1.1, steps: 12, offset: i + k, phase: turn }),
+          points: shapes.wave(x - length / 2, y, x + length / 2, y, { amplitude: 1.6, cycles: 1.1, steps: 12, phase: turn }),
           w: R.float(2.5, 6)
         });
       }

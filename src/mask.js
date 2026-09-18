@@ -8,7 +8,7 @@
 // 안쪽은 비고 바깥만 칠해지므로, 그 칠을 파내기로 하면 바깥만 지워진다. 짝홀이라 남길 모양은
 // 스스로 겹치지 않는 닫힌 모양 하나여야 한다. 겹치면 겹친 자리가 도로 지워진다.
 
-import { splineSubpath } from "./shapes.js";
+import { splineSubpath, polySubpath, circleSubpath } from "./shapes.js";
 
 // keep(g)는 경로를 새로 시작하지 않고 남길 모양만 더한다.
 export function mask(S, { width, height }, keep) {
@@ -26,22 +26,11 @@ export function mask(S, { width, height }, keep) {
 
 // 원 하나를 남긴다. 중심을 주지 않으면 판 한가운데다.
 export function maskCircle(S, page, radius, cx = page.width / 2, cy = page.height / 2) {
-  mask(S, page, (g) => {
-    g.moveTo(cx + radius, cy);
-    g.arc(cx, cy, radius, 0, Math.PI * 2);
-  });
+  mask(S, page, (g) => circleSubpath(g, cx, cy, radius));
 }
 
 // 점으로 이은 닫힌 모양 하나를 남긴다. smooth면 판화의 다른 모양처럼 곡선으로 잇고, 아니면
 // 꺾인 채로 잇는다. shapes.js의 blob이나 leaf가 내놓는 점을 그대로 넘기면 된다.
 export function maskShape(S, page, points, { smooth = true } = {}) {
-  mask(S, page, (g) => {
-    if (smooth) {
-      splineSubpath(g, points, true);
-      return;
-    }
-    g.moveTo(points[0][0], points[0][1]);
-    for (let i = 1; i < points.length; i += 1) g.lineTo(points[i][0], points[i][1]);
-    g.closePath();
-  });
+  mask(S, page, (g) => (smooth ? splineSubpath(g, points, true) : polySubpath(g, points, true)));
 }

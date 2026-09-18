@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SNAPSHOT — 그림이 바뀌었는가</title>
+<style>
+  :root {
+    --desk: #ddd8cb;
+    --paper: #efe9dd;
+    --ink: #2b2724;
+    --line: rgba(43, 39, 36, 0.22);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--desk);
+    color: var(--ink);
+    font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: 0.04em;
+  }
+
+  header { padding: 14px 18px; display: flex; gap: 14px; align-items: baseline; }
+  header a { margin-left: auto; color: inherit; }
+  .mark { font-weight: 700; letter-spacing: 0.18em; }
+  .sub { opacity: 0.5; }
+
+  main { padding: 0 18px 18px; display: grid; gap: 8px; max-width: 1080px; }
+  .card { background: var(--paper); border: 1px solid var(--line); padding: 10px; }
+  .card h2 { margin: 0 0 8px; font-size: 10px; letter-spacing: 0.16em; opacity: 0.7; }
+
+  .row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+
+  button, input {
+    font: inherit;
+    color: inherit;
+    background: transparent;
+    border: 1px solid var(--line);
+    padding: 7px 9px;
+    letter-spacing: 0.12em;
+  }
+  button { cursor: pointer; }
+  button:hover { background: rgba(43, 39, 36, 0.06); }
+  button.primary { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  button:disabled { opacity: 0.4; cursor: wait; }
+  input { flex: 1; min-width: 220px; letter-spacing: 0.02em; }
+
+  pre { margin: 0; white-space: pre-wrap; word-break: break-word; }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="mark">SNAPSHOT</span>
+  <span class="sub">고치기 전과 뒤에 같은 장이 나오는가</span>
+  <a href="./">BENCH</a>
+</header>
+
+<main>
+  <section class="card">
+    <h2>SOURCE</h2>
+    <pre id="meta">BOOT</pre>
+  </section>
+
+  <section class="card">
+    <h2>RUN</h2>
+    <div class="row">
+      <input id="run" aria-label="기준의 이름. bench/results/ 아래 폴더 이름이 된다">
+      <button id="record" type="button">RECORD</button>
+      <button id="compare" class="primary" type="button">COMPARE</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>OUT</h2>
+    <pre id="out">RECORD는 지금 작업 트리를 기준으로 뜨고, COMPARE는 지금을 기준과 견준다.</pre>
+  </section>
+</main>
+
+<script type="module">
+  const out = document.getElementById("out");
+  const buttons = [...document.querySelectorAll("button")];
+  const busy = (on) => buttons.forEach((button) => (button.disabled = on));
+
+  const stamp = Date.now();
+  const snapshot = await import(`./snapshot.js?v=${stamp}`);
+  window.snapshot = snapshot;
+
+  const meta = await snapshot.setup(stamp);
+  document.getElementById("meta").textContent = [
+    `TREE   ${meta.source}`,
+    `GPU    ${meta.gpu}`,
+    `PLATES ${meta.plates.join(" · ")}`,
+    `SHEETS ${meta.cases}`
+  ].join("\n");
+
+  const run = document.getElementById("run");
+  run.value = new URLSearchParams(location.search).get("run") || `${new Date().toISOString().slice(0, 10)}-snapshot`;
+
+  const go = (job) => async () => {
+    busy(true);
+    try {
+      const result = await job(run.value.trim(), (note) => (out.textContent = note));
+      out.textContent = JSON.stringify(result, null, 2);
+      window.lastSnapshot = result;
+    } catch (error) {
+      out.textContent = `ERROR  ${error.message}`;
+      window.lastSnapshot = { error: error.message };
+    } finally {
+      busy(false);
+    }
+  };
+
+  document.getElementById("record").addEventListener("click", go(snapshot.record));
+  document.getElementById("compare").addEventListener("click", go(snapshot.compare));
+</script>
+</body>
+</html>

@@ -50,13 +50,14 @@
 | **오버프린트** | 잉크를 겹쳐 제3의 색을 얻는 것 | 곱하기 셰이더 — [`src/screen.js`](src/screen.js) · 초록 잉크 없이 초록을 내는 CHLORO |
 | **망점 · 하프톤** | 점의 크기로 계조를 내는 것 | [`src/screen.js`](src/screen.js) · 그림으로는 [how.html](how.html) |
 | **스크린 각도** | 통마다 다른 망점 각도. 45°·15°·75° | `ANGLES` |
-| **로제트** | 각도가 벌어진 망점들이 겹쳐 생기는 꽃 무늬 | MEDIUM 판화 |
-| **무아레** | 같은 각도로 겹쳤을 때 생기는 간섭 무늬. 각도를 벌리는 이유 | 피하려고 벌려 둔 것 |
+| **로제트** | 각도가 벌어진 망점들이 겹쳐 생기는 꽃 무늬 | [how.html](how.html#angles) 06 · 걸려 있지 않은 MEDIUM 판화 |
+| **무아레** | 같은 각도로 겹쳤을 때 생기는 간섭 무늬. 각도를 벌리는 이유 | 피하려고 벌려 둔 것 · 일부러 낸 것은 [how.html](how.html#angles) 06 |
 | **미스레지스트레이션** | 판 어긋남. 흠이 아니라 의도로 쓴다 | REGISTER 다이얼 |
-| **녹아웃** | 찍지 않아 종이가 그대로 드러난 자리. 흰 잉크가 아니다 | `Separation.knockout` |
+| **녹아웃** | 찍지 않아 종이가 그대로 드러난 자리. 흰 잉크가 아니다 | `Separation.knockout` · 어두운 시야에서 빛을 파내는 `carve` — [`src/night.js`](src/night.js) |
 | **마스크** | 모양대로 오린 종이를 대고 찍는 것. 모양 바깥은 찍히지 않아 종이로 남는다 | [`src/mask.js`](src/mask.js) |
 | **라운델 · 원형 비네트** | 그림을 둥근 틀 안에 가두는 구성. 미술사에서는 둥근 그림을 톤도라고 한다 | [`src/roundel.js`](src/roundel.js) · SCOPE 칸의 FRAME (CELL · CHLORO · COSMOS · FLAKE · KALEIDO) |
-| **라인리스** | 테두리를 긋지 않고 면의 경계만으로 형태를 그리는 것. 일러스트에서 온 말이다. 동양화에서는 몰골법이라 하고, 테두리를 긋고 안을 칠하는 것은 구륵법이다 | MOON · JELLY의 종 — [`src/plates/moon.js`](src/plates/moon.js) · [`src/plates/jelly.js`](src/plates/jelly.js) |
+| **라인리스** | 테두리를 긋지 않고 면의 경계만으로 형태를 그리는 것. 일러스트에서 온 말이다. 동양화에서는 몰골법이라 하고, 테두리를 긋고 안을 칠하는 것은 구륵법이다 | MOON · JELLY의 종 · METEOR — [`src/plates/moon.js`](src/plates/moon.js) · [`src/plates/jelly.js`](src/plates/jelly.js) · [`src/plates/meteor.js`](src/plates/meteor.js) |
+| **안내선 · 가이드** | 인쇄되지 않는 보조선. 판을 짜는 동안만 보고 찍을 때는 지운다 | GUIDES 다이얼 · 판의 `guides(page, sketch)` — [`src/guides.js`](src/guides.js) |
 | **트랩** | 이웃한 두 판을 살짝 겹쳐, 판이 어긋나도 틈이 보이지 않게 하는 것. 여기서는 거꾸로 틈을 일부러 낸다 | JELLY의 GAP |
 | **보일** | 인상이 바뀌며 화면 전체가 끓는 것 | BOIL 다이얼 |
 | **온 투스** | 두 프레임에 한 장. 손그림 애니메이션의 기본 | SHEETS A SECOND |

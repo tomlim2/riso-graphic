@@ -7,11 +7,11 @@
 // 오르는 것처럼 보이려면 해파리가 아니라 물이 움직여야 한다. 해파리가 실제로 올라가면 한
 // 바퀴 끝에서 제자리로 돌아오느라 튄다. 티끌을 아래로 흘려 보내면 같은 말을 하면서 이어진다.
 //
-// 여러 마리는 깊이로 벌린다. 멀수록 작고 흐리고 위에 있다. 먼 것부터 찍고 가까운 것이 그
-// 위를 덮으므로, 가까운 놈의 녹아웃이 먼 놈을 지워 가림이 저절로 생긴다.
+// 여러 마리는 깊이로 벌린다. 멀수록 작고 흐리다. 먼 것부터 찍고 가까운 것이 그 위를
+// 덮으므로, 가까운 놈의 녹아웃이 먼 놈을 지워 가림이 저절로 생긴다.
 //
 // 물은 한 빛깔이 아니다. 옅은 두 통이 큰 얼룩으로 번져, 물 위에서 초록이나 보라 같은 제3의
-// 색이 된다. 물은 판 가득 찍는다. 둥근 틀은 CELL과 CHLORO의 것이다.
+// 색이 된다. 물은 판 가득 찍는다. 둥근 틀은 현미경과 망원경 판들의 것이다.
 //
 // 해파리는 물에서 조금 넓게 파낸다. 판이 어긋나지 않아도 둘레에 가는 종이 틈이 서서, 같은 통으로
 // 찍은 물과 몸이 갈라져 보인다. 인쇄에서 틈이 안 보이게 두 판을 살짝 겹치는 트랩의 거꾸로다.
@@ -21,8 +21,10 @@
 // 얼룩은 롤이 정하고 시간과 무관하다. 무리를 짜는 난수와 티끌을 뿌리는 난수의 흐름은 건드리지
 // 않는다 — 얼룩은 따로 굴린다.
 
-import { makeRng, makeNoise2 } from "../rng.js";
+import { makeRng, makeNoise2, fieldSeed } from "../rng.js";
+import { keeper } from "../keep.js";
 import * as shapes from "../shapes.js";
+import { soften, glowMask, layGlow } from "../blur.js";
 
 // 종. 위는 둥근 지붕, 아래는 가리비가 줄지어 늘어진 밑단.
 //
@@ -105,6 +107,9 @@ const LEG_WOBBLE = 0.45; // 다리가 옆으로 흔들리는 폭. 수염의 WOBB
 const LEG_BELL = 0.13; // 다리 굵기의 기준이 되는 BELL. 이 BELL의 가까운 종에서 GIRTH가 제 굵기다
 const MOST_TENTACLES = 20; // TENTACLES의 끝값
 const MOST_ARMS = 6; // ARMS의 끝값
+// FIELD를 씨앗에 섞는 곱수. 다른 판들(0x85ebca6b)과 다르지만, 저장된 주소가 같은 무리를 찍어야 하므로
+// 그대로 둔다
+const FIELD_MIX = 0x9e3779b9;
 
 // 물에 번진 얼룩. 옅은 두 통이 저주파 밭을 따라 크게 번진다. 판형의 1/6 크기로 밭을 그려
 // 두고 키워 붙인다. 롤마다 한 벌이면 되니, 매 프레임 새로 짓지 않도록 몇 벌만 쥔다.
@@ -117,48 +122,13 @@ const MOST_ARMS = 6; // ARMS의 끝값
 // 몇 밀리초를 더 쓴다.
 const STAIN_SIZE = 180;
 const FEATHER_REACH = 16; // FEATHER가 1일 때 상자 흐림의 반폭. 밭의 픽셀이다
-const stains = new Map();
-
-// 한 방향 상자 흐림. 창을 밀며 들어오는 값을 더하고 나가는 값을 빼, 반폭과 상관없이 한 줄을
-// 한 번에 훑는다. 줄 끝 너머는 끝값으로 친다. across면 가로로, 아니면 세로로 흐린다
-function boxBlur(field, cols, rows, radius, across) {
-  const out = new Float32Array(field.length);
-  const lines = across ? rows : cols;
-  const length = across ? cols : rows;
-  const along = across ? 1 : cols; // 줄 안에서 한 칸
-  const between = across ? cols : 1; // 줄과 줄 사이
-  const span = radius * 2 + 1;
-  const last = length - 1;
-  for (let line = 0; line < lines; line += 1) {
-    const origin = line * between;
-    const first = field[origin];
-    const end = field[origin + last * along];
-    let sum = 0;
-    for (let k = -radius; k <= radius; k += 1) sum += k < 0 ? first : k > last ? end : field[origin + k * along];
-    for (let k = 0; k < length; k += 1) {
-      out[origin + k * along] = sum / span;
-      const enter = k + radius + 1;
-      const leave = k - radius;
-      sum += (enter > last ? end : field[origin + enter * along]) - (leave < 0 ? first : field[origin + leave * along]);
-    }
-  }
-  return out;
-}
-
-// 세 번 겹친 상자 흐림. 가우스 흐림에 가깝다
-function soften(field, cols, rows, radius) {
-  let out = field;
-  for (let pass = 0; radius > 0 && pass < 3; pass += 1) {
-    out = boxBlur(boxBlur(out, cols, rows, radius, true), cols, rows, radius, false);
-  }
-  return out;
-}
+const stains = keeper(6);
 
 function stainsFor(seed, amount, feather) {
-  const key = `${seed >>> 0}:${amount}:${feather}`;
-  const held = stains.get(key);
-  if (held) return held;
+  return stains(`${seed >>> 0}:${amount}:${feather}`, () => bleed(seed, amount, feather));
+}
 
+function bleed(seed, amount, feather) {
   const radius = Math.round(feather * FEATHER_REACH);
   const pad = radius * 3;
   const span = STAIN_SIZE + pad * 2;
@@ -192,10 +162,7 @@ function stainsFor(seed, amount, feather) {
     return canvas;
   });
 
-  const made = { wash, body };
-  stains.set(key, made);
-  if (stains.size > 6) stains.delete(stains.keys().next().value);
-  return made;
+  return { wash, body };
 }
 
 function soak(sep, canvas, width, height) {
@@ -206,63 +173,11 @@ function soak(sep, canvas, width, height) {
   });
 }
 
-// 종 둘레의 빛. 종을 성긴 격자에 칠해 흐리고, 그 무늬만큼 물에서 옅게 파낸다. 종에서 멀어질수록
-// 고르게 옅어져 계단이 없다. 크기를 달리한 종을 몇 겹 파내면 겹마다 가장자리가 서서, 종 위로 흰
-// 윤곽이 되풀이되는 메아리가 된다.
-//
-// 격자 한 칸(step)은 판의 몇 픽셀이다. 빛이 흐려서 키워 붙여도 티가 나지 않고, 한 마리에 몇천 칸이면
-// 된다. 칸의 크기는 번짐 폭을 따라 정해 흐림이 몇 칸에 걸치게 한다. 번짐 폭은 종마다 정해져 뛰는
-// 동안 바뀌지 않으므로, 칸도 프레임마다 바뀌지 않는다. 종 둘레에는 흐림이 닿는 만큼 여백을 둔다.
-// 흐린 값에는 곡선을 씌워 종 가까이는 진하게, 멀리는 길게 끌리게 한다.
+// 종 둘레의 빛. 종을 흐린 무늬(src/blur.js)만큼 물에서 옅게 파낸다. 종에서 멀어질수록 고르게
+// 옅어져 계단이 없다. 크기를 달리한 종을 몇 겹 파내면 겹마다 가장자리가 서서, 종 위로 흰 윤곽이
+// 되풀이되는 메아리가 된다. 번짐 폭은 종마다 정해져 뛰는 동안 바뀌지 않는다.
 const GLOW_REACH = 0.18; // 번짐 폭. 종 크기에 대한 비율이다
 const GLOW_TONE = 0.9; // 가장 진한 자리에서 물을 얼마나 파내는가
-let glowCanvas = null;
-
-function glowFor(dome, reach) {
-  const step = Math.max(1, Math.min(4, Math.floor(reach / 4)));
-  const pad = reach * 3;
-  let left = Infinity;
-  let top = Infinity;
-  let right = -Infinity;
-  let bottom = -Infinity;
-  for (const [x, y] of dome) {
-    left = Math.min(left, x);
-    top = Math.min(top, y);
-    right = Math.max(right, x);
-    bottom = Math.max(bottom, y);
-  }
-  const col = Math.floor((left - pad) / step);
-  const row = Math.floor((top - pad) / step);
-  const cols = Math.ceil((right + pad) / step) - col;
-  const rows = Math.ceil((bottom + pad) / step) - row;
-
-  // 캔버스는 한 장을 돌려 쓰고, 모자랄 때만 키운다. 무늬는 한 칸 들여 앉히고 매번 전부 지운다.
-  // 키워 붙일 때 무늬 바깥 한 칸을 함께 읽는데, 거기에 앞 해파리의 무늬가 남아 있거나 캔버스
-  // 끝이 걸리면 같은 장이 앞서 무엇을 찍었느냐에 따라 달라진다
-  glowCanvas ??= document.createElement("canvas");
-  if (glowCanvas.width < cols + 2) glowCanvas.width = cols + 2;
-  if (glowCanvas.height < rows + 2) glowCanvas.height = rows + 2;
-  const g = glowCanvas.getContext("2d", { willReadFrequently: true });
-  g.setTransform(1, 0, 0, 1, 0, 0);
-  g.clearRect(0, 0, glowCanvas.width, glowCanvas.height);
-  g.setTransform(1 / step, 0, 0, 1 / step, 1 - col, 1 - row);
-  g.fillStyle = "#000";
-  shapes.splinePath(g, dome, true);
-  g.fill();
-
-  const image = g.getImageData(1, 1, cols, rows);
-  const field = new Float32Array(cols * rows);
-  for (let i = 0; i < field.length; i += 1) field[i] = image.data[i * 4 + 3] / 255;
-  const sigma = reach / step;
-  const soft = soften(field, cols, rows, Math.max(1, Math.round((Math.sqrt(4 * sigma * sigma + 1) - 1) / 2)));
-  for (let i = 0; i < soft.length; i += 1) {
-    const rest = 1 - soft[i];
-    image.data[i * 4 + 3] = Math.round((1 - rest * rest * rest) * 255);
-  }
-  g.putImageData(image, 1, 1);
-
-  return { canvas: glowCanvas, cols, rows, x: col * step, y: row * step, width: cols * step, height: rows * step };
-}
 
 export const jelly = {
   id: "jelly",
@@ -311,16 +226,16 @@ export const jelly = {
 
     // 무리는 제 씨앗으로 굴린다. 종이의 롤에 밭의 씨앗을 섞으므로, NEW ROLL은 여전히 전부를
     // 바꾸고 FIELD는 그리는 잉크와 종이결을 건드리지 않은 채 배치만 다시 뽑는다.
-    const layout = makeRng((page.seed ^ Math.imul(knobs.field + 1, 0x9e3779b9)) >>> 0);
+    const layout = makeRng(fieldSeed(page, 0, FIELD_MIX));
     // 종의 흔들림은 또 따로 굴린다. 무리의 흐름에 끼우면 흔들림을 더한 것만으로 배치가 바뀐다
-    const hands = makeRng((page.seed ^ Math.imul(knobs.field + 1, 0x9e3779b9) ^ 0x2b992ddf) >>> 0);
+    const hands = makeRng(fieldSeed(page, 0x2b992ddf, FIELD_MIX));
     // 밑단의 생김새도 따로. 마리마다 같은 수만큼 뽑아, 마리 수를 바꿔도 앞의 놈들은 그대로다
-    const rims = makeRng((page.seed ^ Math.imul(knobs.field + 1, 0x9e3779b9) ^ 0x5be0cd19) >>> 0);
+    const rims = makeRng(fieldSeed(page, 0x5be0cd19, FIELD_MIX));
     // 촉수가 벌어지는 정도와 구완의 꼬임도 따로. 역시 마리마다 같은 수를 뽑는다
-    const sways = makeRng((page.seed ^ Math.imul(knobs.field + 1, 0x9e3779b9) ^ 0x1f83d9ab) >>> 0);
+    const sways = makeRng(fieldSeed(page, 0x1f83d9ab, FIELD_MIX));
     // 다리 하나하나의 값도 따로. 촉수와 구완은 손잡이의 끝값만큼 늘 뽑고 앞에서부터 쓴다. 무리의
     // 흐름에 끼워 두면 TENTACLES나 ARMS를 바꾸는 것만으로 뒤에 놓이는 놈들의 자리가 밀린다
-    const legs = makeRng((page.seed ^ Math.imul(knobs.field + 1, 0x9e3779b9) ^ 0xa54ff53a) >>> 0);
+    const legs = makeRng(fieldSeed(page, 0xa54ff53a, FIELD_MIX));
 
     // 물. 위가 깊고 아래로 갈수록 옅어진다
     S.key.ramp(0, 0, width, height, { from: deep, to: deep * 0.22 });
@@ -467,16 +382,8 @@ export const jelly = {
       // 빛은 한 번에 파내지 않는다. 종에서 멀어질수록 옅게, 계단 없이 번지게 판다. 한 번에 다
       // 파내면 오려 붙인 스티커가 된다. 종 자체를 파내는 마지막 겹은 촉수 뒤로 미룬다 — 종이
       // 제 촉수의 뿌리를 덮어야 한다.
-      const glow = glowFor(dome, one.size * GLOW_REACH);
-      for (const ink of inks) {
-        ink.knockout((sep) =>
-          sep.draw((g) => {
-            g.globalAlpha = GLOW_TONE * show;
-            g.imageSmoothingQuality = "low";
-            g.drawImage(glow.canvas, 1, 1, glow.cols, glow.rows, glow.x, glow.y, glow.width, glow.height);
-          })
-        );
-      }
+      const glow = glowMask(dome, one.size * GLOW_REACH);
+      for (const ink of inks) ink.knockout((sep) => sep.draw((g) => layGlow(g, glow, GLOW_TONE * show)));
 
       // 물에서 띠를 넓게 파낸다. 틈은 뿌리에서 넓고 끝으로 가며 닫힌다
       const clear = (points, width) => {

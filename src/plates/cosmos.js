@@ -28,10 +28,13 @@
 // 모양이 같으면 다시 굽지 않는다. 별은 언제나 같은 수만큼 뽑고, STARS와 MILKY는 그중 몇을 찍을지만
 // 정한다. 은하수의 자리와 별은 다른 것을 다 뽑은 뒤에 뽑아, 은하수를 더해도 나머지 자리가 그대로다.
 
-import { makeRng, makeNoise2 } from "../rng.js";
+import { makeRng, makeNoise2, fieldSeed } from "../rng.js";
+import { circleSubpath } from "../shapes.js";
+import { keeper } from "../keep.js";
 import { roundel } from "../roundel.js";
 import { SCOPE_KNOBS, dim } from "../scope.js";
 import { nightAndLight } from "../drums.js";
+import { floodNight, carve, stain } from "../night.js";
 
 const TAU = Math.PI * 2;
 const MOST_STARS = 800;
@@ -88,14 +91,7 @@ function bake(size, channels, sample) {
 }
 
 // 구운 것은 몇 벌 쥐고 있는다. 손잡이를 오가도 다시 굽지 않게
-const baked = new Map();
-function keep(key, make) {
-  if (!baked.has(key)) {
-    baked.set(key, make());
-    if (baked.size > 6) baked.delete(baked.keys().next().value);
-  }
-  return baked.get(key);
-}
+const keep = keeper(6);
 
 // 성운. 흐름을 한 번 비튼 잡음으로 구름을 짓고, 가장자리는 잡음을 따라 들쭉날쭉 사라진다.
 // 채널은 넷이다 — 빛(밤을 파냄), 따뜻한 가스(빛의 통을 얹음), 차가운 가스(가장 진한 통을 더
@@ -194,18 +190,15 @@ function galaxyFor(seed, disk) {
   });
 }
 
-// 구운 무늬 한 장을 제자리에 늘려 찍는다. carve면 그만큼 파낸다
-function lay(sep, image, box, alpha, carve) {
-  if (!sep || !(alpha > 0)) return;
-  const paint = (target) =>
-    target.draw((g) => {
-      g.globalAlpha = Math.min(1, alpha);
-      g.imageSmoothingEnabled = true;
-      g.imageSmoothingQuality = "low";
-      g.drawImage(image, box.x, box.y, box.span, box.span);
-    });
-  if (carve) sep.knockout(paint);
-  else paint(sep);
+// 구운 무늬 한 장을 제자리에 늘려 찍는다. hollow면 그만큼 파낸다
+function lay(sep, image, box, alpha, hollow) {
+  if (!sep) return;
+  const paint = (g) => {
+    g.imageSmoothingEnabled = true;
+    g.imageSmoothingQuality = "low";
+    g.drawImage(image, box.x, box.y, box.span, box.span);
+  };
+  (hollow ? carve : stain)([sep], paint, alpha);
 }
 
 // 회절 십자 하나. 가운데가 굵고 끝으로 가는 마름모 둘
@@ -249,7 +242,7 @@ export const cosmos = {
 
     // 자리는 제 씨앗으로 뽑는다. FIELD는 잉크와 종이결을 건드리지 않고 하늘만 다시 뽑는다.
     // 굽는 일은 따로 굴린 난수로 하므로, 구운 것이 있든 없든 여기서 뽑는 수는 같다
-    const seed = (page.seed ^ 0x6c8e9cf5 ^ Math.imul(knobs.field + 1, 0x85ebca6b)) >>> 0;
+    const seed = fieldSeed(page, 0x6c8e9cf5);
     const layout = makeRng(seed);
 
     // 성운과 은하는 시야의 서로 반대쪽에 선다
@@ -327,7 +320,7 @@ export const cosmos = {
 
     // 하늘. 밤의 통을 모두 깔고, 가장 진한 통을 가장 짙게
     const dark = knobs.dark;
-    for (const sep of night) sep.flood((sep === deepest ? 0.95 : 0.8) * dark);
+    floodNight(night, deepest, dark);
 
     // 은하수. 흐릿한 빛, 중심의 따뜻한 빛, 먼지 골짜기
     const milky = knobs.milky;
@@ -398,19 +391,17 @@ export const cosmos = {
     // 밝은 별 둘레의 번짐. 가장 진한 통만 옅게 파낸다
     const bright = lit.filter((s) => s.star.size > 3.2);
     if (bright.length) {
-      deepest.knockout((plate) =>
-        plate.draw((g) => {
-          for (const s of bright) {
-            const halo = g.createRadialGradient(s.x, s.y, s.r * 0.8, s.x, s.y, s.r * 3.2);
-            halo.addColorStop(0, "rgba(0, 0, 0, 0.5)");
-            halo.addColorStop(1, "rgba(0, 0, 0, 0)");
-            g.fillStyle = halo;
-            g.beginPath();
-            g.arc(s.x, s.y, s.r * 3.2, 0, TAU);
-            g.fill();
-          }
-        })
-      );
+      carve([deepest], (g) => {
+        for (const s of bright) {
+          const halo = g.createRadialGradient(s.x, s.y, s.r * 0.8, s.x, s.y, s.r * 3.2);
+          halo.addColorStop(0, "rgba(0, 0, 0, 0.5)");
+          halo.addColorStop(1, "rgba(0, 0, 0, 0)");
+          g.fillStyle = halo;
+          g.beginPath();
+          g.arc(s.x, s.y, s.r * 3.2, 0, TAU);
+          g.fill();
+        }
+      });
     }
 
     // 별의 몸. 흰 별은 밤의 통을 다 파내고, 노란 별은 거기에 빛의 통을 얹고, 푸른 별은 가장 진한
@@ -418,34 +409,24 @@ export const cosmos = {
     const discs = (list) => (g) => {
       g.beginPath();
       for (const s of list) {
-        g.moveTo(s.x + s.r, s.y);
-        g.arc(s.x, s.y, s.r, 0, TAU);
+        circleSubpath(g, s.x, s.y, s.r);
       }
       g.fill();
     };
     const warm = lit.filter((s) => s.star.kind >= 0.55 && s.star.kind < 0.8);
     const pale = [...lit.filter((s) => s.star.kind < 0.8), ...dust.filter((s) => s.star.kind < 0.75)];
-    deepest.knockout((plate) => plate.draw(discs([...lit, ...dust])));
-    for (const sep of night) {
-      if (sep !== deepest && pale.length) sep.knockout((plate) => plate.draw(discs(pale)));
-    }
-    if (glowInk && warm.length) {
-      glowInk.draw((g) => {
-        g.globalAlpha = 0.9;
-        discs(warm)(g);
-      });
-    }
+    carve([deepest], discs([...lit, ...dust]));
+    if (pale.length) carve(night.filter((sep) => sep !== deepest), discs(pale));
+    if (glowInk && warm.length) stain([glowInk], discs(warm), 0.9);
 
     // 회절 십자. 가장 밝은 별 몇에만, 모두 같은 방향으로
     const crossed = [...lit].sort((a, b) => b.star.size - a.star.size).slice(0, knobs.spikes);
     if (crossed.length) {
-      const cross = (plate) =>
-        plate.draw((g) => {
-          g.beginPath();
-          for (const s of crossed) spikes(g, s.x, s.y, s.star.size * (4.5 + 3 * s.pulse), Math.max(1.6, s.star.size * 0.3), spider);
-          g.fill();
-        });
-      for (const sep of night) sep.knockout(cross);
+      carve(night, (g) => {
+        g.beginPath();
+        for (const s of crossed) spikes(g, s.x, s.y, s.star.size * (4.5 + 3 * s.pulse), Math.max(1.6, s.star.size * 0.3), spider);
+        g.fill();
+      });
     }
 
     // 시야 가장자리. 다 그린 뒤에 가장 진한 통으로 한 켜 눌러, 가장자리의 별과 가스까지 함께 죽인다

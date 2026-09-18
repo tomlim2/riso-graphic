@@ -12,7 +12,7 @@ by fractions of `height` wherever they can.
 Motion is the default. The page starts playing as soon as it opens.
 
 The hung plates are **RIPPLE** · **MOON** · **GARDEN** · **JELLY** · **CELL** · **CHLORO** ·
-**COSMOS** · **FLAKE** · **KALEIDO**.
+**COSMOS** · **FLAKE** · **KALEIDO** · **METEOR**.
 POSTER and MEDIUM are still in `src/plates/`. Add a line for either to `src/plates/index.js`
 and it returns to the plate picker and the contact sheet. With only one plate in the list, the
 picker hides.
@@ -44,11 +44,18 @@ node serve.mjs
 Then open `http://localhost:7400`. Pass a port as an argument or set `PORT` to change it.
 `npm start` does the same thing.
 
-If you change the press, measure it side by side with the old one. The method is in
-[bench/README.md](bench/README.md) (Korean).
+If you change the press, measure it side by side with the old one. If you refactor anything,
+record a snapshot first and compare after: it prints every plate 520 ways and proves no pixel
+moved. Both are in [bench/README.md](bench/README.md) (Korean).
 
 ```bash
 node bench/serve.mjs
+```
+
+The URL is where a sheet you like is kept, so reading it has tests of its own.
+
+```bash
+npm test
 ```
 
 ## Print order
@@ -70,7 +77,7 @@ Misregistration does not move a finished plate. The shader screens each drum at 
 position directly, and an edge that slips past the plate gets no ink from that drum.
 
 Yellow multiplied over blue can only come out green. This is why adding a drum adds four
-colors, not one: two inks make three colors, three inks make seven. MEDIUM and GARDEN show
+colors, not one: two inks make three colors, three inks make seven. GARDEN and KALEIDO show
 this, and CHLORO gets its green this way.
 
 ### A separation is coverage, not color
@@ -90,7 +97,8 @@ luminance decides the names.
 | `S.wash` | Lightest. Grounds | 75° |
 
 Spacing the three angles 30° apart is a long-standing printing convention. Two plates at the
-same angle make moiré. Spread apart, the overlaps form rosettes instead. MEDIUM shows this.
+same angle make moiré. Spread apart, the overlaps form rosettes instead. Section 06 of
+[how.html](how.html#angles) prints both side by side.
 
 With two drums, `body` and `wash` are the same drum and share one separation. Two separations
 would print the same plate twice and make it twice as dark.
@@ -151,7 +159,7 @@ to 1.** RIPPLE does it like this:
 - The wobble is `sin(lobes*θ + 2πt)`: whole lobes, one cycle.
 - A second wobble layer turns the other way at `2·2πt`. It used to turn 1.5 times per loop,
   and the rings jumped by about a pixel at the seam.
-- The glints are `sin(2π(t + phase))`.
+- The dot's beat is `1 + 0.12·sin(2πt)`.
 
 **Rule two: the number of random draws must not depend on `t`.** MOON skips stars that fall
 near the moon. The moon sways, so a different set of stars was skipped on each frame. Skip one
@@ -165,6 +173,11 @@ measuring, not by eye. There are two checks.
 every period is whole, the two are the same sheet. RIPPLE, MOON, GARDEN, CELL, COSMOS, FLAKE
 and KALEIDO pass to the pixel, and JELLY differs in one byte from floating-point rounding. This is the check that caught
 RIPPLE's 1.5 turns, with about 34,000 bytes different.
+
+METEOR is drawn on beats, so this check does not apply to it. `t = 1 − 1e−9` lands in the last
+drawing of the loop, not the first, and about a hundred thousand bytes differ by design. For a
+plate like that, compare `t = 1` with `t = 0`, which matches to the pixel, and lean on the step
+measurement below.
 
 CHLORO draws thousands of small ellipses, and the canvas moves a few hundred bytes for a 1e−9
 nudge in either direction: `t = 1e−9` differs from `t = 0` as much as `t = 1 − 1e−9` does. That
@@ -190,42 +203,44 @@ fall away after it are the motion's own speed, not a break.
 Printing one frame used to take longer than the playback budget allows, so the film was baked
 first and the projector only flipped through it. Almost all of that time went to halftoning
 and multiplying. That per-pixel work moved into the shader. Now even the heaviest full-size
-sheet, CHLORO, takes about an eighth of a frame's budget, and most take far less. Nothing is
+sheet, JELLY, takes about a sixth of a frame's budget, and most take far less. Nothing is
 baked: every frame is printed as it plays.
 
 | One sheet | Canvas 2D | WebGL2 |
 | --- | --- | --- |
-| RIPPLE, 1080 | 27 ms | 1.2 ms |
-| MOON, 1080 | 97 ms | 1.7 ms |
-| GARDEN, 1080 | 35 ms | 1.3 ms |
-| JELLY, 1080 | 121 ms | 3.7 ms |
-| CELL, 1080 | 79 ms | 2.5 ms |
-| CHLORO, 1080 | 94 ms | 5.4 ms |
-| COSMOS, 1080 | 87 ms | 3.0 ms |
-| FLAKE, 1080 | 74 ms | 3.7 ms |
-| KALEIDO, 1080 | 85 ms | 1.7 ms |
-| One contact sheet | 126 ms | 14 ms |
+| RIPPLE, 1080 | 29 ms | 1.3 ms |
+| MOON, 1080 | 98 ms | 1.9 ms |
+| GARDEN, 1080 | 37 ms | 1.5 ms |
+| JELLY, 1080 | 134 ms | 6.8 ms |
+| CELL, 1080 | 80 ms | 2.6 ms |
+| CHLORO, 1080 | 96 ms | 5.6 ms |
+| COSMOS, 1080 | 89 ms | 3.0 ms |
+| FLAKE, 1080 | 76 ms | 4.0 ms |
+| KALEIDO, 1080 | 88 ms | 1.9 ms |
+| METEOR, 1080 | 142 ms | 2.5 ms |
+| One contact sheet | 146 ms | 15 ms |
 
 Where one WebGL2 sheet's time goes:
 
 | Stage | Time |
 | --- | --- |
 | Composing the plate | 0.03–2.9 ms |
-| Rasterizing and uploading separations | 0.6–1.6 ms |
-| One shader pass, by GPU timer | 0.1–0.4 ms |
+| Rasterizing and uploading separations | 0.7–2.4 ms |
+| One shader pass, by GPU timer | 0.1–0.7 ms |
 | One frame's budget at 24 fps | 42 ms |
 
 These are means on an M2 Max. Each sheet's time includes waiting for the GPU to finish, forced
 by reading back one pixel. Without that wait, you time only the composing. Boil barely changes
 the numbers. Most of the time now goes to moving separations to the GPU, not to halftoning. The
-exceptions are CHLORO and FLAKE, where composing the plate (a few thousand chloroplasts, a few
-hundred crystal pieces) takes the largest share.
+exceptions are JELLY, CHLORO and FLAKE, where composing the plate (stains, a swarm of bells and
+legs; a few thousand chloroplasts; a few hundred crystal pieces) takes the largest share.
 
 The Canvas 2D press worked harder where a sheet carried more ink. RIPPLE and GARDEN have since
 lost their background washes, and the old press got about twice as fast on both. The first run
 measured 59 ms and 71 ms. The raw data and side-by-side images are in
-[the latest run](bench/results/2026-09-17-canvas2d-vs-webgl2-nine-plates/report.md). The
-earlier runs stay as records: [six plates with the leaf-tissue CHLORO](bench/results/2026-09-17-canvas2d-vs-webgl2-leaf-tissue/report.md),
+[the latest run](bench/results/2026-09-18-canvas2d-vs-webgl2-ten-plates/report.md), measured on
+2026-09-18. The earlier runs stay as records: [nine plates](bench/results/2026-09-17-canvas2d-vs-webgl2-nine-plates/report.md),
+[six plates with the leaf-tissue CHLORO](bench/results/2026-09-17-canvas2d-vs-webgl2-leaf-tissue/report.md),
 [six plates with the first CHLORO](bench/results/2026-09-17-canvas2d-vs-webgl2-six-plates/report.md)
 and [the first run](bench/results/2026-09-17-canvas2d-vs-webgl2/report.md) with four plates.
 
@@ -340,9 +355,11 @@ export const hello = {
 ```
 
 `S` holds the three drums, plus `S.drums`, the list of drums actually running. `R` is the
-roll's random generator. `page` carries the size, margin, palette, the time `t`, and this
-plate's knob values in `knobs`. A separation offers `flood`, `shape`, `line`, `disc`, `ring`,
-`block`, `ramp`, `text`, `knockout` and `draw`.
+roll's random generator. `page` carries the size (`width`, `height`), `margin`, `palette`, the
+running `inks` and their `roles`, the roll's `seed`, the time (`t`, `frame`, `frames`), the
+`headline`, and this plate's knob values in `knobs`. A separation offers `flood`, `shape`,
+`line`, `disc`, `ring`, `block`, `ramp`, `text`, `knockout` and `draw`. Whatever `paint`
+returns is handed to `guides` (below); most plates return nothing.
 
 ### Knobs belong to each plate
 
@@ -371,6 +388,7 @@ knobs.
 | COSMOS | FIELD · STARS · SPIKES · TWINKLE · MILKY · NEBULA · GALAXY · TILT · ARMS · DARK |
 | FLAKE | FIELD · SIZE · HABIT · BRANCH · RIDGE · BUBBLE · GLINT · FLURRY · DARK |
 | KALEIDO | FIELD · MIRRORS · PIECES · SIZE · TUMBLE · TINT |
+| METEOR | SKY: FIELD · DARK · DUST — BEAM: ANGLE · LENGTH · CORE · BEAMS · GLOW — HEAD: SPIKE · BARBS · SHARDS · SPREAD · FLICKER — FLOW: SMOKE · STREAKS · CHIPS · SPARKS · SPEED — BEAT: BEAT · FLASH |
 
 Don't confuse the CELL plate with the CELL dial. The dial sets the halftone cell size for every
 plate. The plate is the microscope sheet.
@@ -400,7 +418,7 @@ own still runs. Older links that put FRAME or VIGNETTE inside `k` still open wit
 
 ### A knob can be a seed
 
-**FIELD** on RIPPLE, JELLY, CELL, CHLORO, COSMOS, FLAKE and KALEIDO is a seed, not an amount.
+**FIELD** on RIPPLE, JELLY, CELL, CHLORO, COSMOS, FLAKE, KALEIDO and METEOR is a seed, not an amount.
 The layout comes from this number, so dragging it redraws only the arrangement while the ink and
 the paper tooth stay the same. NEW ROLL, by contrast, changes everything. FIELD lets you keep a print state you like and
 browse compositions.
@@ -430,6 +448,34 @@ There are two limits:
 - RIPPLE's **RINGS** reverses the ripple once rings × frames held ÷ 48 exceeds 0.5. At eight
   sheets a second the limit is eight rings.
 
+### Guides, for looking while you draw
+
+A plate can hand the screen its skeleton. Export `guides(page, sketch)` and it is called right
+after the sheet is printed, with the same `page` the plate just painted with and `sketch`, whatever
+its `paint` returned, so the marks use the numbers of that very sheet; what it returns is drawn on
+a second canvas laid over the sheet. Nothing of it is printed, so the PNG and the contact sheet stay
+as they were — turning GUIDES on and off leaves the sheet pixel-identical.
+
+| Mark | What it draws |
+| --- | --- |
+| `{ kind: "line", from, to }` | A straight line |
+| `{ kind: "path", points }` | A closed outline |
+| `{ kind: "cross", at, r }` | A small cross on a point |
+| `{ kind: "ring", at, r }` | A circle |
+| `{ kind: "dot", at, r, ring }` | A filled dot inside a dashed circle |
+| `{ kind: "text", at, text }` | One line of type |
+
+Every mark takes `dash` and `hot`, which colors it. Marks on a point (`cross`, `ring`, `dot`)
+also take a `label` and `lift`, how far above the point the label sits; negative puts it below.
+Positions are in sheet coordinates, but sizes —
+`r`, `ring`, `lift`, the line width and the type — are screen pixels, so the marks stay the same
+size however large the sheet hangs. A plate with no `guides` gets the paper's own: the margin box
+and the middle.
+
+METEOR uses it for the one thing a still frame hides: the point everything attached to the head
+grows and shrinks about. The only way to see that it holds still is to mark it while the crystal
+pumps.
+
 ## Dials
 
 | Dial | What it does |
@@ -450,9 +496,10 @@ There are two limits:
 | CELL | Halftone cell size |
 | GRAIN | Ink ceiling and mottle. At 0 the dots are clean |
 | REGISTER | Misregistration, in pixels |
+| GUIDES | Lays the plate's skeleton over the sheet. Printed pixels and the PNG are untouched |
 
 Every setting goes into the URL, so a sheet you like can be kept as a link. `SPACE` plays and
-stops, `N` rolls, `G` toggles the contact sheet and `S` saves.
+stops, `N` rolls, `G` toggles the contact sheet, `D` the guides and `S` saves.
 
 ## How to judge
 
@@ -461,13 +508,14 @@ Looking good is not the same as being right. Each question has a place to check 
 | Question | Where to look |
 | --- | --- |
 | What colors overlaps make | GARDEN, KALEIDO, and CHLORO's green |
-| How to make light things on a dark ground | JELLY, COSMOS |
+| How to make light things on a dark ground | JELLY, COSMOS, METEOR |
 | Tone steps and knockouts | MOON |
 | Whether any plate breaks in this palette | CONTACT SHEET · PLATES |
 | Whether a plate survives all nine palettes | CONTACT SHEET · INKS |
 | Whether the loop flows, and where it goes empty | CONTACT SHEET · FRAMES |
 | Whether a seam really joins | `t = 1 − 1e−9` printed against `t = 0`, then neighbor steps within ±2σ |
 | Whether a new press prints the same sheet, and how much faster | `bench/`, against an old commit on one page |
+| Whether a refactor moved any pixel | `bench/snapshot.html`, against a snapshot recorded just before |
 | The dots on their own | GRAIN at 0 |
 
 MEDIUM is the plate for judging the screen itself. It isn't in the list, so add it back when
@@ -484,13 +532,20 @@ you need it.
 | `src/shapes.js` | Organic blobs, Memphis ornaments, bands of varying width |
 | `src/mask.js` | Masks. Knocks everything outside one shape out of every drum, whether a circle or any shape made of points |
 | `src/roundel.js` | The round frame. A circle mask plus a rim that looks drawn by hand |
-| `src/scope.js` | The eyepiece field: the shared SCOPE knobs, light falloff, floating debris. The round-frame plates use it |
-| `src/drums.js` | Picking drums by color, not brightness: the greenest pair, the bluest and yellowest drum, night and light |
+| `src/scope.js` | The eyepiece field: the shared SCOPE knobs, light falloff, floating debris. The round-frame plates use it, and METEOR borrows its falloff |
+| `src/drums.js` | Picking drums by color, not brightness: the greenest pair, the bluest, yellowest and reddest drum, night and light, night and the one yellow glow |
+| `src/night.js` | The dark field: lay the night drums, carve light out of them, stain dark back on. CELL, COSMOS, FLAKE and METEOR use it |
+| `src/blur.js` | Blurring alpha fields in JavaScript: a three-pass box blur and the soft glow around a shape. JELLY and METEOR use it |
+| `src/keep.js` | Holding a few costly things (woven tissue, baked nebulae, glow masks) by key, so they aren't rebuilt every frame |
 | `src/type.js` | Measuring text, line breaks, fitting type to the plate |
 | `src/plates/` | The plates, one function per sheet. RIPPLE is the model for using time |
-| `src/main.js` | Dials, contact sheet, playback clock, URL, PNG |
+| `src/main.js` | Dials, playback clock, PNG. It hands the rest to the three below |
+| `src/hash.js` | The URL: reading a link back into dials and knobs, and writing it. No DOM, so `npm test` runs it |
+| `src/guides.js` | The guides laid over the sheet on their own canvas |
+| `src/contact.js` | The contact sheet: many small prints pasted on one board |
 | `serve.mjs` | Static server. Stamps module URLs with the boot time so no stale module survives a reload |
-| `bench/` | The bench that measures two presses side by side, and its results |
+| `bench/` | The bench that measures two presses side by side, the snapshot that proves a refactor moved no pixel, and their results |
+| `test/` | Tests that run in Node: the URL reads back the same sheet |
 | `how.html` · `src/how.js` | The page that follows a dot through the press. Its figures are printed live |
 | `MAP.md` | Names and terms: where this kind of print sits |
 
@@ -536,17 +591,17 @@ moonlight stay where they were.
 ## Stains and gaps (JELLY)
 
 Light things rise through dark water. There is no white ink, so everything that glows is
-carved out. The plate lays the water, carves out the bell shapes, and puts the lightest drum
-only inside them. Painting light ink over the water is impossible, because multiply only ever
+carved out. The plate lays the water, carves out the bell shapes, and puts the body drum (the
+middle one of three) only inside them. Painting light ink over the water is impossible, because multiply only ever
 darkens.
 
 To look like rising, the water has to move, not the jellyfish. A jellyfish that really rose
 would have to jump back to its start at the end of the loop. Motes drifting downward say the
 same thing and still loop.
 
-A swarm is spread out in depth. Farther ones are smaller, fainter and higher up. The far ones
-are printed first and the near ones cover them, so the near ones' knockouts erase what's behind
-and occlusion comes for free.
+A swarm is spread out in depth. Farther ones are smaller and fainter; where each one sits comes
+from a placement score, not from its depth. The far ones are printed first and the near ones
+cover them, so the near ones' knockouts erase what's behind and occlusion comes for free.
 
 The water is not a single color. The two lighter drums bleed in large stains (STAIN), so the
 water shows third colors such as green or purple. The stains depend on the roll, not on time,
@@ -616,9 +671,11 @@ printed before it.
 
 Both plates are microscope slides. The round frame is the eyepiece's field of view, and outside
 it is paper. The field is brightest in the middle and dims toward the edge (VIGNETTE).
-`src/scope.js` draws the shared field. Its light goes down before the specimen, debris goes on
-top of it, and the round frame comes last. CELL draws its debris from the random stream after
-the cells, so changing the debris count doesn't move them.
+`src/scope.js` holds what the field shares: the SCOPE knobs, the light falloff and the debris
+layout. CHLORO lays the bright field before the specimen; CELL lays its own dark field, draws its
+motes before the in-focus particles and dims the edge last. The round frame always comes last.
+CELL draws its debris from the random stream after the cells, so changing the debris count
+doesn't move them.
 
 **CELL** is virus particles glowing in a dark confocal field, after a reference image: round
 particles ringed with dense club-shaped spikes, a dark core, and pale spots around it where
@@ -791,6 +848,74 @@ and flipped into place, which makes the cut edges meet exactly at the mirrors.
 Every piece moves on its own: it circles a small loop and rocks a little (TUMBLE). As pieces
 cross the mirror lines, the pattern opens and closes. The tube itself never turns. The plate
 always draws the same number of pieces, and PIECES only decides how many go in.
+
+## A shooting star (METEOR)
+
+A shooting star cuts across a dark sky, built the way an effect artist stacks emitters. The
+reference was a breakdown of an anime-style effect, one emitter per layer, so the plate is
+written as the same stack, printed back to front. Nothing is outlined.
+
+| Layer | What it draws |
+| --- | --- |
+| Dust | Faint specks in the far sky (DUST) |
+| Glow | One soft layer of light around the beam (GLOW) |
+| Speed lines | Dark needles that fan away from the head (STREAKS) |
+| Second beams | Thin pink and blue bands at slightly different angles (BEAMS) |
+| Main beam | The wide yellow band from the head to the tail's end, with a white heart and a blue face at its end (CORE, LENGTH) |
+| Smoke | Long dark ellipses that drift over the beam and give it depth (SMOKE) |
+| Chips | Angular debris that spins as it flows (CHIPS) |
+| Stars | Four-point sparkles, each trailing a dotted tail (SPARKS) |
+| Embers | Short bright strokes near the head |
+| Spike | One large crystal in front of the head, notched at the back (SPIKE) |
+| Barbs | White hooks, hollow on the inside, thrown back from the head (BARBS) |
+| Shards | The small crystals that fan out (SHARDS, SPREAD). Barbs and shards print together, one pass per color |
+| Knot | The pink core at the very front and the yellow ellipse behind it |
+
+Everything in the head — the spike, the barbs, the shards, the knot and the impact burst — grows
+and shrinks about the head's origin, HEAD 0, where the beams start. The beams don't grow and
+shrink, so scaling about any other point slides the head back and forth along the beam. GUIDES
+marks that pivot, the axis and the beam's outline.
+
+The dark sky works like COSMOS: the night drums lay the sky and whatever glows is carved out.
+Here, though, night is every drum except the yellowest one. Counting only the non-yellow drums as
+night leaves a warm drum such as coral out, and the sky becomes one light color; a shooting star
+needs a dark sky. Yellowness is the lower of red and green minus blue, because an average lets
+orange beat yellow. With two drums, both are night, and yellow light keeps a little of the paler
+one instead.
+
+| Light | How it is printed |
+| --- | --- |
+| Yellow | Carve all night drums, then print the yellow drum |
+| Blue | Carve the night drums but leave some of the bluest |
+| Pink | Carve the night drums but leave some of the reddest |
+| White | Carve the yellow drum too |
+| Dark | Print the night drums denser than the sky and carve the yellow drum, which would turn the dark olive |
+
+A thin layer of the yellow drum over the sky gives the bluish gray of the reference.
+
+The star stays put and the world streams past, as if the camera follows it. Speed lines, chips
+and sparkles flow toward the tail, vanish at the end and come back ahead of the head. They flow
+a whole number of times per loop (SPEED), and they taper to nothing at both ends, so the wrap
+never shows. The glow around the beam is the blurred shape from `src/blur.js`; it depends only
+on the shape knobs (LENGTH, ANGLE, CORE), not on the roll, so it is made once and kept. Everything is drawn in full
+every time, and the knobs only decide how much of it prints.
+
+### Drawn like an effect, not like a photograph
+
+Anime effects animation is not smooth. It is built from a few iconic shapes, flat colour, snappy
+timing on twos or threes, and impact frames that break continuity for one or two frames. METEOR
+follows those four rules, which is what separates it from a comet photograph.
+
+| Rule | Here |
+| --- | --- |
+| Timing on twos or threes | BEAT splits the loop into that many drawings, and nothing is inbetweened. At 12 a drawing holds for four of the loop's 48 frames; at 48 the plate redraws every frame and the effect goes soft. The sheet rate still decides which frames print, so at 8 sheets a second a drawing shows for three or six |
+| Flat colour, not gradients | The tail is flat faces: a yellow body, a white heart inside it, a blue face at the tail's end. Only one soft glow layer is laid under them, so they don't read as cut paper |
+| Iconic shapes | Edges are few-jointed, so they break in straight lines like crystal. Debris is angular chips that spin (CHIPS), not round droplets |
+| Impact frames | Once per loop, for two frames, white light bursts at the head, every shard but the pink ones turns white and the sky itself lightens (FLASH). It starts on a multiple of six, a frame that 24, 12 and 8 sheets a second all print. Starting anywhere, one roll in three hid it between printed frames at 8 sheets a second |
+
+The beat is a floor of the loop's time, so `t = 1` gives the same drawing as `t = 0` and the loop
+still closes. The impact frame is kept away from the loop's seam, so the seam's step stays an
+ordinary one.
 
 ## Shape vocabulary
 

@@ -24,10 +24,13 @@
 // 결정은 시간과 무관해서 한 번 짜 두고 다시 쓴다. 움직이는 것은 반짝임과 눈가루뿐이고, 박자는 모두
 // 한 바퀴에 정수 번이다. 난수는 언제나 같은 수만큼 뽑고, 손잡이는 그중 몇을 쓸지만 정한다.
 
-import { makeRng } from "../rng.js";
+import { makeRng, fieldSeed } from "../rng.js";
+import { polySubpath, circleSubpath, sparkleSubpath, signedArea } from "../shapes.js";
+import { keeper } from "../keep.js";
 import { roundel } from "../roundel.js";
 import { SCOPE_KNOBS, dim } from "../scope.js";
 import { nightAndLight } from "../drums.js";
+import { floodNight, carve } from "../night.js";
 
 const TAU = Math.PI * 2;
 const SIXTH = Math.PI / 3;
@@ -38,16 +41,6 @@ const MOST_FLURRY = 16;
 
 const lerp = (a, b, u) => a + (b - a) * u;
 const clamp01 = (x) => (x < 0 ? 0 : x > 1 ? 1 : x);
-
-function signedArea(points) {
-  let sum = 0;
-  for (let i = 0; i < points.length; i += 1) {
-    const [x0, y0] = points[i];
-    const [x1, y1] = points[(i + 1) % points.length];
-    sum += x0 * y1 - x1 * y0;
-  }
-  return sum;
-}
 
 // 감긴 방향을 하나로 맞춘다
 const wound = (points) => (signedArea(points) < 0 ? points.slice().reverse() : points);
@@ -190,39 +183,15 @@ function assemble(shape, x, y) {
 }
 
 // 짜 둔 결정. 롤과 모양이 같으면 다시 짓지 않는다
-const built = new Map();
-function flakeFor(key, make) {
-  if (!built.has(key)) {
-    built.set(key, make());
-    if (built.size > 4) built.delete(built.keys().next().value);
-  }
-  return built.get(key);
-}
+const flakeFor = keeper(4);
 
+// 여러 모양을 한 경로에. 한 번에 채워 겹친 자리가 두 번 찍히지 않는다
 function polygons(g, list) {
-  for (const points of list) {
-    g.moveTo(points[0][0], points[0][1]);
-    for (let i = 1; i < points.length; i += 1) g.lineTo(points[i][0], points[i][1]);
-    g.closePath();
-  }
+  for (const points of list) polySubpath(g, points, true);
 }
 
 function polylines(g, list) {
-  for (const points of list) {
-    g.moveTo(points[0][0], points[0][1]);
-    for (let i = 1; i < points.length; i += 1) g.lineTo(points[i][0], points[i][1]);
-  }
-}
-
-// 네 갈래 반짝임 하나를 경로에 더한다
-function sparkle(g, x, y, r) {
-  const w = r * 0.18;
-  g.moveTo(x, y - r);
-  g.quadraticCurveTo(x + w, y - w, x + r, y);
-  g.quadraticCurveTo(x + w, y + w, x, y + r);
-  g.quadraticCurveTo(x - w, y + w, x - r, y);
-  g.quadraticCurveTo(x - w, y - w, x, y - r);
-  g.closePath();
+  for (const points of list) polySubpath(g, points, false);
 }
 
 export const flake = {
@@ -252,7 +221,7 @@ export const flake = {
     const radius = ring * knobs.size;
 
     // 결정과 눈가루와 방울은 제 씨앗으로 짓는다. FIELD는 잉크와 종이결을 건드리지 않는다
-    const seed = (page.seed ^ 0x5f356495 ^ Math.imul(knobs.field + 1, 0x85ebca6b)) >>> 0;
+    const seed = fieldSeed(page, 0x5f356495);
     const key = [seed, width, ring, radius, knobs.habit, Math.round(knobs.branch)].join("|");
     const scene = flakeFor(key, () => {
       const rng = makeRng(seed);
@@ -295,27 +264,22 @@ export const flake = {
 
     const { night, deepest, light } = nightAndLight(S.drums);
     const [glowInk] = light;
-    const carve = (paint) => {
-      for (const sep of night) sep.knockout((plate) => plate.draw(paint));
-    };
 
     // 바닥. 밤의 통을 깔고, 암시야 조명처럼 가운데를 조금 밝힌다
-    for (const sep of night) sep.flood((sep === deepest ? 0.95 : 0.8) * knobs.dark);
-    deepest.knockout((plate) =>
-      plate.draw((g) => {
-        const glow = g.createRadialGradient(cx, cy, 0, cx, cy, ring);
-        glow.addColorStop(0, "rgba(0, 0, 0, 0.3)");
-        glow.addColorStop(1, "rgba(0, 0, 0, 0)");
-        g.fillStyle = glow;
-        g.fillRect(0, 0, width, height);
-      })
-    );
+    floodNight(night, deepest, knobs.dark);
+    carve([deepest], (g) => {
+      const glow = g.createRadialGradient(cx, cy, 0, cx, cy, ring);
+      glow.addColorStop(0, "rgba(0, 0, 0, 0.3)");
+      glow.addColorStop(1, "rgba(0, 0, 0, 0)");
+      g.fillStyle = glow;
+      g.fillRect(0, 0, width, height);
+    });
 
     // 눈가루. 결정 뒤에 흐리게, 제자리에서 까딱인다
     for (const bit of scene.flurry.slice(0, Math.round(knobs.flurry))) {
       const angle = Math.sin(turn * bit.beat + bit.phase) * bit.rock;
       const shade = bit.tone * (0.85 + 0.15 * Math.sin(turn * bit.beat + bit.phase * 1.7));
-      carve((g) => {
+      carve(night, (g) => {
         g.translate(bit.x, bit.y);
         g.rotate(angle);
         g.globalAlpha = shade;
@@ -331,19 +295,19 @@ export const flake = {
 
     // 결정의 몸. 옅게 파내고, 가운데 판은 한 번 더, 모서리는 끝까지
     const rim = Math.max(3, radius * 0.009);
-    carve((g) => {
+    carve(night, (g) => {
       g.globalAlpha = 0.6;
       g.beginPath();
       polygons(g, main.bodies);
       g.fill();
     });
-    carve((g) => {
+    carve(night, (g) => {
       g.globalAlpha = 0.35;
       g.beginPath();
       polygons(g, main.bodies.slice(0, 1));
       g.fill();
     });
-    carve((g) => {
+    carve(night, (g) => {
       g.lineWidth = rim;
       g.lineJoin = "round";
       g.beginPath();
@@ -367,12 +331,11 @@ export const flake = {
     // 공기방울. 테는 희고 속은 어둡다
     const bubbles = scene.bubbles.slice(0, Math.round(knobs.bubble));
     if (bubbles.length) {
-      carve((g) => {
+      carve(night, (g) => {
         g.lineWidth = 2.2;
         g.beginPath();
         for (const b of bubbles) {
-          g.moveTo(b.x + b.r, b.y);
-          g.arc(b.x, b.y, b.r, 0, TAU);
+          circleSubpath(g, b.x, b.y, b.r);
         }
         g.stroke();
       });
@@ -380,8 +343,7 @@ export const flake = {
         g.globalAlpha = 0.45;
         g.beginPath();
         for (const b of bubbles) {
-          g.moveTo(b.x + b.r * 0.55, b.y);
-          g.arc(b.x, b.y, b.r * 0.55, 0, TAU);
+          circleSubpath(g, b.x, b.y, b.r * 0.55);
         }
         g.fill();
       });
@@ -397,9 +359,9 @@ export const flake = {
         })
         .filter((s) => s.r > 1.5);
       if (lit.length) {
-        carve((g) => {
+        carve(night, (g) => {
           g.beginPath();
-          for (const s of lit) sparkle(g, s.x, s.y, s.r);
+          for (const s of lit) sparkleSubpath(g, s.x, s.y, s.r, 0.18); // 네 갈래 반짝임. 허리가 가늘다
           g.fill();
         });
         if (glowInk) {
@@ -407,8 +369,7 @@ export const flake = {
             g.globalAlpha = 0.8;
             g.beginPath();
             for (const s of lit) {
-              g.moveTo(s.x + s.r * 0.22, s.y);
-              g.arc(s.x, s.y, s.r * 0.22, 0, TAU);
+              circleSubpath(g, s.x, s.y, s.r * 0.22);
             }
             g.fill();
           });

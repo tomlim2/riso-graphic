@@ -20,10 +20,12 @@
 //
 // 0.32.0까지의 CELL — 흰 시야에 물들인 세포가 일렁이고 나뉘던 판 — 은 git 기록에 남아 있다.
 
-import { makeRng } from "../rng.js";
+import { makeRng, fieldSeed } from "../rng.js";
+import { circleSubpath } from "../shapes.js";
 import { roundel } from "../roundel.js";
 import { SCOPE_KNOBS, dim, scatter } from "../scope.js";
 import { nightAndLight, bluest } from "../drums.js";
+import { floodNight, carve, stain } from "../night.js";
 
 const TAU = Math.PI * 2;
 const MOST_SPIKES = 80;
@@ -80,9 +82,9 @@ export const cell = {
     { key: "count", label: "COUNT", min: 3, max: 30, step: 1, value: 9 },
     { key: "field", label: "FIELD", min: 0, max: 199, step: 1, value: 0, hint: "시야의 씨앗. 종이의 롤은 그대로 두고 입자만 다시 뽑는다" },
     { key: "size", label: "SIZE", min: 0.04, max: 0.16, step: 0.005, value: 0.1, hint: "입자의 크기" },
-    { key: "spikes", label: "SPIKES", min: 0, max: 80, step: 1, value: 56, hint: "입자 하나를 두른 가시의 수" },
+    { key: "spikes", label: "SPIKES", min: 0, max: MOST_SPIKES, step: 1, value: 56, hint: "입자 하나를 두른 가시의 수" },
     { key: "length", label: "LENGTH", min: 0.1, max: 0.5, step: 0.01, value: 0.3, hint: "가시의 길이. 입자 반지름에 대한 비율" },
-    { key: "cups", label: "CUPS", min: 0, max: 12, step: 1, value: 8, hint: "짙은 속을 둘러 앞을 보는 가시 머리의 수" },
+    { key: "cups", label: "CUPS", min: 0, max: MOST_CUPS, step: 1, value: 8, hint: "짙은 속을 둘러 앞을 보는 가시 머리의 수" },
     { key: "depth", label: "DEPTH", min: 0, max: 0.7, step: 0.05, value: 0.5, hint: "초점이 맞지 않아 흐린 입자의 비율" },
     { key: "drift", label: "DRIFT", min: 0, max: 0.04, step: 0.002, value: 0.008, hint: "입자가 한 바퀴 동안 도는 작은 길의 크기" },
     { key: "spin", label: "SPIN", min: 0, max: 1, step: 0.05, value: 0.4, hint: "입자가 제자리에서 기울고 가시가 떠는 정도" },
@@ -103,7 +105,7 @@ export const cell = {
     const blue = bluest(S.drums);
 
     // 입자는 제 씨앗으로 굴린다. FIELD는 잉크와 종이결을 건드리지 않고 시야만 다시 뽑는다
-    const layout = makeRng((page.seed ^ 0x1f123bb5 ^ Math.imul(knobs.field + 1, 0x85ebca6b)) >>> 0);
+    const layout = makeRng(fieldSeed(page, 0x1f123bb5));
 
     // 입자를 놓는다. 후보를 여럿 뽑아 이웃과의 여유가 가장 큰 데로 간다. 가시까지 셈에 넣어
     // 조금만 겹친다. 시야 밖으로 너무 나가는 자리는 깎는다
@@ -131,27 +133,9 @@ export const cell = {
     });
 
     // 빛을 판다. 가장 파란 통은 share만큼만 파내 빛이 하늘빛을 띤다. share가 1이면 흰빛이다
-    const light = (paint, strength, share = 0.5) => {
-      if (!(strength > 0)) return;
-      for (const sep of night) {
-        const amount = Math.min(1, strength * (sep === blue ? share : 1));
-        sep.knockout((plate) =>
-          plate.draw((g) => {
-            g.globalAlpha = amount;
-            paint(g);
-          })
-        );
-      }
-    };
+    const shine = (paint, strength, share = 0.5) => carve(night, paint, (sep) => strength * (sep === blue ? share : 1));
     // 어둠을 도로 얹는다
-    const shade = (paint, strength) => {
-      for (const sep of night) {
-        sep.draw((g) => {
-          g.globalAlpha = Math.min(1, strength);
-          paint(g);
-        });
-      }
-    };
+    const shade = (paint, strength) => stain(night, paint, strength);
     // 가운데에서 바깥으로 옅어지는 원 하나
     const soft = (x, y, inner, outer, stops) => (g) => {
       const gradient = g.createRadialGradient(x, y, inner, x, y, outer);
@@ -164,18 +148,17 @@ export const cell = {
     const discs = (list) => (g) => {
       g.beginPath();
       for (const [dx, dy, size] of list) {
-        g.moveTo(dx + size, dy);
-        g.arc(dx, dy, size, 0, TAU);
+        circleSubpath(g, dx, dy, size);
       }
       g.fill();
     };
 
     // 바닥. 밤을 깔고 한가운데를 조금 밝힌다
-    for (const sep of night) sep.flood((sep === deepest ? 0.95 : 0.8) * knobs.dark);
-    light(soft(cx, cy, 0, ring, [[0, 0.35], [1, 0]]), 1, 0.4);
+    floodNight(night, deepest, knobs.dark);
+    shine(soft(cx, cy, 0, ring, [[0, 0.35], [1, 0]]), 1, 0.4);
 
     // 빛 번짐
-    for (const glow of glows) light(soft(glow.x, glow.y, 0, glow.r, [[0, glow.tone], [1, 0]]), 1);
+    for (const glow of glows) shine(soft(glow.x, glow.y, 0, glow.r, [[0, glow.tone], [1, 0]]), 1);
 
     const glowAmount = knobs.glow;
     const shake = knobs.spin;
@@ -197,13 +180,13 @@ export const cell = {
     for (const { p, x, y } of placed.filter((item) => blurred(item.p))) {
       const r = p.r * 1.3;
       const tone = glowAmount * p.tone;
-      light(soft(x, y, 0, r * 1.5, [[0, 0.42 * tone], [0.5, 0.48 * tone], [0.75, 0.28 * tone], [1, 0]]), 1);
+      shine(soft(x, y, 0, r * 1.5, [[0, 0.42 * tone], [0.5, 0.48 * tone], [0.75, 0.28 * tone], [1, 0]]), 1);
       shade(soft(x, y, 0, r * 0.55, [[0, 0.25], [1, 0]]), 1);
     }
 
     // 빛 알갱이. 초점 밖의 작은 입자들이 제자리에서 조금씩 떤다
     if (motes.length) {
-      light(
+      shine(
         discs(
           motes.map((m) => [
             m.x + Math.cos(turn * m.beat + m.phase) * 3,
@@ -221,17 +204,17 @@ export const cell = {
       const tone = Math.min(1, glowAmount * p.tone);
 
       // 둘레의 번짐과 앞면
-      light(soft(x, y, r * 0.9, r * 1.4, [[0, 0.2 * tone], [1, 0]]), 1);
-      light(discs([[x, y, r]]), 0.45 * tone);
+      shine(soft(x, y, r * 0.9, r * 1.4, [[0, 0.2 * tone], [1, 0]]), 1);
+      shine(discs([[x, y, r]]), 0.45 * tone);
 
       // 짙은 속
       shade(soft(x, y, 0, r * 0.62, [[0, 0.9], [0.55, 0.6], [1, 0]]), 1);
 
       // 앞면의 옅은 알갱이
-      light(discs(p.grains.map(([angle, dist, size]) => [x + Math.cos(angle + rot) * dist * r, y + Math.sin(angle + rot) * dist * r, size])), 0.22 * tone);
+      shine(discs(p.grains.map(([angle, dist, size]) => [x + Math.cos(angle + rot) * dist * r, y + Math.sin(angle + rot) * dist * r, size])), 0.22 * tone);
 
       // 테
-      light((g) => {
+      shine((g) => {
         g.lineWidth = Math.max(4, r * 0.045);
         g.beginPath();
         g.arc(x, y, r, 0, TAU);
@@ -256,7 +239,7 @@ export const cell = {
           if (spike.head < 0.35) flats.push([x + ux * reach, y + uy * reach, ux, uy]);
           else rounds.push([x + ux * reach, y + uy * reach, spike.head < 0.8 ? knob : knob * 1.35]);
         });
-        light((g) => {
+        shine((g) => {
           g.lineWidth = stalk;
           g.lineCap = "round";
           g.beginPath();
@@ -266,7 +249,7 @@ export const cell = {
           }
           g.stroke();
         }, tone, 0.7);
-        light((g) => {
+        shine((g) => {
           discs(rounds)(g);
           g.lineWidth = knob * 1.1;
           g.lineCap = "round";
@@ -285,7 +268,7 @@ export const cell = {
           const angle = rot + ((k + 0.5 + cup.shift) / cupCount) * TAU;
           return [x + Math.cos(angle) * cup.dist * r, y + Math.sin(angle) * cup.dist * r, cup.size * r];
         });
-        light(discs(cups), tone, 0.9);
+        shine(discs(cups), tone, 0.9);
         shade(discs(cups.map(([ux, uy, size]) => [ux, uy, size * 0.5])), 0.8);
       }
     }

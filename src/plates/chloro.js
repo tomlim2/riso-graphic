@@ -22,7 +22,9 @@
 // 가져, 시야를 넓히거나 좁혀도 남는 세포는 그대로다. 엽록체는 세포마다 같은 수의 후보를 뽑고,
 // 손잡이는 그중 몇을 앉힐지만 정한다.
 
-import { makeRng } from "../rng.js";
+import { makeRng, fieldSeed } from "../rng.js";
+import { circleSubpath, signedArea } from "../shapes.js";
+import { keeper } from "../keep.js";
 import { roundel } from "../roundel.js";
 import { SCOPE_KNOBS, light } from "../scope.js";
 import { greenest, bluest, yellowest } from "../drums.js";
@@ -102,23 +104,15 @@ function inset(poly, amount) {
   return tidy(out);
 }
 
-function areaOf(poly) {
-  let sum = 0;
-  for (let i = 0; i < poly.length; i += 1) {
-    const [x0, y0] = poly[i];
-    const [x1, y1] = poly[(i + 1) % poly.length];
-    sum += x0 * y1 - x1 * y0;
-  }
-  return Math.abs(sum) / 2;
-}
+const areaOf = (poly) => Math.abs(signedArea(poly)) / 2;
 
 // 조직을 짠다. 세포의 속과 그 안에 앉을 엽록체까지, 시간과 무관한 것 전부
 function weave(seed, knobs, width, cx, cy, ring) {
   const spacing = width * knobs.size;
   const { stretch } = knobs;
-  const turn = (knobs.angle * Math.PI) / 180;
-  const ca = Math.cos(turn);
-  const sa = Math.sin(turn);
+  const tilt = (knobs.angle * Math.PI) / 180;
+  const ca = Math.cos(tilt);
+  const sa = Math.sin(tilt);
   const toWorld = ([x, y]) => [cx + (x * stretch * ca - y * sa) * spacing, cy + (x * stretch * sa + y * ca) * spacing];
 
   // 시야에 조금이라도 걸리는 세포까지. 세포 하나만큼을 더한다
@@ -206,14 +200,7 @@ function weave(seed, knobs, width, cx, cy, ring) {
 }
 
 // 짠 조직은 몇 벌 쥐고 있는다. 손잡이를 끄는 동안이 아니면 같은 조직을 프레임마다 다시 쓴다
-const woven = new Map();
-function tissueFor(key, make) {
-  if (!woven.has(key)) {
-    woven.set(key, make());
-    if (woven.size > 4) woven.delete(woven.keys().next().value);
-  }
-  return woven.get(key);
-}
+const tissueFor = keeper(4);
 
 // 모서리를 둥글린 다각형 하나를 경로에 더한다
 function roundedSubpath(g, points, radius) {
@@ -253,7 +240,7 @@ function discs(sep, list, tone, grow = 1) {
 export const chloro = {
   id: "chloro",
   name: "CHLORO",
-  about: "현미경 아래의 잎 세포. 벽 사이마다 엽록체가 가득 차 천천히 흐른다",
+  about: "현미경 아래의 잎 세포. 벽 사이마다 엽록체가 가득 차, 저마다 제자리에서 조금씩 움직인다",
 
   knobs: [
     { key: "field", label: "FIELD", min: 0, max: 199, step: 1, value: 0, hint: "조직의 씨앗. 종이의 롤은 그대로 두고 세포와 엽록체만 다시 뽑는다" },
@@ -279,7 +266,7 @@ export const chloro = {
     const ring = width * knobs.frame;
 
     // 조직은 제 씨앗으로 짠다. FIELD는 잉크와 종이결을 건드리지 않고 조직만 다시 뽑는다
-    const seed = (page.seed ^ 0x2545f491 ^ Math.imul(knobs.field + 1, 0x85ebca6b)) >>> 0;
+    const seed = fieldSeed(page, 0x2545f491);
     const shape = [seed, width, ring, knobs.size, knobs.stretch, knobs.angle, knobs.jitter, knobs.wall, knobs.density, knobs.plastid];
     const cells = tissueFor(shape.join("|"), () => weave(seed, knobs, width, cx, cy, ring));
 
@@ -299,8 +286,7 @@ export const chloro = {
       glow.draw((g) => {
         g.globalAlpha = 0.34 * knobs.ground;
         g.beginPath();
-        g.moveTo(cx + ring + 40, cy);
-        g.arc(cx, cy, ring + 40, 0, TAU);
+        circleSubpath(g, cx, cy, ring + 40);
         insides(g);
         g.fill("evenodd");
       });
@@ -366,8 +352,7 @@ export const chloro = {
             const ly = Math.sin(angle) * dist * p.r * p.squash;
             const x = p.x + lx * cos - ly * sin;
             const y = p.y + lx * sin + ly * cos;
-            g.moveTo(x + size * p.r, y);
-            g.arc(x, y, size * p.r, 0, TAU);
+            circleSubpath(g, x, y, size * p.r);
           }
         }
       }

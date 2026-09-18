@@ -7,11 +7,37 @@
 // settled during layout. Drawing happens once per ink pass and must not touch the rng,
 // or the second pass would get a different poster than the first.
 
+// Each path builder comes in two: one that starts a new path, and a *Subpath that adds to the
+// current one. Many shapes in one path fill in a single pass, so where they overlap the ink
+// doesn't double up.
+
 export function polyPath(context, points, close = true) {
   context.beginPath();
+  polySubpath(context, points, close);
+}
+
+export function polySubpath(context, points, close = true) {
   context.moveTo(points[0][0], points[0][1]);
   for (let i = 1; i < points.length; i += 1) context.lineTo(points[i][0], points[i][1]);
   if (close) context.closePath();
+}
+
+// A circle added to the current path. It moves to the circle's right end first, or the arc
+// would draw a line from wherever the last shape ended.
+export function circleSubpath(context, cx, cy, radius) {
+  context.moveTo(cx + radius, cy);
+  context.arc(cx, cy, radius, 0, Math.PI * 2);
+}
+
+// Twice the signed area of a closed outline. Positive when it winds one way, negative the other.
+export function signedArea(points) {
+  let sum = 0;
+  for (let i = 0; i < points.length; i += 1) {
+    const [x0, y0] = points[i];
+    const [x1, y1] = points[(i + 1) % points.length];
+    sum += x0 * y1 - x1 * y0;
+  }
+  return sum;
 }
 
 // Catmull-Rom through every point, as beziers. A closed loop of these is the organic blob.
@@ -43,14 +69,6 @@ export function splineSubpath(context, points, close = true) {
     );
   }
   if (close) context.closePath();
-}
-
-export function strokePoints(context, points, width, close = false) {
-  context.lineWidth = width;
-  context.lineCap = "round";
-  context.lineJoin = "round";
-  splinePath(context, points, close);
-  context.stroke();
 }
 
 // -- organic ---------------------------------------------------------------------------
@@ -172,13 +190,7 @@ export function ribbon(points, width) {
 // 민다. 배율로 키우면 해파리 종처럼 밑단이 들린 모양은 밑단이 오히려 안으로 들어온다.
 export function grow(points, amount) {
   const count = points.length;
-  let area = 0;
-  for (let i = 0; i < count; i += 1) {
-    const [x0, y0] = points[i];
-    const [x1, y1] = points[(i + 1) % count];
-    area += x0 * y1 - x1 * y0;
-  }
-  const outward = area > 0 ? amount : -amount;
+  const outward = signedArea(points) > 0 ? amount : -amount;
   return points.map(([x, y], i) => {
     const [ax, ay] = points[(i - 1 + count) % count];
     const [bx, by] = points[(i + 1) % count];
@@ -238,6 +250,10 @@ export function spiral(cx, cy, from, to, turns = 2.5, steps = 80) {
 // The four-point twinkle. Concave sides, which is what separates it from a plus sign.
 export function sparkle(context, cx, cy, radius, waist = 0.26) {
   context.beginPath();
+  sparkleSubpath(context, cx, cy, radius, waist);
+}
+
+export function sparkleSubpath(context, cx, cy, radius, waist = 0.26) {
   context.moveTo(cx, cy - radius);
   context.quadraticCurveTo(cx + radius * waist, cy - radius * waist, cx + radius, cy);
   context.quadraticCurveTo(cx + radius * waist, cy + radius * waist, cx, cy + radius);

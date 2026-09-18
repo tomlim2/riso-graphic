@@ -11,9 +11,10 @@
 // 그 한 줄이 곧 그 드럼의 판이 된다.
 
 import { makeRng } from "./rng.js";
-import { PAPER, PAPER_SHADE, inksFor, luminance } from "./palette.js";
+import { PAPER, PAPER_SHADE, inksFor, luminance, rgbOf } from "./palette.js";
 import { ANGLES, VERTEX, FRAGMENT, pcg } from "./screen.js";
 import { splinePath, polyPath } from "./shapes.js";
+import { measure } from "./type.js";
 
 // 판형. 판화는 전부 이 좌표로 그리고, 종이가 더 작게 걸리면 배율이 알아서 줄인다.
 // 세로 위치를 픽셀로 박아 두면 판형을 바꾸는 순간 다섯 장이 한꺼번에 무너지므로,
@@ -38,10 +39,6 @@ export class Separation {
     this.#g = canvas.getContext("2d");
     wipe(this.#g, canvas);
     this.#g.setTransform(scale, 0, 0, scale, 0, 0);
-  }
-
-  get context() {
-    return this.#g;
   }
 
   #ready(tone) {
@@ -128,14 +125,7 @@ export class Separation {
     g.font = font;
     g.textAlign = "left";
 
-    let width = 0;
-    if (track) {
-      for (const character of string) width += g.measureText(character).width + track;
-      width -= track;
-    } else {
-      width = g.measureText(string).width;
-    }
-
+    const width = measure(string, font, track);
     let cursor = align === "right" ? x - width : align === "center" ? x - width / 2 : x;
     if (track) {
       for (const character of string) {
@@ -239,11 +229,6 @@ function impressionOf(boil, frame, frames) {
   return Math.floor((((frame % frames) + frames) % frames) / step) % BOIL_POOL;
 }
 
-const rgb = (hex) => {
-  const value = parseInt(hex.slice(1), 16);
-  return [((value >> 16) & 255) / 255, ((value >> 8) & 255) / 255, (value & 255) / 255];
-};
-
 // -- 기계 -------------------------------------------------------------------------------
 
 // 인쇄기를 캔버스 하나에 세운다. 이 캔버스가 곧 종이이고, 찍을 때마다 그 크기로 맞춘다.
@@ -319,8 +304,9 @@ function assemble(gl) {
   gl.enableVertexAttribArray(corner);
   gl.vertexAttribPointer(corner, 2, gl.FLOAT, false, 0, 0);
 
-  // 분판을 받을 판 셋. 쓰지 않는 칸도 빈 한 픽셀을 물려 두어 언제나 온전하게 한다.
-  // 망점은 판 사이를 짚으므로 선형으로 읽는다. 판 밖은 셰이더가 스스로 비운다.
+  // 분판을 받을 판 셋. 처음에는 빈 한 픽셀을 물려 두어 언제나 온전하게 한다. 통이 셋이던 장
+  // 다음에 통이 둘인 장을 찍으면 셋째 칸에는 앞 장의 분판이 남지만, 셰이더는 u_count를 넘는 칸을
+  // 읽지 않는다. 망점은 판 사이를 짚으므로 선형으로 읽는다. 판 밖은 셰이더가 스스로 비운다.
   const plates = [0, 1, 2].map((unit) => {
     const texture = gl.createTexture();
     gl.activeTexture(gl.TEXTURE0 + unit);
@@ -352,25 +338,31 @@ function assemble(gl) {
   };
 
   gl.uniform1iv(at("u_sep"), [0, 1, 2]);
-  gl.uniform3fv(at("u_paper"), rgb(PAPER));
-  gl.uniform3fv(at("u_shade"), rgb(PAPER_SHADE));
+  gl.uniform3fv(at("u_paper"), rgbOf(PAPER));
+  gl.uniform3fv(at("u_shade"), rgbOf(PAPER_SHADE));
 
   return { program, vao, plates, u };
 }
 
+// 한 장은 두 단계다. 판을 짜고(compose) 찍는다(stamp). 짜는 동안에는 GPU가 없고, 찍는 동안에는
+// 판화가 없다. 돌려주는 것은 판화가 본 page, 판화의 paint가 돌려준 것(sketch — 안내선이 쓴다),
+// 통마다 찍은 내역(passes)이다.
 function print(gl, machine, canvas, options) {
+  const composed = compose(options);
+  const passes = stamp(gl, machine, canvas, composed, options);
+  return { page: composed.page, sketch: composed.sketch, passes };
+}
+
+// 판을 짠다. 분판을 닦아 판화에 건네고 판화가 그리게 한다
+function compose(options) {
   const {
     plate,
     palette,
     inkCount = 3,
     seed = 1,
-    cell = 9,
-    grain = 0.35,
-    registration = 2,
     headline = "",
     frame = 0,
     frames = 1,
-    boil = "held",
     scale = 1,
     knobs = {},
     // 통마다 스크린 각도를 바꿔 찍을 때만 넘긴다. 무아레를 보여 주는 자리 말고는 쓰지 않는다
@@ -414,20 +406,27 @@ function print(gl, machine, canvas, options) {
   // 손잡이는 판마다 다르다. 화면이 넘겨 주지 않은 것은 판이 스스로 적어 둔 기본값으로
   // 채운다 — 그래야 판 하나만 들고 찍어 보는 자리에서도 그대로 돈다. 시야의 공통 손잡이(scope)도
   // 같은 자리에 들어간다.
-  const settings = Object.fromEntries([...(plate.knobs || []), ...(plate.scope || [])].map((knob) => [knob.key, knob.value]));
+  const defaults = Object.fromEntries([...(plate.knobs || []), ...(plate.scope || [])].map((knob) => [knob.key, knob.value]));
 
   const R = makeRng(seed >>> 0);
   const page = {
     width, height, margin: 78, palette, inks, roles, headline, seed, frame, frames: span, t,
-    knobs: { ...settings, ...knobs }
+    knobs: { ...defaults, ...knobs }
   };
-  plate.paint(S, R, page);
+  const sketch = plate.paint(S, R, page);
+  return { S, page, sketch, scale, deviceWidth, deviceHeight };
+}
+
+// 짠 판을 찍는다. 분판을 텍스처로 올리고 셰이더를 한 번 돌린다. 통마다 찍은 내역을 돌려준다
+function stamp(gl, machine, canvas, { S, page, scale, deviceWidth, deviceHeight }, options) {
+  const { cell = 9, grain = 0.35, registration = 2, boil = "held" } = options;
+  const { seed, frame, frames: span } = page;
 
   // 인상이 바뀌면 스크린의 잡음도 판 어긋남도 함께 바뀐다. 둘은 같은 한 번의 통과에서 나오는
   // 것이라 따로 놀면 안 된다.
   const impression = impressionOf(boil, frame, span);
-  const fieldSeed = (seed ^ Math.imul(impression + 1, 0x9e3779b9)) >>> 0;
-  const root = pcg((fieldSeed ^ 0x5bf03635) >>> 0);
+  const noiseSeed = (seed ^ Math.imul(impression + 1, 0x9e3779b9)) >>> 0;
+  const root = pcg((noiseSeed ^ 0x5bf03635) >>> 0);
 
   // 판 어긋남은 판을 짜는 난수와 따로 둔다. 배치를 한 줄 고쳤다고 어긋남까지 달라지면
   // 무엇 때문에 달라 보이는지 알 수 없다.
@@ -453,7 +452,7 @@ function print(gl, machine, canvas, options) {
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, drum.separation.canvas);
 
     const radians = (drum.angle * Math.PI) / 180;
-    ink.splice(order * 3, 3, ...rgb(drum.ink));
+    ink.splice(order * 3, 3, ...rgbOf(drum.ink));
     turn.splice(order * 2, 2, Math.cos(radians), Math.sin(radians));
 
     // 첫 통이 기준이다. 나중 통이 어긋나는 것이 눈에 어긋남으로 읽힌다
@@ -475,12 +474,10 @@ function print(gl, machine, canvas, options) {
   gl.drawArrays(gl.TRIANGLES, 0, 3);
 
   // 통마다 무엇을 어떻게 찍었는지. 옅은 통부터, 종이가 지나간 순서다
-  const passes = S.drums.map((drum, order) => ({
+  return S.drums.map((drum, order) => ({
     role: drum.role,
     ink: drum.ink,
     angle: drum.angle,
     slip: [offset[order * 2], offset[order * 2 + 1]]
   }));
-
-  return { inks, roles, drums: drums.size, passes, plate: plate.id, seed, frame, t };
 }

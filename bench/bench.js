@@ -12,13 +12,13 @@
 // GPU에 일을 맡기는 순간까지만 잡혀, 판을 짜는 시간만 남는다.
 
 const SEED = 12345;
-const IDS = ["ripple", "moon", "garden", "jelly", "cell", "chloro", "cosmos", "flake", "kaleido"];
+const IDS = ["ripple", "moon", "garden", "jelly", "cell", "chloro", "cosmos", "flake", "kaleido", "meteor"];
 const ALL_IDS = [...IDS, "poster", "medium"];
 const TONES = [0, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 1];
 const SHORT_TONES = [0.05, 0.2, 0.4, 0.6, 0.8, 0.95, 1];
 
 // 1:1로 잘라 볼 자리. 망점이 가장 많이 말하는 곳이다
-const CROPS = { ripple: [300, 250], moon: [340, 180], garden: [300, 420], jelly: [360, 300], cell: [420, 300], chloro: [420, 300], cosmos: [420, 300], flake: [420, 300], kaleido: [420, 300] };
+const CROPS = { ripple: [300, 250], moon: [340, 180], garden: [300, 420], jelly: [360, 300], cell: [420, 300], chloro: [420, 300], cosmos: [420, 300], flake: [420, 300], kaleido: [420, 300], meteor: [330, 520] };
 
 const EMPTY = { id: "empty", name: "EMPTY", paint() {} };
 const flood = (role, tone) => ({ id: `flood-${role}`, name: "FLOOD", paint(S) { S[role].flood(tone); } });

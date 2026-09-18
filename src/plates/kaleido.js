@@ -16,7 +16,7 @@
 // 무늬가 피었다 진다. 통 전체를 돌리지는 않는다. 박자는 모두 한 바퀴에 정수 번이다. 조각은 언제나
 // 같은 수만큼 뽑고, PIECES는 그중 몇을 넣을지만 정한다.
 
-import { makeRng } from "../rng.js";
+import { makeRng, fieldSeed } from "../rng.js";
 import * as shapes from "../shapes.js";
 import { roundel } from "../roundel.js";
 import { SCOPE_KNOBS, light } from "../scope.js";
@@ -109,7 +109,7 @@ export const kaleido = {
   knobs: [
     { key: "field", label: "FIELD", min: 0, max: 199, step: 1, value: 0, hint: "통 속 조각의 씨앗. 종이의 롤은 그대로 두고 조각만 다시 뽑는다" },
     { key: "mirrors", label: "MIRRORS", min: 2, max: 12, step: 1, value: 6, hint: "거울이 만드는 겹의 수. 6이면 눈송이처럼 열두 벌이다" },
-    { key: "pieces", label: "PIECES", min: 4, max: 60, step: 1, value: 24, hint: "통 속 조각의 수" },
+    { key: "pieces", label: "PIECES", min: 4, max: MOST_PIECES, step: 1, value: 24, hint: "통 속 조각의 수" },
     { key: "size", label: "SIZE", min: 0.02, max: 0.14, step: 0.005, value: 0.06, hint: "조각의 크기" },
     { key: "tumble", label: "TUMBLE", min: 0, max: 1, step: 0.05, value: 0.5, hint: "조각이 저마다 굴러다니는 정도" },
     { key: "tint", label: "TINT", min: 0.3, max: 1, step: 0.05, value: 0.8, hint: "조각을 얼마나 진하게 찍을지" }
@@ -126,7 +126,7 @@ export const kaleido = {
     const wedge = Math.PI / mirrors;
 
     // 조각은 제 씨앗으로 뽑는다. FIELD는 잉크와 종이결을 건드리지 않는다
-    const layout = makeRng((page.seed ^ 0x3243f6a8 ^ Math.imul(knobs.field + 1, 0x85ebca6b)) >>> 0);
+    const layout = makeRng(fieldSeed(page, 0x3243f6a8));
     const spin = layout.float(0, TAU);
     const pieces = Array.from({ length: MOST_PIECES }, () => ({
       kind: layout.pick(KINDS),

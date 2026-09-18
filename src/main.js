@@ -8,6 +8,9 @@
 import { PALETTES } from "./palette.js";
 import { PLATES, plateById } from "./plates/index.js";
 import { createPress, SHEET } from "./press.js";
+import { createGuides, paperGuides } from "./guides.js";
+import { parseHash, encodeHash, applyKnobs } from "./hash.js";
+import { GRID_SCALE, layContact } from "./contact.js";
 
 // 시계는 언제나 초당 스물네 번. 바뀌는 것은 한 장을 몇 프레임 잡아 두느냐다.
 //
@@ -23,12 +26,28 @@ const RATES = [
   { label: "12", hold: 2, title: "두 프레임에 한 장. 손그림 애니메이션의 투스 촬영" },
   { label: "8", hold: 3, title: "세 프레임에 한 장. 박자가 또렷해진다" }
 ];
-const GRID_SCALE = 1 / 3;
+// 끓음. 같은 롤이라도 인상이 바뀌면 스크린과 판 어긋남이 함께 바뀐다(press.js)
+const BOILS = [
+  { label: "HELD", kind: "held", title: "한 장. 종이는 붙박이고 그림이 그 밑에서 움직인다" },
+  { label: "TWOS", kind: "twos", title: "두 프레임에 한 번. 손으로 그린 애니메이션의 속도" },
+  { label: "EVERY", kind: "every", title: "매 프레임. 화면 전체가 끓는다" }
+];
+
+// 판화가 하나뿐이면 고르개도, 판화끼리 견주는 콘택트 시트도 뜻이 없다. 목록을 따라간다.
+const many = PLATES.length > 1;
+
+const gridItems = [
+  { label: "OFF", kind: "off" },
+  ...(many ? [{ label: "PLATES", kind: "plates" }] : []),
+  { label: "INKS", kind: "inks" },
+  { label: "FRAMES", kind: "frames" }
+];
 
 // 종이 둘. 한 장은 인쇄기가 직접 찍는 WebGL 캔버스이고, 다른 하나는 콘택트 시트를 붙이는
 // 대지다. 캔버스 하나는 한 가지 컨텍스트만 가질 수 있어서 나눠 둔다.
 const sheet = document.getElementById("sheet");
 const contact = document.getElementById("contact");
+const guidesButton = document.getElementById("guides");
 const status = document.getElementById("status");
 const about = document.getElementById("about");
 const plateRow = document.getElementById("plates");
@@ -66,6 +85,9 @@ try {
   throw error;
 }
 
+// 안내선은 한 장 위에 겹친 다른 캔버스에 그린다(src/guides.js). 찍힌 장에는 손대지 않는다
+const guides = createGuides(sheet, document.getElementById("marks"), SHEET);
+
 const DEFAULTS = {
   plate: PLATES[0].id,
   seed: (Math.random() * 0xffffffff) >>> 0,
@@ -78,10 +100,21 @@ const DEFAULTS = {
   grid: "off",
   frame: 0,
   hold: 3, // 초당 여덟 장. 이 물결에는 이 박자가 맞는다
-  boil: "twos"
+  boil: "twos",
+  guides: false
 };
 
-const state = { ...DEFAULTS, ...readHash() };
+// 주소에 실려 온 설정(src/hash.js). 판의 손잡이는 글자 그대로 받아 두었다가 시동에서 앉힌다
+const { knobs: knobText, scope: scopeText, ...fromHash } = parseHash(location.hash, {
+  plateById,
+  palettes: PALETTES.length,
+  holds: RATES.map((rate) => rate.hold),
+  grids: gridItems.map((item) => item.kind),
+  boils: BOILS.map((item) => item.kind),
+  frames: FRAMES,
+  defaults: DEFAULTS
+});
+const state = { ...DEFAULTS, ...fromHash };
 
 // 손잡이 값은 판마다 따로 기억한다. 판을 바꿨다 돌아와도 맞춰 둔 것이 남아 있어야 하고,
 // 한 판의 값이 다른 판에 새어 들어가서도 안 된다 — 판마다 필요한 것이 다르기 때문이다.
@@ -110,55 +143,9 @@ function knobValues(plate) {
   return values;
 }
 
-function readHash() {
-  const raw = location.hash.replace(/^#/, "");
-  if (!raw) return {};
-  const params = new URLSearchParams(raw);
-  const out = {};
-  if (params.has("plate")) out.plate = plateById(params.get("plate")).id;
-  if (params.has("seed")) out.seed = Number(params.get("seed")) >>> 0;
-  if (params.has("p")) out.palette = Math.max(0, Math.min(PALETTES.length - 1, Number(params.get("p"))));
-  if (params.has("drums")) out.drums = Number(params.get("drums")) === 2 ? 2 : 3;
-  if (params.has("cell")) out.cell = Math.max(3, Math.min(16, Number(params.get("cell"))));
-  if (params.has("grain")) out.grain = Math.max(0, Math.min(0.6, Number(params.get("grain"))));
-  if (params.has("reg")) out.register = Math.max(0, Math.min(5, Number(params.get("reg"))));
-  if (params.has("t")) out.headline = params.get("t");
-  if (params.has("grid")) out.grid = ["plates", "inks", "frames"].includes(params.get("grid")) ? params.get("grid") : "off";
-  if (params.has("f")) out.frame = Math.max(0, Number(params.get("f")) | 0) % FRAMES;
-  if (params.has("hold")) out.hold = RATES.some((r) => r.hold === Number(params.get("hold"))) ? Number(params.get("hold")) : 3;
-  if (params.has("boil")) out.boil = ["held", "twos", "every"].includes(params.get("boil")) ? params.get("boil") : "twos";
-  if (params.has("k")) out.rawKnobs = params.get("k");
-  if (params.has("s")) out.rawScope = params.get("s");
-  return out;
-}
-
 function writeHash() {
-  const params = new URLSearchParams({
-    plate: state.plate,
-    seed: String(state.seed),
-    p: String(state.palette),
-    drums: String(state.drums),
-    cell: String(state.cell),
-    grain: state.grain.toFixed(2),
-    reg: String(state.register),
-    f: String(state.frame),
-    hold: String(state.hold),
-    boil: state.boil
-  });
-  if (state.headline) params.set("t", state.headline);
-  if (state.grid !== "off") params.set("grid", state.grid);
-
-  // 주소에는 지금 걸린 판의 손잡이만 싣는다. 판마다 열쇠가 다르므로 섞어 담을 수 없다.
-  // 시야의 손잡이는 판끼리 나눠 쓰므로 s에 따로 싣는다.
   const plate = plateById(state.plate);
-  const packed = Object.entries(knobsFor(plate)).map(([key, value]) => `${key}:${value}`).join("|");
-  if (packed) params.set("k", packed);
-  if (plate.scope?.length) {
-    const shared = scopeFor(plate);
-    params.set("s", plate.scope.map((knob) => `${knob.key}:${shared[knob.key]}`).join("|"));
-  }
-
-  history.replaceState(null, "", `#${params.toString()}`);
+  history.replaceState(null, "", `#${encodeHash(state, plate, knobsFor(plate), scopeFor(plate))}`);
 }
 
 // 주소는 손이 멎은 뒤에 한 번 적는다. 끄는 내내 적으면 사파리는 30초에 백 번을 넘는 순간
@@ -215,34 +202,9 @@ function gridCells() {
   });
 }
 
-// 칸마다 인쇄기로 작게 찍어 대지에 옮겨 붙인다. 인쇄기의 종이가 이 동안 칸 크기로
-// 줄어들지만, 콘택트 시트가 펼쳐진 동안에는 그 종이가 걸려 있지 않다.
-function printContact() {
-  const cells = gridCells();
-  const columns = Math.min(3, cells.length);
-  const rows = Math.ceil(cells.length / columns);
-  const cellWidth = Math.round(SHEET.width * GRID_SCALE);
-  const cellHeight = Math.round(SHEET.height * GRID_SCALE);
-
-  contact.width = columns * (cellWidth + 14);
-  contact.height = rows * (cellHeight + 26);
-  const out = contact.getContext("2d");
-  out.fillStyle = "#ddd8cb";
-  out.fillRect(0, 0, contact.width, contact.height);
-
-  cells.forEach((cell, index) => {
-    press.print(settings(cell.plate, cell.palette, { frame: cell.frame, scale: GRID_SCALE }));
-    const x = (index % columns) * (cellWidth + 14) + 7;
-    const y = Math.floor(index / columns) * (cellHeight + 26) + 7;
-    out.drawImage(sheet, x, y);
-
-    out.fillStyle = cell.mark ? "#2b2724" : "rgba(43, 39, 36, 0.55)";
-    out.font = "600 11px ui-monospace, SFMono-Regular, Menlo, monospace";
-    out.fillText(cell.label, x, y + cellHeight + 14);
-  });
-
-  return cells.length;
-}
+// 칸마다 작게 찍어 대지에 붙인다(src/contact.js)
+const printContact = () =>
+  layContact(contact, sheet, gridCells(), (cell) => press.print(settings(cell.plate, cell.palette, { frame: cell.frame, scale: GRID_SCALE })), SHEET);
 
 // 한 장이든 콘택트 시트든 지금 다이얼대로 찍는다. 무엇을 찍었는지와 걸린 시간을 돌려준다.
 function draw() {
@@ -251,13 +213,17 @@ function draw() {
   let note;
 
   if (state.grid === "off") {
-    press.print(settings(plate, PALETTES[state.palette], { frame: sheetFrame(state.frame) }));
+    const record = press.print(settings(plate, PALETTES[state.palette], { frame: sheetFrame(state.frame) }));
     show(sheet);
+    // 안내선은 판이 방금 쓴 그 page로 짓는다. 찍은 장과 어긋날 자리가 없다. GPU가 기계를 잃은
+    // 동안에는 찍힌 것이 없으므로(record가 null) 안내선도 없다
+    guides.draw(record && state.guides ? (plate.guides ? plate.guides(record.page, record.sketch) : paperGuides(record.page)) : []);
     about.textContent = plate.about;
-    note = `${plate.name} · ROLL ${state.seed} · ${state.drums} DRUMS · F${state.frame}`;
+    note = `${plate.name} · ROLL ${state.seed} · ${state.drums} DRUMS · F${state.frame}${state.guides ? " · GUIDES" : ""}`;
   } else {
     const count = printContact();
     show(contact);
+    guides.draw([]);
     about.textContent =
       state.grid === "plates" ? "같은 롤로 모든 판화를 나란히" : state.grid === "inks" ? "같은 판화를 배색 아홉 벌로" : "한 바퀴를 아홉 자리에서 끊어";
     note = `GRID ${state.grid.toUpperCase()} · ${count} SHEETS · ROLL ${state.seed}`;
@@ -302,7 +268,10 @@ function show(canvas) {
   fit(canvas);
 }
 
-addEventListener("resize", () => fit(state.grid === "off" ? sheet : contact));
+addEventListener("resize", () => {
+  fit(state.grid === "off" ? sheet : contact);
+  guides.refit();
+});
 
 // -- 시계 -------------------------------------------------------------------------------
 
@@ -393,12 +362,15 @@ function changed() {
   wake();
 }
 
+// 콘택트 시트를 바꾼다. 고르개의 표시도 함께 옮긴다
+function setGrid(kind) {
+  state.grid = kind;
+  mark(gridRow, gridItems, (item) => item.kind === state.grid);
+  changed();
+}
+
 function play() {
-  if (state.grid !== "off") {
-    state.grid = "off";
-    mark(gridRow, gridItems, (item) => item.kind === state.grid);
-    changed();
-  }
+  if (state.grid !== "off") setGrid("off");
   wantsPlay = true;
   wake();
 }
@@ -493,16 +465,6 @@ function buildKnobs() {
   fillKnobs(scopeRow, scope, scopeFor(plate));
 }
 
-// 판화가 하나뿐이면 고르개도, 판화끼리 견주는 콘택트 시트도 뜻이 없다. 목록을 따라간다.
-const many = PLATES.length > 1;
-
-const gridItems = [
-  { label: "OFF", kind: "off" },
-  ...(many ? [{ label: "PLATES", kind: "plates" }] : []),
-  { label: "INKS", kind: "inks" },
-  { label: "FRAMES", kind: "frames" }
-];
-
 if (many) {
   buildRow(
     plateRow,
@@ -538,14 +500,7 @@ buildRow(gridRow, gridItems, (item) => item.kind === state.grid, (item) => { sta
 
 buildRow(rateRow, RATES, (item) => item.hold === state.hold, (item) => { state.hold = item.hold; });
 
-buildRow(
-  boilRow,
-  [{ label: "HELD", kind: "held", title: "한 장. 종이는 붙박이고 그림이 그 밑에서 움직인다" },
-   { label: "TWOS", kind: "twos", title: "두 프레임에 한 번. 손으로 그린 애니메이션의 속도" },
-   { label: "EVERY", kind: "every", title: "매 프레임. 화면 전체가 끓는다" }],
-  (item) => item.kind === state.boil,
-  (item) => { state.boil = item.kind; }
-);
+buildRow(boilRow, BOILS, (item) => item.kind === state.boil, (item) => { state.boil = item.kind; });
 
 for (const [name, dial] of Object.entries(dials)) {
   dial.input.addEventListener("input", () => {
@@ -568,6 +523,14 @@ scrub.addEventListener("input", () => {
 });
 
 playButton.addEventListener("click", () => (playing() ? halt() : play()));
+
+// 안내선은 다이얼이 아니라 들여다보는 방식이다. 찍히는 것은 그대로고 겹쳐 그리는 것만 바뀐다
+function toggleGuides() {
+  state.guides = !state.guides;
+  guidesButton.classList.toggle("on", state.guides);
+  changed();
+}
+guidesButton.addEventListener("click", toggleGuides);
 
 document.getElementById("reroll").addEventListener("click", () => {
   state.seed = (Math.random() * 0xffffffff) >>> 0;
@@ -595,11 +558,8 @@ addEventListener("keydown", (event) => {
   if (event.key === "n" || event.key === "N") document.getElementById("reroll").click();
   if (event.key === "s" || event.key === "S") document.getElementById("save").click();
   if (event.key === " ") { event.preventDefault(); playButton.click(); }
-  if (event.key === "g" || event.key === "G") {
-    state.grid = state.grid === "off" ? gridItems[1].kind : "off";
-    mark(gridRow, gridItems, (item) => item.kind === state.grid);
-    changed();
-  }
+  if (event.key === "d" || event.key === "D") toggleGuides();
+  if (event.key === "g" || event.key === "G") setGrid(state.grid === "off" ? gridItems[1].kind : "off");
 });
 
 // GPU가 기계를 잃었다가 되찾으면 걸려 있던 것을 다시 찍는다
@@ -610,29 +570,15 @@ press.onRestore(() => {
 
 // -- 시동 -------------------------------------------------------------------------------
 
-// 주소에 실려 온 손잡이는 지금 걸린 판의 것이다. 그 판이 내놓지 않은 열쇠는 버린다.
-// 시야의 손잡이는 s에 따로 실려 온다. 예전 주소처럼 k에 섞여 온 것도 시야의 것으로 받는다.
-function take(raw, list, values) {
-  for (const pair of raw.split("|")) {
-    const [key, text] = pair.split(":");
-    const knob = list.find((item) => item.key === key);
-    if (!knob) continue;
-    const value = Number(text);
-    if (Number.isFinite(value)) values[key] = Math.max(knob.min, Math.min(knob.max, value));
-  }
-}
-if (state.rawKnobs) {
+// 주소에 실려 온 손잡이를 앉힌다. k는 지금 걸린 판의 것이고, 시야의 것은 s에 따로 온다
+// (예전 주소처럼 k에 섞여 와도 받는다). 시야의 값은 판끼리 나눠 쓰는 한 벌이다
+{
   const plate = plateById(state.plate);
-  take(state.rawKnobs, plate.knobs || [], knobsFor(plate));
-  if (!state.rawScope) take(state.rawKnobs, plate.scope || [], scopeFor(plate));
-  delete state.rawKnobs;
-}
-if (state.rawScope) {
-  const holder = PLATES.find((plate) => plate.scope);
-  if (holder) take(state.rawScope, holder.scope, scopeFor(holder));
-  delete state.rawScope;
+  const holder = PLATES.find((item) => item.scope);
+  applyKnobs({ knobs: knobText, scope: scopeText }, plate, holder, knobsFor(plate), scopeFor(holder || plate));
 }
 buildKnobs();
+guidesButton.classList.toggle("on", state.guides);
 
 // 제목을 받는 판이 하나도 안 걸려 있으면 그 칸은 아무 데도 닿지 않는다
 document.getElementById("headlineCard").hidden = !PLATES.some((plate) => plate.headline);
