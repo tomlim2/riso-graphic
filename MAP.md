@@ -57,7 +57,7 @@
 | **마스크** | 모양대로 오린 종이를 대고 찍는 것. 모양 바깥은 찍히지 않아 종이로 남는다 | [`src/mask.js`](src/mask.js) |
 | **라운델 · 원형 비네트** | 그림을 둥근 틀 안에 가두는 구성. 미술사에서는 둥근 그림을 톤도라고 한다 | [`src/roundel.js`](src/roundel.js) · SCOPE 칸의 FRAME (CELL · CHLORO · COSMOS · FLAKE · KALEIDO) |
 | **라인리스** | 테두리를 긋지 않고 면의 경계만으로 형태를 그리는 것. 일러스트에서 온 말이다. 동양화에서는 몰골법이라 하고, 테두리를 긋고 안을 칠하는 것은 구륵법이다 | MOON · JELLY의 종 · METEOR — [`src/plates/moon.js`](src/plates/moon.js) · [`src/plates/jelly.js`](src/plates/jelly.js) · [`src/plates/meteor.js`](src/plates/meteor.js) |
-| **반구 방출 · 방출 원뿔** | 이미터가 한쪽 반구로만 조각을 내보내는 것. 원뿔의 반각이 90°를 넘지 않고, 경계는 이미터를 지나는 법선이다. 이펙트 작화의 말이다 | METEOR의 머리 — 도트와 꼬리별은 꼬리 쪽으로만 뿜어 나간다. 임팩트 프레임의 섬광만 사방으로 터진다 — [`src/plates/meteor.js`](src/plates/meteor.js) |
+| **반구 방출 · 방출 원뿔** | 이미터가 한쪽 반구로만 조각을 내보내는 것. 원뿔의 반각이 90°를 넘지 않고, 경계는 이미터를 지나는 법선이다. 이펙트 작화의 말이다 | METEOR의 머리 — 도트와 꼬리별은 꼬리 쪽으로만 뿜어 나간다 — [`src/plates/meteor.js`](src/plates/meteor.js) |
 | **빈도 · 수명 · 수명에 따른 크기** | 이미터가 1초에 뿜는 입자의 수(spawn rate, frequency)와 입자 하나가 사는 시간(lifetime), 그리고 사는 동안 크기가 변하는 곡선(size over life). 한 번에 보이는 입자는 빈도 × 수명개다. 이펙트 툴의 말이다 | METEOR의 DOTS · STARS 칸 — FREQ · LIFETIME · SHRINK. 수명은 한 바퀴를 똑같이 나눈 값으로 맞춰진다. `emitter()` — [`src/plates/meteor.js`](src/plates/meteor.js) |
 | **노이즈 침식 · 알파 이로전** | 잡음 텍스처를 문턱으로 잘라 모양을 남기고, 문턱을 올려 가장자리부터 구멍을 내며 먹어 들어가 사라지게 하는 것. 게임 이펙트가 연기와 불을 흩을 때 쓴다. 디졸브라고도 한다 | 쓰지 않는다. METEOR의 도트(DOTS)는 분해 장면의 Dots처럼 납작한 타원이다 — 모두 머리 뒤에서 크게 태어나 흐르며 작아지므로, 갓 난 것이 겹쳐 덩이가 되고 그 뒤로 구슬이 줄지어 선다 — [`src/plates/meteor.js`](src/plates/meteor.js) |
 | **안내선 · 가이드** | 인쇄되지 않는 보조선. 판을 짜는 동안만 보고 찍을 때는 지운다 | GUIDES 다이얼 · 판의 `guides(page, sketch)` — [`src/guides.js`](src/guides.js) |

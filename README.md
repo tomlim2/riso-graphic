@@ -388,7 +388,7 @@ knobs.
 | COSMOS | FIELD · STARS · SPIKES · TWINKLE · MILKY · NEBULA · GALAXY · TILT · ARMS · DARK |
 | FLAKE | FIELD · SIZE · HABIT · BRANCH · RIDGE · BUBBLE · GLINT · FLURRY · DARK |
 | KALEIDO | FIELD · MIRRORS · PIECES · SIZE · TUMBLE · TINT |
-| METEOR | SKY: FIELD · DARK · DUST — BEAM: ANGLE · LENGTH · CORE · BEAMS · GLOW — BEAT: BEAT · FLASH — SPIKE card: SIZE · POINTS · STRETCH · VARY · FLIP · GLOW — DOTS card: FREQ · LIFETIME · VELOCITY · DRAG · SIZE · SHRINK · STRETCH · SCATTER — STARS card: FREQ · LIFETIME · VELOCITY · DRAG · SIZE · SHRINK · TRAIL · SCATTER |
+| METEOR | SKY: FIELD · DARK · DUST — BEAM: ANGLE · LENGTH · BEAMS — BEAT: BEAT — LASER card: WIDTH · LENGTH · FLICKER · GLOW — SPIKE card: SIZE · POINTS · STRETCH · SPREAD · NOSE · VARY · FLIP · GLOW — SECOND card: SIZE · POINTS · STRETCH · SPREAD · VARY · FLIP — DOTS card: FREQ · LIFETIME · VELOCITY · DRAG · SIZE · VARY · SHRINK · STRETCH · SCATTER — STARS card: FREQ · LIFETIME · VELOCITY · DRAG · SIZE · SHRINK · TRAIL · SCATTER |
 
 Don't confuse the CELL plate with the CELL dial. The dial sets the halftone cell size for every
 plate. The plate is the microscope sheet.
@@ -533,8 +533,9 @@ you need it.
 | `src/mask.js` | Masks. Knocks everything outside one shape out of every drum, whether a circle or any shape made of points |
 | `src/roundel.js` | The round frame. A circle mask plus a rim that looks drawn by hand |
 | `src/scope.js` | The eyepiece field: the shared SCOPE knobs, light falloff, floating debris. The round-frame plates use it, and METEOR borrows its falloff |
-| `src/drums.js` | Picking drums by color, not brightness: the greenest pair, the bluest, yellowest and reddest drum, night and light, night and the one yellow glow |
+| `src/drums.js` | Picking drums by color, not brightness: the greenest pair, the bluest, yellowest and reddest drum, night and light, and METEOR's light, the drum farthest from the darkest one |
 | `src/night.js` | The dark field: lay the night drums, carve light out of them, stain dark back on. CELL, COSMOS, FLAKE and METEOR use it |
+| `src/stains.js` | Soft stains that bleed along low-frequency noise, feathered at the edge: JELLY's water and METEOR's sky |
 | `src/blur.js` | Blurring alpha fields in JavaScript: a three-pass box blur and the soft glow around a shape. JELLY and METEOR use it |
 | `src/keep.js` | Holding a few costly things (woven tissue, baked nebulae, glow masks) by key, so they aren't rebuilt every frame |
 | `src/type.js` | Measuring text, line breaks, fitting type to the plate |
@@ -661,7 +662,7 @@ group changes, which is how JELLY's knobs read as swarm, bell, whiskers, legs an
 
 A knob can also carry a `panel`. Those knobs leave the PLATE KNOBS card for a card of their own,
 titled with the panel's name, right under it. Their values still belong to the plate, so the
-address is the same. METEOR puts its head and its two emitters there: SPIKE, DOTS and STARS.
+address is the same. METEOR puts its laser, its head, its second spike and its two emitters there: LASER, SPIKE, SECOND, DOTS and STARS.
 
 The glow around each bell is carved lightly out of the water. The bell is filled on a coarse
 grid, a few sheet pixels to a cell, blurred, and carved out through a curve that keeps it strong
@@ -864,14 +865,15 @@ written as the same stack, printed back to front. Nothing is outlined.
 | Dust | Faint specks in the far sky (DUST) |
 | Glow | One soft layer of light around the beam (GLOW) |
 | Second beams | Thin pink and blue bands at slightly different angles (BEAMS) |
-| Main beam | The wide yellow band from the head to the tail's end, with a white heart and a blue face at its end (CORE, LENGTH) |
+| Laser | A simple meteor tail after the breakdown's Laser_Main: one band in the light drum that swells just behind the head and thins toward its end (WIDTH). Like the breakdown's, it flickers: about four beats in ten it is off (FLICKER), decided by that beat's own random stream so the loop still closes, and its glow goes with it. LENGTH sets how far it reaches, as a share of the beam's LENGTH, without moving the head (LASER card: WIDTH, LENGTH, FLICKER, GLOW) |
 | Dots | Flat dark ellipses after the breakdown's Dots emitter. Every one is born big and long right behind the head, then flows down the beam, shrinking and rounding until it ends as a circle. Each dot pivots on its leading tip at full size, so it shrinks into that point and keeps its pace as it rounds; pivoting on the head-side end dragged the shape back and made it seem to slow down. So new ones always overlap into one dark lump behind the head, and a string of ever smaller beads runs along the beam. It takes an effects emitter's values: spawn rate (FREQ, per second), lifetime (LIFETIME, seconds, snapped to an even share of the 2 s loop so the loop closes), velocity and drag (VELOCITY, DRAG), start size and size over life (SIZE, SHRINK), elongation (STRETCH) and sideways spread (SCATTER). FREQ × LIFETIME dots live at once, up to 60. These knobs sit in a DOTS card of their own. Printed over the main beam, since the beads line up with it |
 | Embers | Short bright strokes that fly back from the head, twice a loop |
 | Tail stars | Four-point stars the head throws back, after the breakdown's Stars emitter. Each leaves the rim of the head's circle, flies down the beam and shrinks, trailing a hairline tail back toward the head that is longer the faster it flies. Yellow, pink, blue or white, one color each. The same emitter values as the dots plus TRAIL, the tail's length, in a STARS card of their own |
-| Head | After the breakdown's Spike_Main and its final composite: a round white heart, the head's core, sits fixed on HEAD 0, and yellow blades fan out from it toward the tail, with the core as the fan's pivot. The fan is built anew FLIP times a loop (24 by default, apart from BEAT), the way that emitter picks a random texture almost every frame. Blades spread like the ribs of a fan, from half of POINTS (rounded up) to POINTS of them, the count changing each drawing: the middle ones are longest, deep notches part them, and a short nose leads the way. The nose is cut into a polygon that goes back and forth between a pentagon and a heptagon from drawing to drawing: two points half the shorter edge back along each side, and one to three between them, spaced along a curve that bulges toward the old tip, so the front of the head is never a sharp triangle; the blade tips stay pointed. Each drawing sits somewhere between a narrow fan (half-angle about 23°, long blades) and a wide one (about 63°), opened enough that the side blades show beside the beam, leans a little to one side, and turns a little about the core. Each blade is uneven on its own. The core never moves, and its size changes per drawing on its own (0.16–0.26 of SIZE). The fan's floor is the size that still wraps the largest core with a yellow rim — its outline stays 1/0.85 of that core's radius from the center — and each drawing only scales the whole fan up from there (VARY; 1–1.6× at 0.5), apart from the core, so fan and core never swell and shrink together as one lump. Nothing blinks: the fan is always yellow and the core always white, except on impact frames, where the fan swells and turns white and the core turns yellow. The core is cut out of the fan and printed on its own. A soft yellow glow lies around the fan (GLOW) (SPIKE card: SIZE, POINTS as the most blades, STRETCH, VARY, FLIP, GLOW) |
+| Second spike | After the breakdown's Spike_Second, where thin navy and purple spikes stick out behind the bright one in the colour stage: a second fan behind the head, printed in the dots' dark, the secondary colour. Its body is no bigger than the head's smallest body (SIZE 1), so it always hides behind the head and only its longer blades show. It has its own random stream and its own FLIP, its blade length changes each drawing (VARY), and its nose is kept blunt so it tucks behind the head (SECOND card: SIZE, POINTS, STRETCH, SPREAD, VARY, FLIP; SIZE 0 turns it off) |
+| Head | After the breakdown's Spike_Main and its final composite: a round white heart, the head's core, sits fixed on HEAD 0, and blades fan out from it toward the tail, with the core as the fan's pivot. The fan is built anew FLIP times a loop (24 by default, apart from BEAT), the way that emitter picks a random texture almost every frame. Blades spread like the ribs of a fan, from half of POINTS (rounded up) to POINTS of them, the count changing each drawing: the middle ones are longest, deep notches part them, and a short nose leads the way. The nose is cut into a polygon that goes back and forth between a pentagon and a heptagon from drawing to drawing: two points half the shorter edge back along each side, and one to three between them, spaced along a curve that bulges toward the old tip, so the front of the head is never a sharp triangle; the blade tips stay pointed. The fan opens by SPREAD (82° by default), each drawing up to 30% narrower or wider (narrower ones have longer blades), leans a little to one side, and turns a little about the core. The front is two tangent lines from the nose to the ring around the core, and NOSE is the angle between them (70° by default): small makes a long, sharp nose. The flanks are tangent to the same ring, so each corner sits where a nose tangent meets a flank, and SPREAD and NOSE never pull on each other. Each blade is uneven on its own. The core never moves, and its size changes per drawing on its own (0.16–0.26 of SIZE). The fan's floor is the size that still wraps the largest core with a yellow rim — its outline stays 1/0.85 of that core's radius from the center — and each drawing only scales the whole fan up from there (VARY; 1–1.6× at 0.5), apart from the core, so fan and core never swell and shrink together as one lump. Nothing blinks: the fan is always the light drum and the core always white, lightly tinted by the palette (see White in the table below). The core is cut out of the fan and printed on its own. A soft glow lies around the fan (GLOW) (SPIKE card: SIZE, POINTS as the most blades, STRETCH, SPREAD, NOSE, VARY, FLIP, GLOW) |
 
 The head is anchored on the head's origin, HEAD 0, where the beams start. The core sits on it and the
-fan's nose just ahead of it, the impact burst is rooted there, and the dots and tail stars are born on an
+fan's nose just ahead of it, and the dots and tail stars are born on an
 unseen circle around it. The beams don't grow and shrink, so scaling about any other point slides
 the head back and forth along the beam. Each drawing's fan comes from its own random stream
 seeded by the drawing's number, so a drawing always gets the same fan, `t = 1` matches
@@ -881,23 +883,24 @@ beam's outline and where the dots and the stars run out.
 Nothing the head throws flies forward. The dots and tail stars leave toward the tail; a dot at full
 size just touches HEAD 0 with its head-side end, and a star's tail stops short of it. That is kept
 by the shape of each piece, not by clipping pieces at a line: clipping piled them up against the
-line into straight, cut-looking edges. The impact flash is light, not something the head throws, so
-it bursts every way from the pivot, forward too.
+line into straight, cut-looking edges.
 
-The dark sky works like COSMOS: the night drums lay the sky and whatever glows is carved out.
-Here, though, night is every drum except the yellowest one. Counting only the non-yellow drums as
-night leaves a warm drum such as coral out, and the sky becomes one light color; a shooting star
-needs a dark sky. Yellowness is the lower of red and green minus blue, because an average lets
-orange beat yellow. With two drums, both are night, and yellow light keeps a little of the paler
-one instead.
+The sky is laid like JELLY's water. The darkest drum fades from the top down, the palest lies at
+about half that, and the two paler drums bleed in big soft stains along different noise fields
+(`src/stains.js`), so every palette gives its own sky: blue, green, teal, coral, red or pink. The stains drift toward the tail, the way everything around the meteor flows while the camera follows it, one step a beat. The stain field doesn't tile, so two layers laid larger than the page drift half a loop apart and fade in turn, and the loop closes without a seam. The
+meteor's light is the drum farthest from the darkest one, yellow under a blue sky and the bluest
+drum under a coral, red or pink one, so the meteor changes with the palette too. Whatever glows is
+carved out of every drum and printed in its own ink, which keeps the meteor clean over the mottled
+sky. Any drum left over is the accent. Yellowness is the lower of red and green minus blue, because
+an average lets orange beat yellow.
 
 | Light | How it is printed |
 | --- | --- |
-| Yellow | Carve all night drums, then print the yellow drum |
-| Blue | Carve the night drums but leave some of the bluest |
-| Pink | Carve the night drums but leave some of the reddest |
-| White | Carve the yellow drum too |
-| Dark | Print the night drums denser than the sky and carve the yellow drum, which would turn the dark olive |
+| Yellow | Carve every drum, then print the light drum |
+| Blue | Carve every drum but leave some, a paler sky |
+| Pink | Carve every drum and print the accent; with two drums, leave some of the sky instead |
+| White | Carve every drum, then tint it lightly (40%) with the accent, or with the darkest drum when there are only two, so the whites change with the palette too |
+| Dark | Fill the darkest drum, overprint the accent and carve the rest; a yellow accent is left out, since it would turn the dark olive |
 
 A thin layer of the yellow drum over the sky gives the bluish gray of the reference.
 
@@ -913,17 +916,16 @@ every time, and the knobs only decide how much of it prints.
 
 Anime effects animation is not smooth. It is built from a few iconic shapes, flat colour, snappy
 timing on twos or threes, and impact frames that break continuity for one or two frames. METEOR
-follows three of those rules, which is what separates it from a comet photograph.
+follows two of those rules, which is what separates it from a comet photograph. It had impact frames
+too (FLASH) and dropped them in 0.41.0.
 
 | Rule | Here |
 | --- | --- |
 | Timing on twos or threes | BEAT splits the loop into that many drawings, and nothing is inbetweened. At 12 a drawing holds for four of the loop's 48 frames; at 48 the plate redraws every frame and the effect goes soft. The sheet rate still decides which frames print, so at 8 sheets a second a drawing shows for three or six |
-| Flat colour, not gradients | The tail is flat faces: a yellow body, a white heart inside it, a blue face at the tail's end. Only one soft glow layer is laid under them, so they don't read as cut paper |
-| Impact frames | Once per loop, for two frames, a round white light bursts from the head every way, forward too, and the sky itself lightens (FLASH). It starts on a multiple of six, a frame that 24, 12 and 8 sheets a second all print. Starting anywhere, one roll in three hid it between printed frames at 8 sheets a second |
+| Flat colour, not gradients | The laser is one flat face in the light drum. Only one soft glow layer is laid under it, so it doesn't read as cut paper |
 
 The beat is a floor of the loop's time, so `t = 1` gives the same drawing as `t = 0` and the loop
-still closes. The impact frame is kept away from the loop's seam, so the seam's step stays an
-ordinary one.
+still closes.
 
 ## Shape vocabulary
 

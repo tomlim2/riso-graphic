@@ -56,32 +56,24 @@ export const bluest = (drums) => pick(drums, ([r, g, b]) => b - (r + g) / 2);
 export const yellowest = (drums) => pick(drums, yellowness);
 export const reddest = (drums) => pick(drums, ([r, g, b]) => r - (g + b) / 2);
 
-// 밤과 노란 빛. 가장 노란 통 하나만 빛으로 빼고 나머지는 모두 밤이다. nightAndLight와 달리 코랄
-// 같은 따뜻한 통도 밤에 들어, 하늘이 한 가지 밝은 색으로 깔리지 않는다(METEOR). 노랑은 빨강과
-// 초록이 함께 높아야 하므로 둘 중 낮은 쪽에서 파랑을 뺀다 — warmth처럼 평균으로 재면 주황이 노랑을
-// 이긴다. 통이 둘 이하면 빛은 없고 모두 밤이다. S.drums는 옅은 통부터이므로 밤의 처음이 가장 옅고
-// 마지막이 가장 진하다. 빛은 분판으로, 밤은 분판과 통(nightDrums) 둘 다로 돌려준다
+// 유성의 잉크(METEOR). 하늘은 해파리의 물처럼 모든 통으로 깐다. 빛(유성 본체)은 하늘의 가장 진한 통(key)과
+// 가장 먼 빛깔이다 — 진한 통이 푸르면 가장 노란 통, 붉으면 가장 푸른 통이다. 그래서 배색마다 하늘도 유성도
+// 빛깔이 바뀐다. 곁들이는 남은 통이다. 어둠(도트)에는 곁들이를 가장 진한 통과 겹치되, 곁들이가 노라면
+// 겹치지 않는다 — 노랑이 겹치면 어둠이 올리브가 된다. 노랑은 빨강과 초록이 함께 높아야 하므로 둘 중 낮은
+// 쪽에서 파랑을 뺀다 — warmth처럼 평균으로 재면 주황이 노랑을 이긴다. 모두 분판으로 돌려준다
 const pureYellow = ([r, g, b]) => Math.min(r, g) - b;
+const best = (drums, score) => drums.reduce((top, drum) => (score(rgbOf(drum.ink)) > score(rgbOf(top.ink)) ? drum : top));
 
-export function nightAndGlow(drums) {
-  let glow = null;
-  let top = -Infinity;
-  if (drums.length >= 3) {
-    for (const drum of drums) {
-      const value = pureYellow(rgbOf(drum.ink));
-      if (value > top) {
-        top = value;
-        glow = drum;
-      }
-    }
-  }
-  const nightDrums = drums.filter((drum) => drum !== glow);
+export function meteorInks(drums, key) {
+  const rest = drums.filter((drum) => drum.separation !== key);
+  if (!rest.length) return { glowInk: null, accent: null, darkInk: null };
+  const [r, , b] = rgbOf(drums.find((drum) => drum.separation === key).ink);
+  const glow = best(rest, r > b ? ([rr, gg, bb]) => bb - (rr + gg) / 2 : pureYellow);
+  const accent = rest.find((drum) => drum !== glow) || null;
   return {
-    night: nightDrums.map((drum) => drum.separation),
-    palest: nightDrums[0].separation,
-    deepest: nightDrums[nightDrums.length - 1].separation,
-    nightDrums,
-    glowInk: glow ? glow.separation : null
+    glowInk: glow.separation,
+    accent: accent ? accent.separation : null,
+    darkInk: accent && pureYellow(rgbOf(accent.ink)) < 0.55 ? accent.separation : null
   };
 }
 
