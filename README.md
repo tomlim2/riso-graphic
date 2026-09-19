@@ -388,7 +388,7 @@ knobs.
 | COSMOS | FIELD · STARS · SPIKES · TWINKLE · MILKY · NEBULA · GALAXY · TILT · ARMS · DARK |
 | FLAKE | FIELD · SIZE · HABIT · BRANCH · RIDGE · BUBBLE · GLINT · FLURRY · DARK |
 | KALEIDO | FIELD · MIRRORS · PIECES · SIZE · TUMBLE · TINT |
-| METEOR | SKY: FIELD · DARK · DUST — BEAM: ANGLE · LENGTH · CORE · BEAMS · GLOW — HEAD: SPIKE · BARBS · SHARDS · SPREAD · FLICKER — FLOW: STREAKS · CHIPS · SPARKS · SPEED — SMOKE: FREQ · LIFETIME · VELOCITY · DRAG · SIZE · SHRINK · STRETCH · SCATTER — STARS: FREQ · LIFETIME · VELOCITY · DRAG · SIZE · SHRINK · TRAIL · SCATTER — BEAT: BEAT · FLASH |
+| METEOR | SKY: FIELD · DARK · DUST — BEAM: ANGLE · LENGTH · CORE · BEAMS · GLOW — BEAT: BEAT · FLASH — SPIKE card: SIZE · POINTS · STRETCH · VARY · FLIP · GLOW — DOTS card: FREQ · LIFETIME · VELOCITY · DRAG · SIZE · SHRINK · STRETCH · SCATTER — STARS card: FREQ · LIFETIME · VELOCITY · DRAG · SIZE · SHRINK · TRAIL · SCATTER |
 
 Don't confuse the CELL plate with the CELL dial. The dial sets the halftone cell size for every
 plate. The plate is the microscope sheet.
@@ -661,7 +661,7 @@ group changes, which is how JELLY's knobs read as swarm, bell, whiskers, legs an
 
 A knob can also carry a `panel`. Those knobs leave the PLATE KNOBS card for a card of their own,
 titled with the panel's name, right under it. Their values still belong to the plate, so the
-address is the same. METEOR puts its two emitters there, SMOKE and STARS.
+address is the same. METEOR puts its head and its two emitters there: SPIKE, DOTS and STARS.
 
 The glow around each bell is carved lightly out of the water. The bell is filled on a coarse
 grid, a few sheet pixels to a cell, blurred, and carved out through a curve that keeps it strong
@@ -863,40 +863,26 @@ written as the same stack, printed back to front. Nothing is outlined.
 | --- | --- |
 | Dust | Faint specks in the far sky (DUST) |
 | Glow | One soft layer of light around the beam (GLOW) |
-| Speed lines | Dark needles that fan away from the head (STREAKS) |
 | Second beams | Thin pink and blue bands at slightly different angles (BEAMS) |
 | Main beam | The wide yellow band from the head to the tail's end, with a white heart and a blue face at its end (CORE, LENGTH) |
-| Smoke | Flat dark ellipses after the breakdown's Dots emitter. Every one is born big and long right behind the head, then flows down the beam, shrinking and rounding until it ends as a circle. Each dot pivots on its leading tip at full size, so it shrinks into that point and keeps its pace as it rounds; pivoting on the head-side end dragged the shape back and made it seem to slow down. So new ones always overlap into one dark lump behind the head, and a string of ever smaller beads runs along the beam. It takes an effects emitter's values: spawn rate (FREQ, per second), lifetime (LIFETIME, seconds, snapped to an even share of the 2 s loop so the loop closes), velocity and drag (VELOCITY, DRAG), start size and size over life (SIZE, SHRINK), elongation (STRETCH) and sideways spread (SCATTER). FREQ × LIFETIME dots live at once, up to 60. These knobs sit in a SMOKE card of their own. Printed over the main beam, since the beads line up with it |
-| Chips | Angular debris that spins as it flows (CHIPS) |
-| Stars | Four-point sparkles, each trailing a dotted tail (SPARKS) |
-| Embers | Short bright strokes that fly back from the head |
-| Tail stars | Four-point stars the head throws back, after the breakdown's Stars emitter. Each leaves the rim of the head's circle, flies down the beam and shrinks, trailing a hairline tail back toward the head that is longer the faster it flies. Yellow, pink, blue or white, one color each; they blink between two sizes on alternate drawings (FLICKER). The same emitter values as the smoke plus TRAIL, the tail's length, in a STARS card of their own |
-| Spike | The fan the fragments fly along. It isn't drawn: the hooks and shards leave the rim of the head's circle and shoot straight out inside a sector whose half-angle is SPREAD and whose radius is SPIKE, so their paths trace the fan, its round front being the head itself (SPIKE) |
-| Barbs | Long white blades in mirrored pairs that fly out along the fan's two edges, the outer pair on the edge and inner pairs a little inside. Straight like the shards: each pivots on its base and points out from the head's pivot (BARBS) |
-| Shards | Crystals the head emits (SHARDS, SPREAD). Each leaves the head's rim in its own lane of an even comb, shoots straight out, slows and shrinks away. Every shard pivots on its base, the end nearest the head, and points straight out from the head's pivot, so it grows outward from the rim. White when young, then yellow, cooling to pink at the end; about one in six stays blue. Barbs and shards print together, one pass per color |
-| Head | One white circle centered on HEAD 0, a little wider than the beam. The fragments leave its rim, so it is the fan's round front. It pulses |
+| Dots | Flat dark ellipses after the breakdown's Dots emitter. Every one is born big and long right behind the head, then flows down the beam, shrinking and rounding until it ends as a circle. Each dot pivots on its leading tip at full size, so it shrinks into that point and keeps its pace as it rounds; pivoting on the head-side end dragged the shape back and made it seem to slow down. So new ones always overlap into one dark lump behind the head, and a string of ever smaller beads runs along the beam. It takes an effects emitter's values: spawn rate (FREQ, per second), lifetime (LIFETIME, seconds, snapped to an even share of the 2 s loop so the loop closes), velocity and drag (VELOCITY, DRAG), start size and size over life (SIZE, SHRINK), elongation (STRETCH) and sideways spread (SCATTER). FREQ × LIFETIME dots live at once, up to 60. These knobs sit in a DOTS card of their own. Printed over the main beam, since the beads line up with it |
+| Embers | Short bright strokes that fly back from the head, twice a loop |
+| Tail stars | Four-point stars the head throws back, after the breakdown's Stars emitter. Each leaves the rim of the head's circle, flies down the beam and shrinks, trailing a hairline tail back toward the head that is longer the faster it flies. Yellow, pink, blue or white, one color each. The same emitter values as the dots plus TRAIL, the tail's length, in a STARS card of their own |
+| Head | After the breakdown's Spike_Main and its final composite: a round white heart, the head's core, sits fixed on HEAD 0, and yellow blades fan out from it toward the tail, with the core as the fan's pivot. The fan is built anew FLIP times a loop (24 by default, apart from BEAT), the way that emitter picks a random texture almost every frame. Blades spread like the ribs of a fan, from half of POINTS (rounded up) to POINTS of them, the count changing each drawing: the middle ones are longest, deep notches part them, and a short nose leads the way. The nose is cut into a polygon that goes back and forth between a pentagon and a heptagon from drawing to drawing: two points half the shorter edge back along each side, and one to three between them, spaced along a curve that bulges toward the old tip, so the front of the head is never a sharp triangle; the blade tips stay pointed. Each drawing sits somewhere between a narrow fan (half-angle about 23°, long blades) and a wide one (about 63°), opened enough that the side blades show beside the beam, leans a little to one side, and turns a little about the core. Each blade is uneven on its own. The core never moves, and its size changes per drawing on its own (0.16–0.26 of SIZE). The fan's floor is the size that still wraps the largest core with a yellow rim — its outline stays 1/0.85 of that core's radius from the center — and each drawing only scales the whole fan up from there (VARY; 1–1.6× at 0.5), apart from the core, so fan and core never swell and shrink together as one lump. Nothing blinks: the fan is always yellow and the core always white, except on impact frames, where the fan swells and turns white and the core turns yellow. The core is cut out of the fan and printed on its own. A soft yellow glow lies around the fan (GLOW) (SPIKE card: SIZE, POINTS as the most blades, STRETCH, VARY, FLIP, GLOW) |
 
-The head itself is one white circle centered on the head's origin, HEAD 0, where the beams start.
-Built from several overlapping shapes it stopped reading as one head. The impact burst is rooted
-at HEAD 0, and the hooks and shards leave the rim of the head's circle along the fan. The fan is
-their path, not a shape: a fan kept on the sheet read as one more thing stuck to the head. The
-beams don't grow and shrink, so scaling about any other point slides the head back and forth along
-the beam. GUIDES marks that pivot, the axis and the beam's outline.
+The head is anchored on the head's origin, HEAD 0, where the beams start. The core sits on it and the
+fan's nose just ahead of it, the impact burst is rooted there, and the dots and tail stars are born on an
+unseen circle around it. The beams don't grow and shrink, so scaling about any other point slides
+the head back and forth along the beam. Each drawing's fan comes from its own random stream
+seeded by the drawing's number, so a drawing always gets the same fan, `t = 1` matches
+`t = 0`, and the layout of every other layer is untouched. GUIDES marks that pivot, the axis, the
+beam's outline and where the dots and the stars run out.
 
-The shards are what make the head read as an emitter. They used to sit on the head and pulse in
-place, each on its own beat, side and color, so every drawing showed a different jumble. Now they
-leave the head's rim on a comb: as many lanes as there are shards, a little jitter inside each,
-inside a fan whose half-angle is SPREAD. The teeth near the axis are longer and fly farther than the
-outer ones. Births are spread by the golden ratio, so the stream stays even and neighboring teeth
-never fire together, and each shard is born a whole number of times per loop. They fly straight,
-so their paths draw the fan.
-
-Nothing the head throws flies forward. The shards and hooks fly inside a fan whose half-angle,
-SPREAD, tops out at 80°. In effects terms
-the head is a hemisphere emitter. That is kept by the shape of each piece, not by clipping pieces
-at a line: clipping piled them up against the line into straight, cut-looking edges. The fragments
-leave the head's circle, so the fan's front is the head. The impact flash is
-light, not something the head throws, so it bursts every way from the pivot, forward too.
+Nothing the head throws flies forward. The dots and tail stars leave toward the tail; a dot at full
+size just touches HEAD 0 with its head-side end, and a star's tail stops short of it. That is kept
+by the shape of each piece, not by clipping pieces at a line: clipping piled them up against the
+line into straight, cut-looking edges. The impact flash is light, not something the head throws, so
+it bursts every way from the pivot, forward too.
 
 The dark sky works like COSMOS: the night drums lay the sky and whatever glows is carved out.
 Here, though, night is every drum except the yellowest one. Counting only the non-yellow drums as
@@ -915,10 +901,11 @@ one instead.
 
 A thin layer of the yellow drum over the sky gives the bluish gray of the reference.
 
-The star stays put and the world streams past, as if the camera follows it. Speed lines, chips
-and sparkles flow toward the tail, vanish at the end and come back ahead of the head. They flow
-a whole number of times per loop (SPEED), and they taper to nothing at both ends, so the wrap
-never shows. The glow around the beam is the blurred shape from `src/blur.js`; it depends only
+The star stays put and the world streams past, as if the camera follows it. The embers flow
+toward the tail twice a loop, vanish at the end and come back ahead of the head, tapering to
+nothing at both ends so the wrap never shows. The dots and tail stars are emitters: each one is
+reborn a whole number of times per loop, which is why their lifetimes snap to an even share of
+the loop. The glow around the beam is the blurred shape from `src/blur.js`; it depends only
 on the shape knobs (LENGTH, ANGLE, CORE), not on the roll, so it is made once and kept. Everything is drawn in full
 every time, and the knobs only decide how much of it prints.
 
@@ -926,14 +913,13 @@ every time, and the knobs only decide how much of it prints.
 
 Anime effects animation is not smooth. It is built from a few iconic shapes, flat colour, snappy
 timing on twos or threes, and impact frames that break continuity for one or two frames. METEOR
-follows those four rules, which is what separates it from a comet photograph.
+follows three of those rules, which is what separates it from a comet photograph.
 
 | Rule | Here |
 | --- | --- |
-| Timing on twos or threes | BEAT splits the loop into that many drawings, and nothing is inbetweened. At 12 a drawing holds for four of the loop's 48 frames; at 48 the plate redraws every frame and the effect goes soft. The sheet rate still decides which frames print, so at 8 sheets a second a drawing shows for three or six. The head boils between two poses on alternate drawings (FLICKER), all its pieces together, instead of each piece flickering on its own |
+| Timing on twos or threes | BEAT splits the loop into that many drawings, and nothing is inbetweened. At 12 a drawing holds for four of the loop's 48 frames; at 48 the plate redraws every frame and the effect goes soft. The sheet rate still decides which frames print, so at 8 sheets a second a drawing shows for three or six |
 | Flat colour, not gradients | The tail is flat faces: a yellow body, a white heart inside it, a blue face at the tail's end. Only one soft glow layer is laid under them, so they don't read as cut paper |
-| Iconic shapes | Edges are few-jointed, so they break in straight lines like crystal. Debris is angular chips that spin (CHIPS), not round droplets |
-| Impact frames | Once per loop, for two frames, a round white light bursts from the head every way, forward too; every shard but the pink ones turns white and the sky itself lightens (FLASH). It starts on a multiple of six, a frame that 24, 12 and 8 sheets a second all print. Starting anywhere, one roll in three hid it between printed frames at 8 sheets a second |
+| Impact frames | Once per loop, for two frames, a round white light bursts from the head every way, forward too, and the sky itself lightens (FLASH). It starts on a multiple of six, a frame that 24, 12 and 8 sheets a second all print. Starting anywhere, one roll in three hid it between printed frames at 8 sheets a second |
 
 The beat is a floor of the loop's time, so `t = 1` gives the same drawing as `t = 0` and the loop
 still closes. The impact frame is kept away from the loop's seam, so the seam's step stays an
