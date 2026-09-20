@@ -604,8 +604,12 @@ export const meteor = {
     const leaf = Math.floor(t * flip) % flip; // 부채의 몇 번째 장인가. t=1은 t=0과 같은 장이다
     const spikeRng = makeRng((seed ^ 0x51f15e5d ^ Math.imul(leaf + 1, 0x9e3779b1)) >>> 0);
     const base = width * 0.1 * knobs.spikeSize; // 창끝 크기(SIZE)
-    // 심. 머리의 코어라 머리 원점에 붙박이고, 크기는 장마다 제 난수로 바뀐다(창끝 크기의 0.16~0.26배)
+    // 심. 머리의 코어라 머리 원점에 붙박이고, 크기는 장마다 제 난수로 바뀐다(창끝 크기의 0.16~0.26배).
+    // 꼴은 자로 그린 원이 아니라 손으로 오린 둥근 꼴이다 — 컴퍼스로 그린 동그라미는 이 판의 다른
+    // 층과 따로 논다. 부채의 난수를 건드리지 않도록 제 난수를 따로 굴린다
     const heartR = base * (0.16 + 0.1 * spikeRng.next());
+    const coreRng = makeRng((seed ^ 0x7feb352d ^ Math.imul(leaf + 1, 0x846ca68b)) >>> 0);
+    const core = shapes.blob(coreRng, hx, hy, heartR, { lobes: 4, wobble: 0.16, steps: 16 });
     // 부채. 가장 작을 때도 가장 커진 심을 감싸고 테를 남긴다 — 윤곽이 심 가운데에서 가장 큰 심의 1/0.85배
     // 밖에 있다. 부채는 이 바닥만 지키고, 장마다 그보다 크게 통째로 스케일한다(VARY). 심과 따로 논다. 장마다
     // 심을 축으로 조금 돈다(±3°) — 텍스처를 바꿔 끼울 때마다 조금씩 어긋나는 것과 같다. 등 쪽은 축의 -v다
@@ -647,13 +651,12 @@ export const meteor = {
     glowWith("yellow", (g) => {
       g.beginPath();
       g.rect(-width, -height, width * 3, height * 3);
-      shapes.circleSubpath(g, hx, hy, heartR);
+      shapes.splineSubpath(g, core, true);
       g.clip("evenodd");
       poly(outline)(g);
     });
     glowWith("core", (g) => {
-      g.beginPath();
-      shapes.circleSubpath(g, hx, hy, heartR);
+      shapes.splinePath(g, core, true);
       g.fill();
     });
 
