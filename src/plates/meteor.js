@@ -5,13 +5,13 @@
 //
 //   티끌      먼 하늘의 작은 점
 //   번짐      광선 둘레의 흐린 빛 한 겹
-//   보조 광선  레이저와 조금 다른 각도로 나란히 뻗는 가는 띠. 분홍과 푸름
+//   보조 광선  분해 장면의 Laser_Second. 머리에서 한 점으로 모여 나와 레이저 곁을 휘어 뻗는 어두운 띠.
+//             박자마다 새로 짓는다
 //   레이저    머리 쪽에서 부풀었다가 끝으로 가늘어지는 단순한 유성 꼬리 하나. 박자마다 깜빡인다
 //   도트      머리 바로 뒤에서 크게 태어나 광선을 따라 흐르며 작아지는 납작한 어두운 타원. 머리 뒤에
 //             한 덩이가 되고 그 뒤로 구슬이 줄지어 선다. 광선 위에 얹는다
-//   불티      머리 언저리의 짧고 밝은 줄기
 //   꼬리별     머리에서 뿜어 나와 꼬리 쪽으로 날아가는 네 갈래 별. 머리 쪽으로 가늘어지는 꼬리를 끈다
-//   머리      분해 장면의 Spike_Main. 머리 원점의 흰 동그라미 심(코어)을 사북으로 칼날이 부채꼴로
+//   머리      분해 장면의 Spike_Main. 머리 원점의 동그라미 심(코어)을 사북으로 칼날이 부채꼴로
 //             꼬리 쪽에 펼쳐진다. 부채는 장마다 새로 짓고, 심은 자리가 붙박이고 크기만 부채를 따라 바뀐다.
 //             빛깔은 깜빡이지 않는다
 //
@@ -21,8 +21,8 @@
 //                     모양이 뚝뚝 끊겨 튄다. 프레임마다 부드럽게 흐르면 사진이 되고 이펙트가 아니다
 //   납작한 면        번지는 계조가 아니라 납작한 면이다. 가장자리는 마디가 적어 직선으로 꺾인다
 //
-// 어두운 시야는 COSMOS처럼 하늘을 깔고 빛나는 것을 파내는 방식이다. 하늘은 해파리의 물처럼 모든 통으로
-// 깐다 — 가장 진한 통이 위에서 아래로 옅어지고 옅은 두 통이 번져, 배색마다 하늘 빛깔이 크게 달라진다.
+// 어두운 시야는 COSMOS처럼 하늘을 깔고 빛나는 것을 파내는 방식이다. 하늘은 모든 통으로 깐다 — 가장 진한
+// 통이 위에서 아래로 옅어지고 가장 옅은 통이 그 반쯤으로 깔려, 배색마다 하늘 빛깔이 달라진다.
 // 빛(유성 본체)은 하늘의 가장 진한 통과 가장 먼 빛깔이다 — 진한 통이 푸르면 노랑, 붉으면 물빛. 나머지가
 // 곁들이다(src/drums.js). 아래 '노란 빛'은 빛의 통으로, '분홍 빛'은 곁들이로 찍는다는 뜻이다.
 //
@@ -43,7 +43,6 @@ import { glowMask, keepGlow, layGlow } from "../blur.js";
 import { keeper } from "../keep.js";
 import { meteorInks } from "../drums.js";
 import { carve, stain } from "../night.js";
-import { stainsFor } from "../stains.js";
 import { dim } from "../scope.js";
 
 const TAU = Math.PI * 2;
@@ -74,12 +73,6 @@ function facet(at, u0, u1, v, half, { steps = 7, lean = 0 } = {}) {
 // 띠의 굵기. 머리 쪽에서 부풀었다가 끝으로 가늘어진다
 const taper = (s) => (s < 0.08 ? Math.sqrt(s / 0.08) : Math.pow(1 - (s - 0.08) / 0.92, 1.1));
 
-// 흐르는 것의 자리. 한 바퀴에 speed번 0에서 1까지 가고, 양 끝에서 0으로 가늘어지는 창을 함께 준다
-function flowing(phase, t, speed) {
-  const p = (phase + t * speed) % 1;
-  return { p, fade: Math.pow(Math.sin(Math.PI * p), 0.6) };
-}
-
 // 흐린 무늬는 모양 손잡이(LENGTH · ANGLE · CORE)가 같으면 다시 짓지 않는다. 롤과는 상관이 없다.
 // 공용 캔버스(src/blur.js)의 것을 제 캔버스로 옮겨 쥔다
 const keepMask = keeper(8);
@@ -93,13 +86,14 @@ const poly = (points) => (g) => {
 
 // 이미터. 1초에 freq개를 뿜고 하나는 lifetime초 산다. 하나는 한 바퀴에 lives번 다시 태어나므로 수명은
 // 한 바퀴의 1/lives로 맞춰진다 — 정수여야 루프가 닫힌다. 1초에 freq개를 뿜으려면 한 번에 freq × 수명개가
-// 살아 있어야 하므로, 늘 뽑아 둔 all에서 그만큼만 쓴다. 태어나는 때는 황금비로 흩어 늘 고르게 뿜는다
-function emitter(all, freq, lifetime, held) {
+// 살아 있어야 하므로, 늘 뽑아 둔 all에서 그만큼만 쓴다. 태어나는 때는 황금비로 흩어 늘 고르게 뿜는다.
+// burst는 그 흩어짐을 거두는 정도다 — 1이면 모두 같은 때에 태어나 함께 사라지고, 수명마다 한 무더기씩 뿜는다
+function emitter(all, freq, lifetime, held, burst = 0) {
   const lives = Math.max(1, Math.round(LOOP_SECONDS / lifetime));
   const life = LOOP_SECONDS / lives;
   const list = all.slice(0, Math.min(all.length, Math.round(freq * life)));
   const count = Math.max(1, list.length);
-  const ageOf = (i, born) => (((i * 0.6180339887 + born / count + held * lives) % 1) + 1) % 1;
+  const ageOf = (i, born) => ((((i * 0.6180339887 + born / count) * (1 - burst) + held * lives) % 1) + 1) % 1;
   return { lives, lifetime: life, list, ageOf };
 }
 
@@ -206,52 +200,59 @@ export const meteor = {
     { group: "SKY", key: "dark", label: "DARK", min: 0.3, max: 1, step: 0.05, value: 0.85, hint: "하늘의 어둠" },
     { group: "SKY", key: "dust", label: "DUST", min: 0, max: 120, step: 5, value: 50, hint: "먼 하늘의 티끌" },
     { group: "BEAM", key: "angle", label: "ANGLE", min: 10, max: 80, step: 1, value: 38, hint: "광선이 기운 각도. 꼬리가 오른쪽 위로 뻗는다" },
-    { group: "BEAM", key: "length", label: "LENGTH", min: 0.4, max: 1.3, step: 0.01, value: 1.05, hint: "광선의 길이. 판 폭에 대한 비율이다. 길게 하면 꼬리가 판 밖으로 나간다" },
-    { group: "BEAM", key: "beams", label: "BEAMS", min: 0, max: 4, step: 1, value: 2, hint: "조금 다른 각도로 나란히 뻗는 보조 광선의 수" },
+    { group: "BEAM", key: "length", label: "LENGTH", min: 0.4, max: 1.3, step: 0.01, value: 0.89, hint: "광선의 길이. 판 폭에 대한 비율이다. 길게 하면 꼬리가 판 밖으로 나간다" },
+    { group: "BEAM", key: "beams", label: "BEAMS", min: 0, max: 4, step: 1, value: 0, hint: "레이저 곁을 휘어 뻗는 보조 광선(분해 장면의 Laser_Second)의 수" },
     // 레이저(분해 장면의 Laser_Main). 판 손잡이 칸에서 빼 LASER 칸으로 따로 둔다. 주소의 열쇠 core · glow는 예전 그대로다
-    { panel: "LASER", key: "core", label: "WIDTH", min: 0.3, max: 2.5, step: 0.05, value: 1.3, hint: "레이저의 굵기. 머리 쪽에서 가장 굵고 끝으로 가늘어진다" },
-    { panel: "LASER", key: "laserLength", label: "LENGTH", min: 0.2, max: 1.3, step: 0.01, value: 1, hint: "레이저의 길이. BEAM의 LENGTH에 대한 비율이다. 머리 자리는 그대로 두고 레이저만 늘고 준다" },
-    { panel: "LASER", key: "laserFlicker", label: "FLICKER", min: 0, max: 0.8, step: 0.05, value: 0.4, hint: "박자마다 꺼져 있을 몫. 분해 장면의 레이저는 열 장에 넷쯤 꺼져 있다. 0이면 늘 켜져 있다" },
-    { panel: "LASER", key: "glow", label: "GLOW", min: 0, max: 1, step: 0.05, value: 0.6, hint: "레이저 둘레의 번짐. 납작한 면만 있으면 붙인 색종이가 된다" },
+    { panel: "LASER", key: "core", label: "WIDTH", min: 0.3, max: 2.5, step: 0.05, value: 0.8, hint: "레이저의 굵기. 머리 쪽에서 가장 굵고 끝으로 가늘어진다" },
+    { panel: "LASER", key: "laserLength", label: "LENGTH", min: 0.2, max: 1.3, step: 0.01, value: 1.3, hint: "레이저의 길이. BEAM의 LENGTH에 대한 비율이다. 머리 자리는 그대로 두고 레이저만 늘고 준다" },
+    { panel: "LASER", key: "laserVary", label: "VARY", min: 0, max: 1, step: 0.05, value: 0.5, hint: "박자마다 레이저의 굵기와 길이가 달라지는 정도. 0.5면 굵기 ±15% · 길이 ±12%쯤이고, 0이면 늘 같다" },
+    { panel: "LASER", key: "laserFlicker", label: "FLICKER", min: 0, max: 0.8, step: 0.05, value: 0, hint: "박자마다 꺼져 있을 몫. 분해 장면의 레이저는 열 장에 넷쯤 꺼져 있다. 0이면 늘 켜져 있다" },
+    { panel: "LASER", key: "glow", label: "GLOW", min: 0, max: 1, step: 0.05, value: 0.4, hint: "레이저 둘레의 번짐. 납작한 면만 있으면 붙인 색종이가 된다" },
     // 머리의 창끝(분해 장면의 Spike_Main). 판 손잡이 칸에서 빼 SPIKE 칸으로 따로 둔다(panel)
-    { panel: "SPIKE", key: "spikeSize", label: "SIZE", min: 0.3, max: 2, step: 0.05, value: 1, hint: "머리 창끝의 크기" },
-    { panel: "SPIKE", key: "spikePoints", label: "POINTS", min: 2, max: 8, step: 1, value: 4, hint: "부채의 칼날 수의 끝값. 장마다 이 수의 절반에서 이 수 사이로 줄었다 늘었다 한다" },
-    { panel: "SPIKE", key: "spikeStretch", label: "STRETCH", min: 0.5, max: 2.5, step: 0.05, value: 1, hint: "칼날이 뻗는 길이. 높을수록 길다" },
-    { panel: "SPIKE", key: "spikeSpread", label: "SPREAD", min: 20, max: 140, step: 1, value: 82, hint: "부채가 벌어지는 각(도). 칼날이 심에서 퍼지는 폭이다. 장마다 이보다 30%쯤 좁거나 넓다" },
-    { panel: "SPIKE", key: "spikeNose", label: "NOSE", min: 20, max: 150, step: 1, value: 70, hint: "코끝에서 심의 테에 닿는 두 접선 사이의 각(도). 작을수록 코가 길고 뾰족하다. SPREAD와 따로 논다" },
-    { panel: "SPIKE", key: "spikeVary", label: "VARY", min: 0, max: 1, step: 0.05, value: 0.5, hint: "장마다 창끝이 커지는 정도. 가장 작을 때도 가장 커진 심을 감싼다. 0이면 늘 그 크기다" },
-    { panel: "SPIKE", key: "spikeFlip", label: "FLIP", min: 4, max: 48, step: 1, value: 24, hint: "창끝이 한 바퀴에 몇 번 바뀌는가. 한 바퀴는 48프레임이고, 분해 장면은 거의 매 프레임 바뀐다. BEAT와 따로 논다" },
-    { panel: "SPIKE", key: "spikeGlow", label: "GLOW", min: 0, max: 1, step: 0.05, value: 0.8, hint: "창끝 둘레의 번짐" },
+    { panel: "SPIKE", key: "spikeSize", label: "SIZE", min: 0.3, max: 2, step: 0.05, value: 1.3, hint: "머리 창끝의 크기" },
+    { panel: "SPIKE", key: "spikePoints", label: "POINTS", min: 2, max: 8, step: 1, value: 5, hint: "부채의 칼날 수의 끝값. 장마다 이 수의 절반에서 이 수 사이로 줄었다 늘었다 한다" },
+    { panel: "SPIKE", key: "spikeStretch", label: "STRETCH", min: 0.5, max: 2.5, step: 0.05, value: 0.95, hint: "칼날이 뻗는 길이. 높을수록 길다" },
+    { panel: "SPIKE", key: "spikeSpread", label: "SPREAD", min: 20, max: 140, step: 1, value: 140, hint: "부채가 벌어지는 각(도). 칼날이 심에서 퍼지는 폭이다. 장마다 이보다 30%쯤 좁거나 넓다" },
+    { panel: "SPIKE", key: "spikeNose", label: "NOSE", min: 20, max: 150, step: 1, value: 137, hint: "코끝에서 심의 테에 닿는 두 접선 사이의 각(도). 작을수록 코가 길고 뾰족하다. SPREAD와 따로 논다" },
+    { panel: "SPIKE", key: "spikeVary", label: "VARY", min: 0, max: 1, step: 0.05, value: 0.2, hint: "장마다 창끝이 커지는 정도. 가장 작을 때도 가장 커진 심을 감싼다. 0이면 늘 그 크기다" },
+    { panel: "SPIKE", key: "spikeFlip", label: "FLIP", min: 4, max: 48, step: 1, value: 12, hint: "창끝이 한 바퀴에 몇 번 바뀌는가. 한 바퀴는 48프레임이고, 분해 장면은 거의 매 프레임 바뀐다. BEAT와 따로 논다" },
+    { panel: "SPIKE", key: "spikeGlow", label: "GLOW", min: 0, max: 1, step: 0.05, value: 0.45, hint: "창끝 둘레의 번짐" },
     // 두 번째 창끝(분해 장면의 Spike_Second). 첫째 부채 뒤에 도트의 빛깔로 한 겹 더 편다. SECOND 칸으로 따로 둔다
-    { panel: "SECOND", key: "secondSize", label: "SIZE", min: 0, max: 2.5, step: 0.05, value: 1, hint: "몸통의 크기. 1이면 첫째 부채의 가장 작은 몸통과 같아 늘 그 뒤에 묻힌다. 0이면 없다" },
-    { panel: "SECOND", key: "secondPoints", label: "POINTS", min: 2, max: 8, step: 1, value: 4, hint: "칼날 수의 끝값. 장마다 이 수의 절반에서 이 수 사이다" },
-    { panel: "SECOND", key: "secondStretch", label: "STRETCH", min: 0.5, max: 2.5, step: 0.05, value: 1.6, hint: "칼날이 뻗는 길이" },
-    { panel: "SECOND", key: "secondSpread", label: "SPREAD", min: 20, max: 140, step: 1, value: 90, hint: "부채가 벌어지는 각(도)" },
+    { panel: "SECOND", key: "secondSize", label: "SIZE", min: 0, max: 2.5, step: 0.05, value: 0.5, hint: "몸통의 크기. 1이면 첫째 부채의 가장 작은 몸통과 같아 늘 그 뒤에 묻힌다. 0이면 없다" },
+    { panel: "SECOND", key: "secondPoints", label: "POINTS", min: 2, max: 8, step: 1, value: 2, hint: "칼날 수의 끝값. 장마다 이 수의 절반에서 이 수 사이다" },
+    { panel: "SECOND", key: "secondStretch", label: "STRETCH", min: 0.5, max: 2.5, step: 0.05, value: 2.2, hint: "칼날이 뻗는 길이" },
+    { panel: "SECOND", key: "secondSpread", label: "SPREAD", min: 20, max: 140, step: 1, value: 33, hint: "부채가 벌어지는 각(도)" },
     { panel: "SECOND", key: "secondVary", label: "VARY", min: 0, max: 1, step: 0.05, value: 0.5, hint: "장마다 날의 길이가 달라지는 정도" },
     { panel: "SECOND", key: "secondFlip", label: "FLIP", min: 4, max: 48, step: 1, value: 18, hint: "한 바퀴에 몇 번 바뀌는가. 첫째 부채와 다르게 두면 둘이 함께 바뀌지 않는다" },
     // 도트 이미터. 이펙트 툴의 이미터 값을 그대로 둔다 — 뿜는 빈도, 수명, 빠르기와 끌림, 크기와 수명에 따른 크기.
     // 판 손잡이 칸에서 빼 DOTS 칸으로 따로 둔다(panel)
-    { panel: "DOTS", key: "freq", label: "FREQ", min: 0, max: 60, step: 1, value: 0, hint: "뿜는 빈도(spawn rate). 1초에 몇 개를 뿜는가. 한 번에 보이는 점은 FREQ × LIFETIME개이고 60개까지다. 0이면 도트가 없다" },
-    { panel: "DOTS", key: "lifetime", label: "LIFETIME", min: 0.2, max: 2, step: 0.05, value: 1, hint: "점 하나가 사는 시간(초). 루프가 닫히도록 한 바퀴(2초)를 똑같이 나눈 값(2 · 1 · 0.67 · 0.5 …)으로 맞춰진다. 길수록 오래 남아 멀리 간다" },
-    { panel: "DOTS", key: "velocity", label: "VELOCITY", min: 0.05, max: 1.5, step: 0.05, value: 0.45, hint: "흐르는 빠르기. 1초에 광선 길이의 몇 배를 가는가. 구슬 줄의 길이는 VELOCITY × LIFETIME이다" },
-    { panel: "DOTS", key: "drag", label: "DRAG", min: 0, max: 1, step: 0.05, value: 0, hint: "끌림. 0이면 고른 빠르기로 흐르고, 올릴수록 갓 난 점이 빠르게 튀어 나갔다가 느려져 구슬이 꼬리 쪽에 몰린다" },
-    { panel: "DOTS", key: "size", label: "SIZE", min: 0.3, max: 2, step: 0.05, value: 1, hint: "갓 난 타원의 크기. 머리 뒤 덩이의 크기다" },
-    { panel: "DOTS", key: "sizeVary", label: "VARY", min: 0, max: 1, step: 0.05, value: 0.5, hint: "갓 난 타원의 크기가 점마다 달라지는 정도. 0이면 모두 같은 크기로 태어나고, 0.5면 0.55~1.45배, 1이면 0.1~1.9배다" },
-    { panel: "DOTS", key: "shrink", label: "SHRINK", min: 0, max: 6, step: 0.1, value: 3, hint: "사는 동안 작아지는 모양(size over life). 0이면 고르게 줄고, 높을수록 덩이를 벗어나자마자 작아져 구슬이 떨어져 선다" },
-    { panel: "DOTS", key: "stretch", label: "STRETCH", min: 0, max: 2, step: 0.05, value: 1, hint: "갓 난 타원이 축을 따라 길쭉한 정도. 흐르며 동그래져 끝에서는 원이 된다. 0이면 처음부터 원이다" },
-    { panel: "DOTS", key: "scatter", label: "SCATTER", min: 0, max: 1, step: 0.05, value: 0.25, hint: "옆으로 벌어지는 정도. 0이면 구슬이 광선과 한 줄로 선다" },
+    { panel: "DOTS", key: "burst", label: "BURST", min: 0, max: 1, step: 0.05, value: 0, hint: "한꺼번에 뿜는 정도. 0이면 고르게 이어 뿜고, 1이면 수명마다 모두 한꺼번에 태어나 함께 사라진다" },
+    { panel: "DOTS", key: "freq", label: "FREQ", min: 0, max: 60, step: 1, value: 20, hint: "뿜는 빈도(spawn rate). 1초에 몇 개를 뿜는가. 한 번에 보이는 점은 FREQ × LIFETIME개이고 60개까지다. 0이면 도트가 없다" },
+    { panel: "DOTS", key: "lifetime", label: "LIFETIME", min: 0.2, max: 2, step: 0.05, value: 1.9, hint: "점 하나가 사는 시간(초). 루프가 닫히도록 한 바퀴(2초)를 똑같이 나눈 값(2 · 1 · 0.67 · 0.5 …)으로 맞춰진다. 길수록 오래 남아 멀리 간다" },
+    { panel: "DOTS", key: "velocity", label: "VELOCITY", min: 0.05, max: 1.5, step: 0.05, value: 0.5, hint: "흐르는 빠르기. 1초에 광선 길이의 몇 배를 가는가. 구슬 줄의 길이는 VELOCITY × LIFETIME이다" },
+    { panel: "DOTS", key: "dotAngle", label: "ANGLE", min: -60, max: 60, step: 1, value: 0, hint: "점이 나는 방향. 광선 축에서 기운 각(도)이다. 0이면 꼬리 쪽으로 곧게 흐른다. 속력(VELOCITY)과 함께 속도가 된다" },
+    { panel: "DOTS", key: "accel", label: "ACCEL", min: -0.5, max: 2, step: 0.05, value: 0.4, hint: "나는 방향으로 빨라지는 가속도. 0이면 고른 속력이고, 양수면 사는 동안 점점 빨라지며 음수면 느려진다. 가는 거리는 그대로다" },
+    { panel: "DOTS", key: "drag", label: "DRAG", min: 0, max: 1, step: 0.05, value: 0.55, hint: "끌림. 0이면 고른 빠르기로 흐르고, 올릴수록 갓 난 점이 빠르게 튀어 나갔다가 느려져 구슬이 꼬리 쪽에 몰린다" },
+    { panel: "DOTS", key: "gravity", label: "GRAVITY", min: 0, max: 1, step: 0.05, value: 0, hint: "한쪽으로 끌리는 가속도. 나이의 제곱으로 밀려나 구슬 줄이 포물선처럼 휜다. 1이면 수명 끝에 판 폭의 절반만큼 밀린다. 0이면 없다" },
+    { panel: "DOTS", key: "toward", label: "TOWARD", min: -180, max: 180, step: 5, value: 0, hint: "끌리는 방향(도). 0이면 화면 아래, 90이면 오른쪽, ±180이면 위다" },
+    { panel: "DOTS", key: "size", label: "SIZE", min: 0.1, max: 2, step: 0.05, value: 1, hint: "갓 난 타원의 크기. 머리 뒤 덩이의 크기다. 0.1까지 내리면 덩이 없이 작은 구슬만 흐른다" },
+    { panel: "DOTS", key: "sizeVary", label: "VARY", min: 0, max: 1, step: 0.05, value: 1, hint: "갓 난 타원의 크기가 점마다 달라지는 정도. 0이면 모두 같은 크기로 태어나고, 0.5면 0.55~1.45배, 1이면 0.1~1.9배다" },
+    { panel: "DOTS", key: "shrink", label: "SHRINK", min: 0, max: 6, step: 0.1, value: 6, hint: "사는 동안 작아지는 모양(size over life). 0이면 고르게 줄고, 높을수록 덩이를 벗어나자마자 작아져 구슬이 떨어져 선다" },
+    { panel: "DOTS", key: "fade", label: "FADE", min: 0, max: 6, step: 0.1, value: 0, hint: "사는 동안 옅어지는 모양(alpha over life). 0이면 끝까지 진하고, 높을수록 태어나자마자 옅어져 사라진다" },
+    { panel: "DOTS", key: "stretch", label: "STRETCH", min: 0, max: 2, step: 0.05, value: 0.85, hint: "갓 난 타원이 축을 따라 길쭉한 정도. 흐르며 동그래져 끝에서는 원이 된다. 0이면 처음부터 원이다" },
+    { panel: "DOTS", key: "scatter", label: "SCATTER", min: 0, max: 1, step: 0.05, value: 0.4, hint: "옆으로 벌어지는 정도. 0이면 구슬이 광선과 한 줄로 선다" },
     // 꼬리별 이미터. 도트와 같은 이미터 값에, 별 뒤로 끄는 꼬리의 길이(TRAIL)를 더한다. 판 손잡이 칸에서
     // 빼 STARS 칸으로 따로 둔다(panel)
-    { panel: "STARS", key: "starFreq", label: "FREQ", min: 0, max: 30, step: 1, value: 10, hint: "꼬리별을 뿜는 빈도(spawn rate). 1초에 몇 개를 뿜는가. 한 번에 보이는 별은 FREQ × LIFETIME개이고 40개까지다. 0이면 없다" },
-    { panel: "STARS", key: "starLifetime", label: "LIFETIME", min: 0.2, max: 2, step: 0.05, value: 0.7, hint: "별 하나가 사는 시간(초). 루프가 닫히도록 한 바퀴(2초)를 똑같이 나눈 값(2 · 1 · 0.67 · 0.5 …)으로 맞춰진다" },
-    { panel: "STARS", key: "starVelocity", label: "VELOCITY", min: 0.1, max: 2, step: 0.05, value: 0.9, hint: "날아가는 빠르기. 1초에 광선 길이의 몇 배를 가는가" },
-    { panel: "STARS", key: "starDrag", label: "DRAG", min: 0, max: 1, step: 0.05, value: 0.3, hint: "끌림. 올릴수록 빠르게 튀어 나갔다가 느려지고, 느려지는 만큼 꼬리가 짧아진다" },
-    { panel: "STARS", key: "starSize", label: "SIZE", min: 0.3, max: 2, step: 0.05, value: 1, hint: "갓 난 별의 크기" },
-    { panel: "STARS", key: "starShrink", label: "SHRINK", min: 0, max: 6, step: 0.1, value: 1.2, hint: "사는 동안 작아지는 모양(size over life). 높을수록 금세 작아진다" },
-    { panel: "STARS", key: "starTrail", label: "TRAIL", min: 0, max: 3, step: 0.05, value: 1, hint: "별 뒤로 머리 쪽을 향해 끄는 꼬리의 길이. 빠르게 날수록 길다. 0이면 꼬리 없는 반짝이다" },
-    { panel: "STARS", key: "starScatter", label: "SCATTER", min: 0, max: 1, step: 0.05, value: 0.4, hint: "옆으로 벌어지는 정도. 0이면 별이 광선과 한 줄로 난다" },
+    { panel: "STARS", key: "starFreq", label: "FREQ", min: 0, max: 30, step: 1, value: 30, hint: "꼬리별을 뿜는 빈도(spawn rate). 1초에 몇 개를 뿜는가. 한 번에 보이는 별은 FREQ × LIFETIME개이고 40개까지다. 0이면 없다" },
+    { panel: "STARS", key: "starLifetime", label: "LIFETIME", min: 0.2, max: 2, step: 0.05, value: 1.25, hint: "별 하나가 사는 시간(초). 루프가 닫히도록 한 바퀴(2초)를 똑같이 나눈 값(2 · 1 · 0.67 · 0.5 …)으로 맞춰진다" },
+    { panel: "STARS", key: "starVelocity", label: "VELOCITY", min: 0.1, max: 2, step: 0.05, value: 1.4, hint: "날아가는 빠르기. 1초에 광선 길이의 몇 배를 가는가" },
+    { panel: "STARS", key: "starDrag", label: "DRAG", min: 0, max: 1, step: 0.05, value: 1, hint: "끌림. 올릴수록 빠르게 튀어 나갔다가 느려지고, 느려지는 만큼 꼬리가 짧아진다" },
+    { panel: "STARS", key: "starSize", label: "SIZE", min: 0.3, max: 2, step: 0.05, value: 2, hint: "갓 난 별의 크기" },
+    { panel: "STARS", key: "starShrink", label: "SHRINK", min: 0, max: 6, step: 0.1, value: 4.8, hint: "사는 동안 작아지는 모양(size over life). 높을수록 금세 작아진다" },
+    { panel: "STARS", key: "starTrail", label: "TRAIL", min: 0, max: 3, step: 0.05, value: 0.05, hint: "별 뒤로 머리 쪽을 향해 끄는 꼬리의 길이. 빠르게 날수록 길다. 0이면 꼬리 없는 반짝이다" },
+    { panel: "STARS", key: "starScatter", label: "SCATTER", min: 0, max: 1, step: 0.05, value: 1, hint: "옆으로 벌어지는 정도. 0이면 별이 광선과 한 줄로 난다" },
     // 한 바퀴를 몇 장으로 그리는가. 시계는 한 바퀴 48프레임이므로 12면 네 프레임에 한 장이다
-    { group: "BEAT", key: "beat", label: "BEAT", min: 4, max: 48, step: 1, value: 12, hint: "한 바퀴를 몇 장으로 그리는가. 낮을수록 뚝뚝 끊기고, 48이면 프레임마다 다시 그린다" },
+    { group: "BEAT", key: "beat", label: "BEAT", min: 4, max: 48, step: 1, value: 48, hint: "한 바퀴를 몇 장으로 그리는가. 낮을수록 뚝뚝 끊기고, 48이면 프레임마다 다시 그린다" },
   ],
 
   paint(S, R, page) {
@@ -276,13 +277,9 @@ export const meteor = {
     const L = width * knobs.length;
     const hx = width * 0.5 - Math.cos(angle) * L * 0.44;
     const hy = height * 0.5 + Math.sin(angle) * L * 0.44;
-    const axis = (lean = 0) => {
-      const a = angle + lean;
-      const dx = Math.cos(a);
-      const dy = -Math.sin(a);
-      return (u, v) => [hx + dx * u - dy * v, hy + dy * u + dx * v];
-    };
-    const at = axis();
+    const dx = Math.cos(angle);
+    const dy = -Math.sin(angle);
+    const at = (u, v) => [hx + dx * u - dy * v, hy + dy * u + dx * v];
     const tilt = -angle;
 
     // 뽑기. 언제나 같은 수만큼, 같은 차례로
@@ -305,25 +302,14 @@ export const meteor = {
       stretch: layout.next()
     });
     const dotsEarly = Array.from({ length: DOTS_EARLY }, drawDot);
-    const beams = Array.from({ length: MOST_BEAMS }, (_, i) => ({
-      lean: layout.float(0.03, 0.12) * (i % 2 === 0 ? 1 : -1),
-      off: layout.float(0.005, 0.04) * (i % 2 === 0 ? 1 : -1),
-      long: layout.float(0.3, 0.6),
-      wide: layout.float(0.18, 0.4),
-      kind: i % 2 === 0 ? "pink" : "cyan",
-      beat: layout.int(1, 2),
-      phase: layout.float(0, TAU)
-    })).slice(0, knobs.beams);
+    // 예전 보조 광선이 뽑던 자리(4개 × 6번). 보조 광선은 이제 박자마다 제 난수로 짓는다. 뒤의 층들이
+    // 제자리에 있도록 흘려보낸다
+    for (let i = 0; i < MOST_BEAMS * 6; i += 1) layout.next();
     // 걷은 층들이 뽑던 자리 — 속도선(30개 × 8번), 각진 파편(14개 × 7번), 점선 꼬리 별(40개 × 8번). 층은
     // 걷었지만 뒤의 층들이 제자리에 있도록 뽑던 수만큼 흘려보낸다
     for (let i = 0; i < 30 * 8 + 14 * 7 + 40 * 8; i += 1) layout.next();
-    const embers = Array.from({ length: MOST_EMBERS }, () => ({
-      phase: layout.next(),
-      off: layout.float(-0.05, 0.05),
-      len: layout.float(0.03, 0.09),
-      half: layout.float(1.5, 4),
-      kind: layout.chance(0.6) ? "yellow" : "pink"
-    }));
+    // 걷은 불티가 뽑던 자리(12개 × 5번). 뒤의 도트와 꼬리별이 제자리에 있도록 흘려보낸다
+    for (let i = 0; i < MOST_EMBERS * 5; i += 1) layout.next();
     // 걷은 머리의 파편들이 뽑던 자리 — 긴 가시(4쌍 × 3번), 결정 조각(24개 × 6번), 부채꼴의 반지름(1번).
     // 뒤의 도트와 꼬리별이 제자리에 있도록 흘려보낸다
     for (let i = 0; i < 4 * 3 + 24 * 6 + 1; i += 1) layout.next();
@@ -340,11 +326,11 @@ export const meteor = {
         drift: layout.float(-1, 1)
       };
       layout.next(); // 걷은 반짝임(FLICKER)이 뽑던 자리. 뒤의 별들이 제자리에 있게 흘려보낸다
-      return { ...star, kind: hue < 0.5 ? "yellow" : hue < 0.7 ? "pink" : hue < 0.9 ? "cyan" : "white" };
+      return { ...star, kind: hue < 0.45 ? "yellow" : hue < 0.62 ? "pink" : hue < 0.78 ? "cyan" : hue < 0.9 ? "dark" : "white" };
     });
 
     // 도트와 꼬리별의 이미터. 한 번에 사는 수는 빈도와 수명이 정한다
-    const dotsFlow = emitter(dotsAll, knobs.freq, knobs.lifetime, held);
+    const dotsFlow = emitter(dotsAll, knobs.freq, knobs.lifetime, held, knobs.burst);
     const dots = dotsFlow.list;
     const starFlow = emitter(starsAll, knobs.starFreq, knobs.starLifetime, held);
 
@@ -357,7 +343,7 @@ export const meteor = {
     // 통, 분홍은 곁들이, 흰빛은 곁들이로 옅게 물든 종이다. 푸른 빛은 하늘을 조금 남겨 옅은 하늘이 된다.
     // 곁들이가 없으면 분홍 빛도 하늘을 조금 남긴다
     // 흰빛은 종이 그대로가 아니라 곁들이 잉크로 옅게 물든다. 배색마다 흰 부분의 빛깔도 바뀐다. 곁들이가 없는
-    // 두 통 배색에서는 가장 진한 통으로 물든다
+    // 두 통 배색에서는 가장 진한 통으로 물든다. 머리의 심은 같은 잉크로 진하게 물들어 잉크색에 가깝다
     const tint = accent || (S.key !== glowInk ? S.key : null);
     const keeps = (kind) => (kind === "cyan" ? 0.6 : kind === "pink" && !accent ? 0.45 : 0);
     const glowWith = (kind, paint, strength = 1) => {
@@ -365,6 +351,7 @@ export const meteor = {
       if (kind === "pink" && accent) stain([accent], paint, strength * 0.8);
       else if (kind === "yellow" && glowInk) stain([glowInk], paint, strength * 0.95);
       else if (kind === "white" && tint) stain([tint], paint, strength * 0.4);
+      else if (kind === "core" && tint) stain([tint], paint, strength * 0.8);
     };
 
     // 어둠을 찍는다. 가장 진한 통을 끝까지 채우고 곁들이를 겹쳐 하늘보다 짙게, 나머지 통은 파낸다 — 노랑이
@@ -385,43 +372,28 @@ export const meteor = {
     const pulse = 1 + 0.12 * Math.sin(turn * 2 + trailPhase);
     const headRadius = width * 0.026 * pulse;
 
-    // 하늘. 해파리의 물처럼 깐다 — 가장 진한 통이 위에서 아래로 옅어지고, 가장 옅은 통이 그 반쯤으로
-    // 깔리며, 옅은 두 통이 서로 다른 밭을 따라 크게 번져 제3의 색이 된다(src/stains.js). 배색마다 하늘 빛깔이
-    // 크게 달라진다. 가장자리를 조금 누른다
+    // 하늘. 가장 진한 통이 위에서 아래로 옅어지고 가장 옅은 통이 그 반쯤으로 깔린다. 배색마다 하늘
+    // 빛깔이 달라진다. 가장자리를 조금 누른다. 카메라가 별똥별을 따라가므로 하늘에는 자리를 잡고 멈춰
+    // 있는 무늬가 없다 — 빛만 깔고 얼룩은 두지 않는다
     const dark = knobs.dark;
     S.key.ramp(0, 0, width, height, { from: dark, to: dark * 0.22 });
     S.wash.ramp(0, 0, width, height, { from: dark * 0.5, to: 0.06 });
-    // 얼룩은 별똥별이 가는 쪽의 반대, 꼬리 쪽으로 흐른다 — 카메라가 별똥별을 따라가는 셈이다. 다른 것처럼
-    // 박자(BEAT)마다 한 걸음씩 흐른다. 얼룩 밭은 이어 붙일 수 없어서, 판보다 크게 깐 두 겹을 반 바퀴 어긋나게
-    // 흘리며 번갈아 옅어지게 한다. 그래서 한 바퀴가 끝나도 이음매 없이 되감긴다. 한 겹은 한 바퀴에 판 폭의
-    // 0.3배를 흐른다
-    const made = stainsFor(seed, 0.8, 0.6);
-    const cloth = Math.max(width, height) * 1.5;
-    const drift = (sep, canvas) => {
-      for (const shift of [0, 0.5]) {
-        const phase = (held + shift) % 1;
-        const along = (phase - 0.5) * cloth * 0.2;
-        sep.draw((g) => {
-          g.globalAlpha = 1 - Math.abs(2 * phase - 1);
-          g.imageSmoothingEnabled = true;
-          g.imageSmoothingQuality = "low";
-          g.drawImage(canvas, (width - cloth) / 2 + Math.cos(angle) * along, (height - cloth) / 2 - Math.sin(angle) * along, cloth, cloth);
-        });
-      }
-    };
-    drift(S.wash, made.wash);
-    drift(S.body, made.body);
     dim(S.key, page, width * 0.82, 0.8);
 
-    // 먼 하늘의 티끌
+    // 먼 하늘의 티끌. 카메라가 따라가는 만큼 먼 하늘도 흘러, 티끌이 꼬리 쪽으로 지나간다. 제 자리를
+    // 가운데 두고 한 바퀴에 판 폭의 절반을 가며, 양 끝에서 옅어져 되감기는 자리가 보이지 않는다
     if (dust.length) {
+      const past = width * 0.5;
       glowWith(
         "white",
         every(
           dust.map((d) => (g) => {
-            const r = d.size * (0.6 + 0.4 * Math.sin(turn * d.beat + d.phase));
+            const p = (d.phase / TAU + held) % 1;
+            const gone = (p - 0.5) * past;
+            const r = d.size * (0.6 + 0.4 * Math.sin(turn * d.beat + d.phase)) * Math.pow(Math.sin(Math.PI * p), 0.6);
+            if (r < 0.3) return;
             g.beginPath();
-            g.arc(d.x, d.y, Math.max(0.3, r), 0, TAU);
+            g.arc(d.x + Math.cos(angle) * gone, d.y - Math.sin(angle) * gone, r, 0, TAU);
             g.fill();
           })
         ),
@@ -429,30 +401,51 @@ export const meteor = {
       );
     }
 
-    // 레이저. 머리 쪽에서 부풀었다가 끝으로 가늘어지는 단순한 유성 꼬리 하나다. 박자마다 켜졌다 꺼진다 — 켜지는지는
-    // 박자 번호로 섞은 제 난수로 정해, t=1은 t=0과 같은 박자다(FLICKER). 길이는 LENGTH만큼이고 머리 자리는 그대로다
+    // 레이저. 머리 쪽에서 부풀었다가 끝으로 가늘어지는 단순한 유성 꼬리 하나다. 박자마다 켜졌다 꺼지고(FLICKER),
+    // 켜진 박자마다 굵기와 길이가 조금씩 달라진다(VARY) — 늘 같은 띠가 깜빡이기만 하면 붙였다 뗀 색종이가 된다.
+    // 셋 다 박자 번호로 섞은 한 난수에서 이어 뽑아, t=1은 t=0과 같은 박자다. 머리 자리는 그대로다
     const coreWidth = width * 0.016 * knobs.core;
-    const lit = makeRng((seed ^ 0x3c6ef372 ^ Math.imul((Math.floor(t * beat) % beat) + 1, 0xa54ff53a)) >>> 0).next() >= knobs.laserFlicker;
-    const reach = L * knobs.laserLength;
+    const beatRng = makeRng((seed ^ 0x3c6ef372 ^ Math.imul((Math.floor(t * beat) % beat) + 1, 0xa54ff53a)) >>> 0);
+    const lit = beatRng.next() >= knobs.laserFlicker;
+    const laserWide = coreWidth * (1 + knobs.laserVary * (beatRng.next() - 0.5) * 0.6);
+    const baseReach = L * knobs.laserLength;
+    const reach = baseReach * (1 + knobs.laserVary * (beatRng.next() - 0.5) * 0.5);
 
     // 레이저 둘레의 번짐. 레이저가 꺼진 박자에는 없다
     if (lit && knobs.glow > 0) {
       const mask = keepMask(`halo|${width}|${height}|${knobs.length}|${knobs.angle}|${knobs.core}|${knobs.laserLength}`, () =>
-        keepGlow(glowMask(facet(at, -reach * 0.02, reach, 0, (s) => coreWidth * 2.4 * taper(s), { steps: 24 }), width * 0.03))
+        // 번짐은 흐릿해 박자마다 다시 지을 것이 없다. 손잡이가 정한 바탕 꼴로 한 번 짓고 쥔다
+        keepGlow(glowMask(facet(at, -baseReach * 0.02, baseReach, 0, (s) => coreWidth * 2.4 * taper(s), { steps: 24 }), width * 0.03))
       );
       for (const sep of inks) sep.knockout((plate) => plate.draw((g) => layGlow(g, mask, knobs.glow * 0.6)));
       if (glowInk) glowInk.draw((g) => layGlow(g, mask, knobs.glow * 0.5));
     }
 
-    // 보조 광선. 레이저와 조금 다른 각도로 나란히 뻗는다. 분홍과 푸름이 번갈아 온다
-    for (const b of beams) {
-      const beamAt = axis(b.lean);
-      const wide = coreWidth * b.wide * (1 + 0.12 * Math.sin(turn * b.beat + b.phase));
-      glowWith(b.kind, poly(facet(beamAt, 0, L * b.long, b.off * width, (s) => wide * taper(s), { steps: 8 })));
+    // 보조 광선. 분해 장면의 Laser_Second다(0:30~0:33). 머리에서 한 점으로 모여 나와 레이저 곁을 따라 뻗는
+    // 띠로, 레이저 옆으로 활처럼 휘었다가 돌아오고 어떤 것은 끝 쪽에서 물결친다. 박자마다 제 난수로 새로
+    // 짓는다 — 박자 번호로 씨앗을 섞어 t=1은 t=0과 같은 박자다. 빛깔은 도트와 같은 어둠(세컨더리 빛깔)이다.
+    // 레이저가 꺼진 박자에도 있다. 수는 BEAMS다
+    const beamRng = makeRng((seed ^ 0x6a09e667 ^ Math.imul((Math.floor(t * beat) % beat) + 1, 0xbb67ae85)) >>> 0);
+    for (let i = 0; i < knobs.beams; i += 1) {
+      const long = reach * beamRng.float(0.6, 1);
+      const lean = beamRng.float(-0.08, 0.08);
+      const bow = beamRng.float(-0.1, 0.1);
+      const wave = beamRng.float(-0.06, 0.06);
+      const wide = coreWidth * beamRng.float(0.3, 0.6);
+      const one = [];
+      const other = [];
+      for (let k = 0; k <= 10; k += 1) {
+        const f = k / 10;
+        const v = long * (lean * f + bow * Math.sin(Math.PI * f) + wave * f * Math.sin(3 * Math.PI * f));
+        const w = wide * Math.min(1, f / 0.12, (1 - f) / 0.35);
+        one.push(at(long * f, v + w));
+        other.push(at(long * f, v - w));
+      }
+      darken(poly([...one, ...other.reverse()]));
     }
 
     // 레이저. 꼬리 하나를 빛의 통으로 찍는다
-    if (lit) glowWith("yellow", poly(facet(at, 0, reach, 0, (s) => coreWidth * taper(s), { steps: 9 })));
+    if (lit) glowWith("yellow", poly(facet(at, 0, reach, 0, (s) => laserWide * taper(s), { steps: 9 })));
 
     // 도트. 받은 분해 장면의 Dots 이미터다(0:13~0:14). 점은 모두 머리 바로 뒤에서 크고 길쭉한 타원으로
     // 태어나 고른 빠르기로 꼬리 쪽으로 흐르며 작아지고 동그래져, 끝에서는 원이 된다. 그래서 머리 뒤에는
@@ -465,10 +458,10 @@ export const meteor = {
     // 느려 보였다. 가장 클 때 머리 쪽 끝이 머리 원점 바로 뒤에 닿으므로 머리 앞으로 나오지 않는다.
     //
     // 값은 이펙트 툴의 이미터처럼 둔다(DOTS 칸) — 뿜는 빈도(FREQ), 수명(LIFETIME), 흐르는 빠르기와
-    // 끌림(VELOCITY · DRAG), 갓 난 크기와 그 흩어짐과 수명에 따른 크기(SIZE · VARY · SHRINK), 길쭉함(STRETCH), 옆으로
-    // 벌어짐(SCATTER). 기본은 꺼져 있다(FREQ 0). 켤 때는 1초에 스물네 개를 뿜어 1초 살면 기본 박자(BEAT 12)에서
-    // 여섯 장쯤이다.
-    // 세 장만 살 때는 점이 흐르기보다 깜빡이다 사라졌다.
+    // 나는 방향과 가속도와 끌림(VELOCITY · ANGLE · ACCEL · DRAG · GRAVITY · TOWARD), 갓 난 크기와 그 흩어짐과 수명에 따른 크기와 옅어짐(SIZE · VARY · SHRINK · FADE),
+    // 한꺼번에 뿜기(BURST), 길쭉함(STRETCH), 옆으로
+    // 벌어짐(SCATTER). 기본은 1초에 서른일곱 개를 뿜고 한 점이 한 바퀴를 산다. FREQ 0이면 도트가 없다.
+    // 수명이 짧아 한 점이 세 장만 살면 흐르기보다 깜빡이다 사라진다.
     //
     // 겹친 자리가 더 진해지지 않게 한 길에 모아 한 번에 찍는다. 광선 위에 얹는다 — 구슬이 광선과 한
     // 줄이라 광선 밑에 깔면 다 가려진다. 색은 분해 장면의 완성본처럼 어둠이다. 흰 타원이면 머리의 흰
@@ -477,59 +470,66 @@ export const meteor = {
     // dotPeak는 도트 하나가 가장 클 때의 반지름(긴 축)에 대한 비율이다. 크기는 자라기를 마치는 나이
     // 0.04에서 가장 크다
     const dotPeak = 0.96 * Math.exp(-0.04 * knobs.shrink);
+    const aim = (knobs.dotAngle * Math.PI) / 180; // 점이 나는 방향. 속력과 함께 속도가 된다
+    // 끌리는 쪽(GRAVITY · TOWARD). 화면의 y는 아래로 자라므로 0도가 화면 아래다
+    const fallTo = (knobs.toward * Math.PI) / 180;
+    const fall = [Math.sin(fallTo) * knobs.gravity * width * 0.5, Math.cos(fallTo) * knobs.gravity * width * 0.5];
     const dotReach = L * knobs.velocity * dotsFlow.lifetime;
     if (dots.length) {
-      darken((g) => {
-        g.beginPath();
-        dots.forEach((d, i) => {
-          const age = dotsFlow.ageOf(i, d.born);
-          // 수명에 따른 크기. 끝으로 갈수록 0이라 되감기는 자리에서 튀지 않는다
-          const shrink = Math.min(1, age / 0.04) * (1 - age) * Math.exp(-knobs.shrink * age);
-          if (shrink <= 0.01) return;
-          const full = width * 0.08 * knobs.size * (1 + knobs.sizeVary * 1.8 * (d.size - 0.5)); // 갓 난 크기. 점마다 VARY만큼 다르다
-          const long = full * shrink;
-          // 갓 난 것은 길쭉하고 흐르며 동그래져, 끝에서는 원이다
-          const thick = long / (1 + knobs.stretch * (3 + 0.6 * d.stretch) * Math.pow(1 - age, 1.5));
-          // 피벗은 가장 컸을 때의 진행 방향 맨 앞 끝(꼬리 쪽 끝)이다. 점은 이 점을 따라 흐르고, 작아지며
-          // 이 점으로 오므라들어 원이 된다. 가장 클 때 머리 쪽 끝이 머리 원점 바로 뒤에 닿는다
-          const flow = 1 - Math.pow(1 - age, 1 + 3 * knobs.drag);
-          const lead = headRadius * 0.2 + 2 * full * dotPeak + dotReach * (0.78 + 0.44 * d.reach) * flow;
-          const middle = lead - long;
-          const lean = d.drift * 0.16 * knobs.scatter;
-          const [x, y] = at(middle, d.off * headRadius * 1.6 * knobs.scatter + middle * lean);
-          const tip = tilt + lean;
+      // 옅어짐(FADE)이 같은 단계끼리 한 길에 모아 찍는다. 겹친 자리가 더 진해지지 않게 하려는 것이다.
+      // FADE가 0이면 모두 한 단계라 예전처럼 한 길이고, 한꺼번에 뿜으면(BURST 1) 나이가 같아 역시 한 길이다
+      const steps = new Map();
+      dots.forEach((d, i) => {
+        const age = dotsFlow.ageOf(i, d.born);
+        // 수명에 따른 크기. 끝으로 갈수록 0이라 되감기는 자리에서 튀지 않는다
+        const shrink = Math.min(1, age / 0.04) * (1 - age) * Math.exp(-knobs.shrink * age);
+        if (shrink <= 0.01) return;
+        // 사는 동안 옅어지는 모양. 여덟 단계로 끊어 같은 단계끼리 모은다
+        const light = Math.round(8 * Math.exp(-knobs.fade * age));
+        if (light <= 0) return;
+        const full = width * 0.08 * knobs.size * (1 + knobs.sizeVary * 1.8 * (d.size - 0.5)); // 갓 난 크기. 점마다 VARY만큼 다르다
+        const long = full * shrink;
+        // 갓 난 것은 길쭉하고 흐르며 동그래져, 끝에서는 원이다
+        const thick = long / (1 + knobs.stretch * (3 + 0.6 * d.stretch) * Math.pow(1 - age, 1.5));
+        // 피벗은 가장 컸을 때의 진행 방향 맨 앞 끝(꼬리 쪽 끝)이다. 점은 이 점을 따라 흐르고, 작아지며
+        // 이 점으로 오므라들어 원이 된다. 가장 클 때 머리 쪽 끝이 머리 원점 바로 뒤에 닿는다
+        const eased = 1 - Math.pow(1 - age, 1 + 3 * knobs.drag);
+        // 가속도. 등속이면 나이만큼 가고, 빨라지면 나이의 제곱이 섞인다. 끝값으로 나눠 가는 거리는 그대로다
+        const flow = (eased + knobs.accel * eased * eased) / (1 + knobs.accel);
+        const lead = headRadius * 0.2 + 2 * full * dotPeak + dotReach * (0.78 + 0.44 * d.reach) * flow;
+        const middle = lead - long;
+        // 나는 방향(라디안). ANGLE만큼 축에서 기울고, 점마다 SCATTER만큼 더 흩어진다. 옆으로 밀리는
+        // 자리는 그 방향의 기울기다
+        const lean = aim + d.drift * 0.16 * knobs.scatter;
+        const [px, py] = at(middle, d.off * headRadius * 1.6 * knobs.scatter + middle * Math.tan(lean));
+        // 끌림. 나이의 제곱으로 한쪽으로 밀려 구슬 줄이 휜다
+        const x = px + fall[0] * age * age;
+        const y = py + fall[1] * age * age;
+        const tip = tilt + lean;
+        if (!steps.has(light)) steps.set(light, []);
+        steps.get(light).push((g) => {
           g.moveTo(x + Math.cos(tip) * long, y + Math.sin(tip) * long);
           g.ellipse(x, y, long, thick, tip, 0, TAU);
         });
-        g.fill();
       });
-    }
-
-    // 불티. 머리 언저리에서 짧고 밝은 줄기가 튄다. 한 바퀴에 두 번 흐른다
-    for (const kind of ["yellow", "pink"]) {
-      const mine = embers.filter((e) => e.kind === kind);
-      if (!mine.length) continue;
-      glowWith(
-        kind,
-        every(
-          mine.map((e) => {
-            const { p, fade } = flowing(e.phase, held, 2);
-            const u0 = -L * 0.06 + p * L * 0.4;
-            const len = width * e.len;
-            return poly(facet(at, u0, u0 + len, e.off * width, (s) => e.half * fade * Math.pow(Math.sin(Math.PI * s), 0.7), { steps: 5 }));
-          })
-        )
-      );
+      for (const [light, list] of [...steps].sort((a, b) => a[0] - b[0])) {
+        darken((g) => {
+          g.beginPath();
+          for (const add of list) add(g);
+          g.fill();
+        }, light / 8);
+      }
     }
 
     // 꼬리별. 받은 분해 장면의 Stars 이미터다(0:18~0:21). 별은 머리 원의 가장자리에서 태어나 꼬리 쪽으로
     // 날아가며 작아진다. 허리가 가는 네 갈래 반짝이이고, 앞뒤 팔이 옆 팔보다 조금 길다. 뒤로는 머리 쪽을
     // 향해 머리카락처럼 가늘어지는 꼬리를 끈다 — 빠를수록 길어, 끌림(DRAG)으로 느려지면 짧아진다. 꼬리는
-    // 머리 원점을 넘어 앞으로 나오지 않는다. 별마다 노랑 · 분홍 · 푸름 · 흰빛 가운데 하나로 빛난다. 색끼리
+    // 머리 원점을 넘어 앞으로 나오지 않는다. 별마다 노랑 · 분홍 · 푸름 · 흰빛 가운데 하나로 빛나고, 열에 하나쯤은
+    // 두 번째 창끝과 같은 어둠이라 밝은 별 사이에 어두운 별이 섞인다. 색끼리
     // 한 길에 모아 찍는다. 머리는 그 위에 찍힌다
     const starReach = L * knobs.starVelocity * starFlow.lifetime;
     if (starFlow.list.length) {
-      const byKind = { yellow: [], pink: [], cyan: [], white: [] };
+      const byKind = { yellow: [], pink: [], cyan: [], dark: [], white: [] };
       const hard = 1 + 3 * knobs.starDrag;
       starFlow.list.forEach((d, i) => {
         const age = starFlow.ageOf(i, d.born);
@@ -559,19 +559,21 @@ export const meteor = {
       });
       for (const [kind, list] of Object.entries(byKind)) {
         if (!list.length) continue;
-        glowWith(kind, (g) => {
+        const paint = (g) => {
           g.beginPath();
           for (const add of list) add(g);
           g.fill();
-        });
+        };
+        if (kind === "dark") darken(paint);
+        else glowWith(kind, paint);
       }
     }
 
-    // 유성의 머리. 분해 장면의 Spike_Main이다(0:03~0:08, 완성본 0:34~0:36). 머리 원점에 흰 동그라미 심이
+    // 유성의 머리. 분해 장면의 Spike_Main이다(0:03~0:08, 완성본 0:34~0:36). 머리 원점에 동그라미 심이
     // 붙박이로 빛나고, 심을 사북으로 칼날이 부채꼴로 꼬리 쪽에 펼쳐진다. 부채는 한 바퀴에 FLIP번 새로
     // 짓는다 — 텍스처를 거의 매 프레임 무작위로 고르는 분해 장면과 같다. BEAT와 따로 논다. 장마다 날의 수는
     // 그대로(POINTS)이고 펼친 폭과 길이와 크기가 달라지며(VARY), 심은 자리가 붙박이고 크기만 부채를 따라
-    // 바뀐다. 빛깔은 깜빡이지 않는다 — 부채는 늘 빛의 통이고 심은 늘 희다. 둘레로 번진다(GLOW).
+    // 바뀐다. 빛깔은 깜빡이지 않는다 — 부채는 늘 빛의 통이고 심은 늘 곁들이 잉크다. 둘레로 번진다(GLOW).
     //
     // 장의 부채는 제 난수로 짓는다. 장 번호로 씨앗을 섞으므로 같은 장은 늘 같은 부채이고, t=1은 t=0과
     // 같은 장이다. 자리를 뽑는 난수는 건드리지 않아 다른 층은 그대로다
@@ -626,16 +628,22 @@ export const meteor = {
       g.clip("evenodd");
       poly(outline)(g);
     });
-    glowWith("white", (g) => {
+    glowWith("core", (g) => {
       g.beginPath();
       shapes.circleSubpath(g, hx, hy, heartR);
       g.fill();
     });
 
+    // 도트가 사는 동안 가는 끝. 기운 방향(ANGLE)과 끌림(GRAVITY)을 따라간다. 안내선이 여기를 찍는다
+    const dotEnd = headRadius * 0.2 + 2 * width * 0.08 * knobs.size * dotPeak + dotReach;
+    const dotTip = at(dotEnd, dotEnd * Math.tan(aim));
+    dotTip[0] += fall[0];
+    dotTip[1] += fall[1];
+
     // 이 장의 뼈대. 인쇄기가 안내선(guides)에 넘긴다. 안내선이 판을 다시 계산하지 않고 이 장이 쓴
     // 값을 그대로 본다. span은 안내선의 축이 머리 앞에서 꼬리 끝 너머까지 긋는 길이다
     const span = L * 1.3;
-    return { at, L, reach, hx, hy, coreWidth, beat, held, clock, span, dots: { count: dots.length, lifetime: dotsFlow.lifetime, end: headRadius * 0.2 + 2 * width * 0.08 * knobs.size * dotPeak + dotReach }, stars: { count: starFlow.list.length, lifetime: starFlow.lifetime, end: headRadius * 0.8 + starReach } };
+    return { at, L, reach, hx, hy, coreWidth: laserWide, beat, held, clock, span, dots: { count: dots.length, lifetime: dotsFlow.lifetime, tip: dotTip }, stars: { count: starFlow.list.length, lifetime: starFlow.lifetime, end: headRadius * 0.8 + starReach } };
   },
 
   // 안내선. 인쇄된 픽셀은 건드리지 않고 화면 위에 겹쳐 그린다 — 축이 어디를 지나는지, 머리에 딸린
@@ -655,7 +663,7 @@ export const meteor = {
     marks.push({ kind: "dot", at: [hx, hy], r: 5, ring: 22, label: "PIVOT · HEAD 0", hot: true });
 
     // 도트의 피벗(가장 컸을 때의 앞 끝)이 사는 동안 가는 끝. 구슬 줄이 여기쯤에서 원이 되어 사라진다
-    if (dots.count) marks.push({ kind: "dot", at: at(dots.end, 0), r: 3, label: "DOTS END" });
+    if (dots.count) marks.push({ kind: "dot", at: dots.tip, r: 3, label: "DOTS END" });
 
     // 꼬리별이 사는 동안 가는 끝(가운데 빠르기의 별)
     if (stars.count) marks.push({ kind: "dot", at: at(stars.end, 0), r: 3, label: "STARS END", lift: -18 });
