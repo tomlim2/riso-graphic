@@ -17,14 +17,13 @@
 // 같은 수만큼 뽑고, PIECES는 그중 몇을 넣을지만 정한다.
 
 import { makeRng, fieldSeed } from "../rng.js";
-import * as shapes from "../shapes.js";
+import { KINDS, piece } from "../glass.js";
 import { roundel } from "../roundel.js";
 import { SCOPE_KNOBS, light } from "../scope.js";
 
 const TAU = Math.PI * 2;
 const MOST_PIECES = 60;
 const PAD = 8;
-const KINDS = ["glass", "glass", "glass", "shard", "shard", "bead", "ring", "drop", "leaf", "star", "thread"];
 
 // 쐐기를 그릴 캔버스. 통마다 하나씩 두고 다시 쓴다
 const wedges = [];
@@ -41,78 +40,20 @@ function wedgeCanvas(index, size) {
   return canvas;
 }
 
-// 조각 하나를 그린다. 모양의 난수는 조각의 씨앗으로 새로 굴려, 매 프레임 같은 모양이 나온다
-function piece(g, kind, seed, x, y, size, angle) {
-  const rng = makeRng(seed);
-  switch (kind) {
-    case "glass":
-      shapes.splinePath(g, shapes.blob(rng, x, y, size, { lobes: 3, wobble: 0.25, steps: 14, tilt: angle }), true);
-      g.fill();
-      break;
-    case "shard": {
-      const corners = rng.int(3, 4);
-      const points = Array.from({ length: corners }, (_, k) => {
-        const a = angle + (k / corners) * TAU + rng.float(-0.35, 0.35);
-        const r = size * rng.float(0.55, 1.1);
-        return [x + Math.cos(a) * r, y + Math.sin(a) * r];
-      });
-      shapes.polyPath(g, points, true);
-      g.fill();
-      break;
-    }
-    case "bead":
-      g.beginPath();
-      g.arc(x, y, size * 0.35, 0, TAU);
-      g.fill();
-      break;
-    case "ring":
-      g.beginPath();
-      g.lineWidth = Math.max(3, size * 0.14);
-      g.arc(x, y, size * 0.6, 0, TAU);
-      g.stroke();
-      break;
-    case "drop":
-      shapes.splinePath(g, shapes.drop(rng, x, y, size, angle), true);
-      g.fill();
-      break;
-    case "leaf":
-      shapes.splinePath(g, shapes.leaf(rng, x, y, size, angle), true);
-      g.fill();
-      break;
-    case "star":
-      shapes.sparkle(g, x, y, size * 0.8, 0.22);
-      g.fill();
-      break;
-    default: {
-      // 실. 조각을 가로질러 물결치는 선
-      const ux = Math.cos(angle);
-      const uy = Math.sin(angle);
-      const wiggle = rng.float(0.15, 0.3);
-      const points = [];
-      for (let s = 0; s <= 12; s += 1) {
-        const u = s / 12 - 0.5;
-        const side = Math.sin(u * TAU * 1.5) * size * wiggle;
-        points.push([x + ux * u * size * 2.2 - uy * side, y + uy * u * size * 2.2 + ux * side]);
-      }
-      g.lineWidth = Math.max(3, size * 0.08);
-      shapes.splinePath(g, points, false);
-      g.stroke();
-    }
-  }
-}
-
 export const kaleido = {
   id: "kaleido",
   name: "KALEIDO",
   about: "만화경. 색유리 조각이 거울에 비쳐 대칭으로 피고, 조각마다 굴러 무늬가 바뀐다",
 
   knobs: [
-    { key: "field", label: "FIELD", min: 0, max: 199, step: 1, value: 0, hint: "통 속 조각의 씨앗. 종이의 롤은 그대로 두고 조각만 다시 뽑는다" },
-    { key: "mirrors", label: "MIRRORS", min: 2, max: 12, step: 1, value: 6, hint: "거울이 만드는 겹의 수. 6이면 눈송이처럼 열두 벌이다" },
-    { key: "pieces", label: "PIECES", min: 4, max: MOST_PIECES, step: 1, value: 24, hint: "통 속 조각의 수" },
+    { key: "field", label: "FIELD", min: 0, max: 199, step: 1, value: 70, hint: "통 속 조각의 씨앗. 종이의 롤은 그대로 두고 조각만 다시 뽑는다" },
+    { key: "mirrors", label: "MIRRORS", min: 2, max: 12, step: 1, value: 12, hint: "거울이 만드는 겹의 수. 6이면 눈송이처럼 열두 벌이다" },
+    { key: "pieces", label: "PIECES", min: 4, max: MOST_PIECES, step: 1, value: 28, hint: "통 속 조각의 수" },
     { key: "size", label: "SIZE", min: 0.02, max: 0.14, step: 0.005, value: 0.06, hint: "조각의 크기" },
-    { key: "tumble", label: "TUMBLE", min: 0, max: 1, step: 0.05, value: 0.5, hint: "조각이 저마다 굴러다니는 정도" },
-    { key: "tint", label: "TINT", min: 0.3, max: 1, step: 0.05, value: 0.8, hint: "조각을 얼마나 진하게 찍을지" }
+    { key: "tumble", label: "TUMBLE", min: 0, max: 1, step: 0.05, value: 0, hint: "조각이 저마다 굴러다니는 정도. 가장 높으면 조각 하나만큼 돌아다녀 거울 선을 넘나든다" },
+    { key: "flow", label: "FLOW", min: 0, max: 2, step: 1, value: 1, hint: "조각이 한 바퀴에 가운데로 흘러드는 횟수. 통 밖에서 들어 가운데로 가고, 가운데에 닿으면 다시 밖에서 든다. 0이면 흐르지 않는다" },
+    { key: "spin", label: "SPIN", min: -2, max: 2, step: 1, value: -2, hint: "한 바퀴에 통이 도는 칸 수. 한 칸은 거울 한 겹이라 돌아도 이음매가 없다. 음수면 반대로 돈다. 0이면 통이 서 있다" },
+    { key: "tint", label: "TINT", min: 0.3, max: 1, step: 0.05, value: 1, hint: "조각을 얼마나 진하게 찍을지" }
   ],
   scope: SCOPE_KNOBS,
 
@@ -128,6 +69,10 @@ export const kaleido = {
     // 조각은 제 씨앗으로 뽑는다. FIELD는 잉크와 종이결을 건드리지 않는다
     const layout = makeRng(fieldSeed(page, 0x3243f6a8));
     const spin = layout.float(0, TAU);
+    // 통이 도는 각. 한 바퀴에 거울 한 겹(2 × 쐐기)씩 도므로 무늬의 대칭 주기와 같아, 돌아도 t=1이 t=0과
+    // 같은 장이다. 통을 손에 쥐고 천천히 돌리는 셈이다(SPIN)
+    const barrel = Math.round(knobs.spin) * 2 * wedge * t;
+    const flow = Math.round(knobs.flow); // 한 바퀴에 조각이 가운데로 흘러드는 횟수. 정수라야 루프가 닫힌다
     const pieces = Array.from({ length: MOST_PIECES }, () => ({
       kind: layout.pick(KINDS),
       seed: Math.floor(layout.next() * 4294967296) >>> 0,
@@ -145,18 +90,36 @@ export const kaleido = {
 
     light(S, page, ring, knobs.vignette);
 
-    // 조각의 자리. 쐐기의 극좌표에서 저마다 작은 고리를 돌고 까딱인다. 큰 것부터 깐다
-    const roam = knobs.tumble * width * 0.02;
+    // 조각의 자리. 쐐기의 극좌표에서 저마다 작은 고리를 한 바퀴 돈다. 큰 것부터 깐다.
+    //
+    // 고리는 두 좌표에 같은 각을 써서 참말로 도는 고리다 — 한쪽은 코사인, 한쪽은 사인이다. 전에는 두
+    // 좌표의 박자와 위상이 따로 놀아, 위상이 비슷한 조각은 한 줄 위를 오갔다. 오가는 조각은 양 끝에서
+    // 멈췄다 되돌아오므로 무늬가 새로 짜이지 않고 숨만 쉬었다. 도는 고리는 멈추는 자리가 없어 한 바퀴
+    // 내내 무늬가 바뀐다. 도는 수는 대개 한 바퀴에 한 번이고 넷에 하나만 두 번이다 — 정수라 루프가
+    // 닫히고, 대부분이 한 바퀴를 꼬박 도는 동안 제자리로 돌아오지 않아 무늬가 내내 새로 짜인다. 두 번
+    // 도는 조각이 섞여 빠르기가 한 가지로 보이지 않는다. 도는 쪽과 고리의 납작함(py)은 조각마다 다르다
+    const roam = knobs.tumble * width * 0.06;
     const base = width * knobs.size;
     const placed = pieces
       .map((p) => {
-        const r = p.r * ring * 1.02 + Math.cos(turn * p.loop.fx + p.loop.px) * roam * p.reach;
-        const a = p.a * wedge + (Math.sin(turn * p.loop.fy + p.loop.py) * roam * p.reach) / Math.max(r, 40);
+        const laps = p.loop.fx === 1 && p.loop.fy === 1 ? 2 : 1; // 넷에 하나만 두 번 돈다
+        const spun = turn * laps * (p.tilt < Math.PI ? 1 : -1) + p.loop.px;
+        const squash = 0.6 + (0.4 * p.loop.py) / TAU;
+        // 흐름. 조각은 통 밖에서 들어 가운데로 흘러 들어가고, 가운데에 닿으면 다시 밖에서 든다(FLOW).
+        // 되감기는 자리는 보이지 않는다 — 드는 자리는 둥근 틀 밖이라 잘리고, 지는 자리에서는 가운데로
+        // 갈수록 작아져 한 점으로 사라진다. 흐르는 수가 정수라 루프가 닫힌다. 조각마다 드는 때가 달라
+        // 무리가 생겼다 풀린다. 처음에는 안팎으로 밀렸다 당겼다 하게 했는데 사인 곡선이 그대로 보였다
+        // 드는 때는 고르게 흩는다 — p.r은 넓이를 고르게 하려고 제곱근을 씌운 값이라 그대로 쓰면
+        // 한 무리가 함께 바깥에 몰려, 그 무리가 가운데에 닿을 때 판이 훌쩍 비어 보인다
+        const sink = (((p.r * p.r - t * flow) % 1) + 1) % 1; // 1이면 통 밖, 0이면 가운데
+        const r = ring * 1.08 * sink + Math.cos(spun) * roam * p.reach;
+        // 가운데에서는 각의 흔들림이 커지므로 통의 3할 안쪽으로는 더 흔들리지 않게 잡는다
+        const a = p.a * wedge + (Math.sin(spun) * squash * roam * p.reach) / Math.max(r, ring * 0.3);
         return {
           p,
           x: Math.cos(a) * r,
           y: Math.sin(a) * r,
-          size: base * p.size,
+          size: base * p.size * Math.min(1, sink * 2.2),
           angle: p.tilt + Math.sin(turn * p.loop.fs + p.loop.ps) * 0.5 * knobs.tumble
         };
       })
@@ -209,7 +172,7 @@ export const kaleido = {
           for (const flip of [1, -1]) {
             sheet.save();
             sheet.translate(cx, cy);
-            sheet.rotate(spin + k * 2 * wedge);
+            sheet.rotate(spin + barrel + k * 2 * wedge);
             sheet.scale(1, flip);
             sheet.drawImage(canvas, -PAD, -PAD);
             sheet.restore();

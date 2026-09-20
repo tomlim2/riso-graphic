@@ -55,6 +55,7 @@
 | **미스레지스트레이션** | 판 어긋남. 흠이 아니라 의도로 쓴다 | REGISTER 다이얼 |
 | **녹아웃** | 찍지 않아 종이가 그대로 드러난 자리. 흰 잉크가 아니다 | `Separation.knockout` · 어두운 시야에서 빛을 파내는 `carve` — [`src/night.js`](src/night.js) |
 | **마스크** | 모양대로 오린 종이를 대고 찍는 것. 모양 바깥은 찍히지 않아 종이로 남는다 | [`src/mask.js`](src/mask.js) |
+| **프리즈 군** | 한 줄로 이어지는 띠의 대칭. 밀기 · 미끄럼 거울 · 좌우 거울 · 위아래 거울 · 180° 돌리기를 어떻게 섞느냐에 따라 일곱 가지뿐이다. 건축에서 띠 장식을 프리즈라 한 데서 왔다 | FRIEZE의 GROUP — [`src/plates/frieze.js`](src/plates/frieze.js) |
 | **라운델 · 원형 비네트** | 그림을 둥근 틀 안에 가두는 구성. 미술사에서는 둥근 그림을 톤도라고 한다 | [`src/roundel.js`](src/roundel.js) · SCOPE 칸의 FRAME (CELL · CHLORO · COSMOS · FLAKE · KALEIDO) |
 | **라인리스** | 테두리를 긋지 않고 면의 경계만으로 형태를 그리는 것. 일러스트에서 온 말이다. 동양화에서는 몰골법이라 하고, 테두리를 긋고 안을 칠하는 것은 구륵법이다 | MOON · JELLY의 종 · METEOR — [`src/plates/moon.js`](src/plates/moon.js) · [`src/plates/jelly.js`](src/plates/jelly.js) · [`src/plates/meteor.js`](src/plates/meteor.js) |
 | **반구 방출 · 방출 원뿔** | 이미터가 한쪽 반구로만 조각을 내보내는 것. 원뿔의 반각이 90°를 넘지 않고, 경계는 이미터를 지나는 법선이다. 이펙트 작화의 말이다 | METEOR의 머리 — 도트와 꼬리별은 꼬리 쪽으로만 뿜어 나간다 — [`src/plates/meteor.js`](src/plates/meteor.js) |

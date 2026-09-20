@@ -202,6 +202,27 @@ function gridCells() {
   });
 }
 
+// 판화 고르개의 썸네일. 이름만 있으면 무엇이 찍히는지 알 수 없다. 판마다 지금 배색과 지금 손잡이로
+// 첫 장을 작게 찍어 버튼에 붙인다. 공용 종이 한 장을 돌려 쓰므로, 찍고 나면 본 그림을 다시 찍는다
+const thumbs = new Map();
+let wantsThumbs = true;
+function paintThumbs() {
+  if (!press) return;
+  for (const [id, canvas] of thumbs) {
+    press.print(settings(plateById(id), PALETTES[state.palette], { frame: 0, scale: GRID_SCALE }));
+    const g = canvas.getContext("2d");
+    g.clearRect(0, 0, canvas.width, canvas.height);
+    g.imageSmoothingQuality = "high";
+    g.drawImage(sheet, 0, 0, sheet.width, sheet.height, 0, 0, canvas.width, canvas.height);
+  }
+}
+
+// 배색이나 통 수가 바뀌면 썸네일도 따라 바뀐다. 다음 프레임에 본 그림과 함께 찍는다
+function askThumbs() {
+  wantsThumbs = true;
+  wake();
+}
+
 // 칸마다 작게 찍어 대지에 붙인다(src/contact.js)
 const printContact = () =>
   layContact(contact, sheet, gridCells(), (cell) => press.print(settings(cell.plate, cell.palette, { frame: cell.frame, scale: GRID_SCALE })), SHEET);
@@ -323,6 +344,13 @@ function loop(now) {
       state.frame = frame;
       meter.frames += 1;
     }
+  }
+
+  // 썸네일을 먼저 찍고 본 그림을 다시 찍는다. 한 프레임 안에서 둘 다 끝나 화면이 깜빡이지 않는다
+  if (wantsThumbs) {
+    wantsThumbs = false;
+    paintThumbs();
+    shown = "";
   }
 
   const want = wanted();
@@ -494,7 +522,16 @@ if (many) {
     plateRow,
     PLATES.map((plate) => ({ label: plate.name, title: plate.about, id: plate.id })),
     (item) => item.id === state.plate,
-    (item) => { state.plate = item.id; buildKnobs(); }
+    (item) => { state.plate = item.id; buildKnobs(); },
+    (button, item) => {
+      const canvas = document.createElement("canvas");
+      canvas.width = 180;
+      canvas.height = 180;
+      const name = document.createElement("span");
+      name.textContent = item.label;
+      button.append(canvas, name);
+      thumbs.set(item.id, canvas);
+    }
   );
 } else {
   // 고를 것이 없으면 고르개를 치우고, 그 자리에 지금 걸린 판의 이름만 남긴다
@@ -506,7 +543,7 @@ buildRow(
   paletteRow,
   PALETTES.map((palette, index) => ({ label: palette.label, title: `${palette.name} — ${palette.label}`, index, inks: palette.inks })),
   (item) => item.index === state.palette,
-  (item) => { state.palette = item.index; },
+  (item) => { state.palette = item.index; askThumbs(); },
   (button, item) => {
     button.className = "swatch";
     button.setAttribute("aria-label", item.label);
@@ -518,7 +555,7 @@ buildRow(
   }
 );
 
-buildRow(drumsRow, [{ label: "2", count: 2 }, { label: "3", count: 3 }], (item) => item.count === state.drums, (item) => { state.drums = item.count; });
+buildRow(drumsRow, [{ label: "2", count: 2 }, { label: "3", count: 3 }], (item) => item.count === state.drums, (item) => { state.drums = item.count; askThumbs(); });
 
 buildRow(gridRow, gridItems, (item) => item.kind === state.grid, (item) => { state.grid = item.kind; });
 

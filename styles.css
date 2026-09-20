@@ -166,9 +166,28 @@ input[type="range"] {
 .swatch span { flex: 1; }
 .swatch.on { outline: 2px solid var(--ink); outline-offset: 1px; }
 
-/* 판화 이름은 여러 줄로 접힌다. 목록이 늘어도 카드가 버틴다 */
-.seg.wrap { flex-wrap: wrap; }
-.seg.wrap button { flex: 1 0 44%; }
+/* 판화 고르개. 이름만 있으면 무엇이 찍히는지 알 수 없어, 지금 배색으로 찍은 작은 한 장을 붙인다.
+   목록이 늘어도 칸이 늘 뿐이라 카드가 버틴다 */
+.plateGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.plateGrid button {
+  display: block;
+  padding: 3px 3px 4px;
+  text-align: center;
+  line-height: 1.4;
+}
+
+.plateGrid canvas {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  margin-bottom: 3px;
+  background: var(--paper);
+}
 
 .about {
   margin: 8px 0 0;

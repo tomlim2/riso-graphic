@@ -12,7 +12,7 @@ by fractions of `height` wherever they can.
 Motion is the default. The page starts playing as soon as it opens.
 
 The hung plates are **RIPPLE** · **MOON** · **GARDEN** · **JELLY** · **CELL** · **CHLORO** ·
-**COSMOS** · **FLAKE** · **KALEIDO** · **METEOR**.
+**COSMOS** · **FLAKE** · **KALEIDO** · **FRIEZE** · **METEOR**.
 POSTER and MEDIUM are still in `src/plates/`. Add a line for either to `src/plates/index.js`
 and it returns to the plate picker and the contact sheet. With only one plate in the list, the
 picker hides.
@@ -387,7 +387,8 @@ knobs.
 | CHLORO | FIELD · SIZE · STRETCH · ANGLE · JITTER · WALL · DENSITY · PLASTID · DEPTH · WANDER · TINT · GROUND |
 | COSMOS | FIELD · STARS · SPIKES · TWINKLE · MILKY · NEBULA · GALAXY · TILT · ARMS · DARK |
 | FLAKE | FIELD · SIZE · HABIT · BRANCH · RIDGE · BUBBLE · GLINT · FLURRY · DARK |
-| KALEIDO | FIELD · MIRRORS · PIECES · SIZE · TUMBLE · TINT |
+| KALEIDO | FIELD · MIRRORS · PIECES · SIZE · TUMBLE · FLOW · SPIN · TINT |
+| FRIEZE | FIELD · GROUP · MOTIF · ROWS · CELL · WEIGHT · RAILS · DRIFT · TINT |
 | METEOR | SKY: FIELD · DARK · DUST · DEPTH · TRAIL — BEAM: ANGLE · LENGTH · BEAMS — BEAT: BEAT — LASER card: WIDTH · LENGTH · VARY · FLICKER · GLOW — SPIKE card: SIZE · POINTS · STRETCH · SPREAD · NOSE · VARY · FLIP · GLOW — SECOND card: SIZE · POINTS · STRETCH · SPREAD · VARY · FLIP — DOTS card: BURST · FREQ · LIFETIME · VELOCITY · ANGLE · ACCEL · DRAG · GRAVITY · TOWARD · SIZE · VARY · SHRINK · FADE · STRETCH · SCATTER — STARS card: FREQ · LIFETIME · VELOCITY · DRAG · SIZE · SHRINK · TRAIL · SCATTER |
 
 Don't confuse the CELL plate with the CELL dial. The dial sets the halftone cell size for every
@@ -483,7 +484,7 @@ pumps.
 | NEW ROLL | A new roll. The same number always prints the same sheet |
 | PNG | Saves the current sheet |
 | HOW IT'S MADE | Opens the page that follows a dot through the press |
-| PLATE | Picks the plate. With a single plate it hides, leaving only the name |
+| PLATE | Picks the plate. Each button carries a thumbnail — that plate's first sheet, printed small in the palette and drums now on the press, so the choice is made by looking, not by reading names. The thumbnails are reprinted when the palette or the drum count changes. With a single plate the card hides, leaving only the name |
 | MOTION | Play, stop and scrub |
 | SHEETS A SECOND | 24, 12 or 8. The clock and the loop length stay fixed |
 | PLATE KNOBS | The knobs the chosen plate offers. Different on each plate, remembered per plate |
@@ -530,6 +531,7 @@ you need it.
 | `src/screen.js` | Halftone, paper tooth and multiply, all in the shader. The part that makes it look like riso |
 | `src/press.js` | Separations and the press. Draws separations on canvases, uploads them as textures and prints in one pass |
 | `src/shapes.js` | Organic blobs, Memphis ornaments, bands of varying width |
+| `src/glass.js` | One piece of colored glass — blob, shard, bead, ring, drop, leaf, sparkle, thread. The plates about symmetry share it: KALEIDO and FRIEZE |
 | `src/mask.js` | Masks. Knocks everything outside one shape out of every drum, whether a circle or any shape made of points |
 | `src/roundel.js` | The round frame. A circle mask plus a rim that looks drawn by hand |
 | `src/scope.js` | The eyepiece field: the shared SCOPE knobs, light falloff, floating debris. The round-frame plates use it, and METEOR borrows its falloff |
@@ -838,8 +840,8 @@ only the glints and the flurry move.
 ## Kaleidoscope (KALEIDO)
 
 After the microscope and the telescope, the third thing to look through. The round frame is the
-tube. Two mirrors inside it turn one wedge MIRRORS times and flip it once each; at 6 that is
-twelve copies, the same symmetry as a snowflake.
+tube. Two mirrors inside it turn one wedge MIRRORS times and flip it once each; at the default 12 that
+is twenty-four copies, and at 6 it is twelve, the same symmetry as a snowflake.
 
 The wedge holds colored glass: blobs, shards, beads, rings, drops, leaves, sparkles and threads,
 the repository's own shape vocabulary. Each piece is printed on one drum, and one in three is
@@ -850,9 +852,49 @@ Pieces are placed across the wedge's edges, so they meet their own reflections a
 lines and bloom there. Each drum's wedge is drawn once on a small canvas, clipped, then turned
 and flipped into place, which makes the cut edges meet exactly at the mirrors.
 
-Every piece moves on its own: it circles a small loop and rocks a little (TUMBLE). As pieces
-cross the mirror lines, the pattern opens and closes. The tube itself never turns. The plate
+Every piece moves on its own: it rides a small circle and rocks a little (TUMBLE). Both polar
+coordinates share one angle, so the path really is a circle and a piece never stalls and doubles
+back; most pieces go round once a loop and one in four goes round twice, so the pattern keeps
+being rebuilt for the whole loop instead of breathing in and out. As pieces cross the mirror
+lines, the pattern opens and closes. At TUMBLE 1 a piece wanders about its own width, so pieces
+really do change places and the arrangement is rebuilt, not just jiggled. Pieces also drift inward the whole way, the way glass
+settles in an oil-filled chamber: each enters from outside the frame, flows to the center and
+comes back in from outside (FLOW). Neither end of that journey shows — the way in is behind the
+round frame, and on the way to the center a piece shrinks to a point. Pieces enter at evenly
+spread times, so groups gather and break up without the whole tube emptying at once. The tube itself turns a whole number of mirror cells a loop (SPIN), which is
+the pattern's own symmetry period, so it can turn for ever without a seam; SPIN 0 holds it still. The plate
 always draws the same number of pieces, and PIECES only decides how many go in.
+
+## A band of ornament (FRIEZE)
+
+A frieze is the band that runs around a building above the columns. Look at a plate of them in an
+ornament handbook — Owen Jones, Meyer — and three things hold every time: one line of even weight
+turns by the rule of a single cell and carries on, thin rails hold the band top and bottom, and
+what reads is the empty space between, not the ink. So this plate draws with a line, not with
+shapes.
+
+A strip pattern can only be symmetric in seven ways — the frieze groups — and GROUP picks among
+them: HOP is a plain repeat, STEP slides half a cell and flips (a glide reflection), SIDLE mirrors
+left to right, JUMP mirrors top to bottom, and the three SPIN groups add the half turn. One cell is
+drawn once on a small canvas and stamped across the row by that rule, the same trick KALEIDO uses
+for its wedge. Every motif leaves the cell's left edge at the center line and enters the right edge
+at the center line, so the line still meets itself however the cell is flipped.
+
+MOTIF picks what fills the cell, or mixes them row by row like a page of the handbook. A spine
+crosses the cell and the ornament grows off it: MEANDER is the Greek key, a ribbon that leaves the
+spine, turns and winds once inward, drawn on a grid so the ribbon and the gap are the same width —
+that equality is what makes a key read; FRET is the plainer battlement; GUILLOCHE plaits two strands
+with a round eye at each turn; ANTHEMION spreads seven fronds from the spine with volutes at the
+foot, the honeysuckle of Greek borders; EGG alternates an oval and a dart; SCROLL curves once and
+curls its end; CHAIN hooks two half circles; TOOTH is the straight zigzag; BEAD threads beads on the
+spine (an astragal); and GLASS is the one band drawn in shapes — the colored glass KALEIDO uses
+(`src/glass.js`).
+
+Rows stack to cover the sheet, a wide row then a narrow one, and each takes a drum of its own so the
+same motif changes color from row to row; one row in four is echoed on the next drum, slightly
+offset, and the overlap prints a third color. Neighbouring rows drift the opposite way, which reads
+as weaving. The drift is a whole number of repeats a loop, so a band can slide for ever without a
+seam. The guides draw each row's center line and the marks where its pattern repeats.
 
 ## A shooting star (METEOR)
 
