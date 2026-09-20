@@ -12,8 +12,8 @@ by fractions of `height` wherever they can.
 Motion is the default. The page starts playing as soon as it opens.
 
 The hung plates are **RIPPLE** · **MOON** · **GARDEN** · **JELLY** · **CELL** · **CHLORO** ·
-**COSMOS** · **FLAKE** · **KALEIDO** · **FRIEZE** · **METEOR**.
-POSTER and MEDIUM are still in `src/plates/`. Add a line for either to `src/plates/index.js`
+**COSMOS** · **FLAKE** · **KALEIDO** · **METEOR**.
+POSTER, MEDIUM and WHALE are still in `src/plates/`. Add a line for either to `src/plates/index.js`
 and it returns to the plate picker and the contact sheet. With only one plate in the list, the
 picker hides.
 
@@ -388,7 +388,6 @@ knobs.
 | COSMOS | FIELD · STARS · SPIKES · TWINKLE · MILKY · NEBULA · GALAXY · TILT · ARMS · DARK |
 | FLAKE | FIELD · SIZE · HABIT · BRANCH · RIDGE · BUBBLE · GLINT · FLURRY · DARK |
 | KALEIDO | FIELD · MIRRORS · PIECES · SIZE · TUMBLE · FLOW · SPIN · TINT |
-| FRIEZE | FIELD · GROUP · MOTIF · ROWS · CELL · WEIGHT · RAILS · DRIFT · TINT |
 | METEOR | SKY: FIELD · DARK · DUST · DEPTH · TRAIL — BEAM: ANGLE · LENGTH · BEAMS — BEAT: BEAT — LASER card: WIDTH · LENGTH · VARY · FLICKER · GLOW — SPIKE card: SIZE · POINTS · STRETCH · SPREAD · NOSE · VARY · FLIP · GLOW — SECOND card: SIZE · POINTS · STRETCH · SPREAD · VARY · FLIP — DOTS card: BURST · FREQ · LIFETIME · VELOCITY · ANGLE · ACCEL · DRAG · GRAVITY · TOWARD · SIZE · VARY · SHRINK · FADE · STRETCH · SCATTER — STARS card: FREQ · LIFETIME · VELOCITY · DRAG · SIZE · SHRINK · TRAIL · SCATTER |
 
 Don't confuse the CELL plate with the CELL dial. The dial sets the halftone cell size for every
@@ -531,7 +530,7 @@ you need it.
 | `src/screen.js` | Halftone, paper tooth and multiply, all in the shader. The part that makes it look like riso |
 | `src/press.js` | Separations and the press. Draws separations on canvases, uploads them as textures and prints in one pass |
 | `src/shapes.js` | Organic blobs, Memphis ornaments, bands of varying width |
-| `src/glass.js` | One piece of colored glass — blob, shard, bead, ring, drop, leaf, sparkle, thread. The plates about symmetry share it: KALEIDO and FRIEZE |
+| `src/glass.js` | One piece of colored glass — blob, shard, bead, ring, drop, leaf, sparkle, thread. KALEIDO fills its wedge with it |
 | `src/mask.js` | Masks. Knocks everything outside one shape out of every drum, whether a circle or any shape made of points |
 | `src/roundel.js` | The round frame. A circle mask plus a rim that looks drawn by hand |
 | `src/scope.js` | The eyepiece field: the shared SCOPE knobs, light falloff, floating debris. The round-frame plates use it, and METEOR borrows its falloff |
@@ -865,36 +864,25 @@ spread times, so groups gather and break up without the whole tube emptying at o
 the pattern's own symmetry period, so it can turn for ever without a seam; SPIN 0 holds it still. The plate
 always draws the same number of pieces, and PIECES only decides how many go in.
 
-## A band of ornament (FRIEZE)
+## What doesn't belong here
 
-A frieze is the band that runs around a building above the columns. Look at a plate of them in an
-ornament handbook — Owen Jones, Meyer — and three things hold every time: one line of even weight
-turns by the rule of a single cell and carries on, thin rails hold the band top and bottom, and
-what reads is the empty space between, not the ink. So this plate draws with a line, not with
-shapes.
+Two plates were built and taken down again, and they failed the same way.
 
-A strip pattern can only be symmetric in seven ways — the frieze groups — and GROUP picks among
-them: HOP is a plain repeat, STEP slides half a cell and flips (a glide reflection), SIDLE mirrors
-left to right, JUMP mirrors top to bottom, and the three SPIN groups add the half turn. One cell is
-drawn once on a small canvas and stamped across the row by that rule, the same trick KALEIDO uses
-for its wedge. Every motif leaves the cell's left edge at the center line and enters the right edge
-at the center line, so the line still meets itself however the cell is flipped.
+FRIEZE drew bands of ornament — the seven frieze groups, twenty motifs from the ornament handbooks,
+rails, a border with corner blocks. WHALE drew a whale in the sea — a silhouette against light,
+with the water laid like JELLY's. Both were built from real references and both were measured
+against them. Neither was good.
 
-MOTIF picks what fills the cell, or mixes them row by row like a page of the handbook. A spine
-crosses the cell and the ornament grows off it: MEANDER is the Greek key, a ribbon that leaves the
-spine, turns and winds once inward, drawn on a grid so the ribbon and the gap are the same width —
-that equality is what makes a key read; FRET is the plainer battlement; GUILLOCHE plaits two strands
-with a round eye at each turn; ANTHEMION spreads seven fronds from the spine with volutes at the
-foot, the honeysuckle of Greek borders; EGG alternates an oval and a dart; SCROLL curves once and
-curls its end; CHAIN hooks two half circles; TOOTH is the straight zigzag; BEAD threads beads on the
-spine (an astragal); and GLASS is the one band drawn in shapes — the colored glass KALEIDO uses
-(`src/glass.js`).
+What they have in common is that the form came from drawing, not from printing. Every plate that
+holds up here hangs on something the press does — overprint making a third color (GARDEN), gradation
+and knockout (MOON), the halftone itself (MEDIUM), a symmetry that the stamping performs (KALEIDO),
+emitters stacked the way an effect artist stacks them (METEOR). The rule makes the form, and riso
+makes the rule visible. Ornament and depiction are the other way round: the form is drawn first and
+the press only reproduces it, so the sheet stands or falls on draughtsmanship, and a mediocre drawing
+is not rescued by being printed well.
 
-Rows stack to cover the sheet, a wide row then a narrow one, and each takes a drum of its own so the
-same motif changes color from row to row; one row in four is echoed on the next drum, slightly
-offset, and the overlap prints a third color. Neighbouring rows drift the opposite way, which reads
-as weaving. The drift is a whole number of repeats a loop, so a band can slide for ever without a
-seam. The guides draw each row's center line and the marks where its pattern repeats.
+So: no plates whose subject is a drawn thing, and no plates whose quality is a matter of taste in
+ornament. If a new plate can't be stated as a rule the press carries out, it doesn't belong here.
 
 ## A shooting star (METEOR)
 
