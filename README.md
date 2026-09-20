@@ -388,7 +388,7 @@ knobs.
 | COSMOS | FIELD · STARS · SPIKES · TWINKLE · MILKY · NEBULA · GALAXY · TILT · ARMS · DARK |
 | FLAKE | FIELD · SIZE · HABIT · BRANCH · RIDGE · BUBBLE · GLINT · FLURRY · DARK |
 | KALEIDO | FIELD · MIRRORS · PIECES · SIZE · TUMBLE · TINT |
-| METEOR | SKY: FIELD · DARK · DUST — BEAM: ANGLE · LENGTH · BEAMS — BEAT: BEAT — LASER card: WIDTH · LENGTH · VARY · FLICKER · GLOW — SPIKE card: SIZE · POINTS · STRETCH · SPREAD · NOSE · VARY · FLIP · GLOW — SECOND card: SIZE · POINTS · STRETCH · SPREAD · VARY · FLIP — DOTS card: BURST · FREQ · LIFETIME · VELOCITY · ANGLE · ACCEL · DRAG · GRAVITY · TOWARD · SIZE · VARY · SHRINK · FADE · STRETCH · SCATTER — STARS card: FREQ · LIFETIME · VELOCITY · DRAG · SIZE · SHRINK · TRAIL · SCATTER |
+| METEOR | SKY: FIELD · DARK · DUST · DEPTH · TRAIL — BEAM: ANGLE · LENGTH · BEAMS — BEAT: BEAT — LASER card: WIDTH · LENGTH · VARY · FLICKER · GLOW — SPIKE card: SIZE · POINTS · STRETCH · SPREAD · NOSE · VARY · FLIP · GLOW — SECOND card: SIZE · POINTS · STRETCH · SPREAD · VARY · FLIP — DOTS card: BURST · FREQ · LIFETIME · VELOCITY · ANGLE · ACCEL · DRAG · GRAVITY · TOWARD · SIZE · VARY · SHRINK · FADE · STRETCH · SCATTER — STARS card: FREQ · LIFETIME · VELOCITY · DRAG · SIZE · SHRINK · TRAIL · SCATTER |
 
 Don't confuse the CELL plate with the CELL dial. The dial sets the halftone cell size for every
 plate. The plate is the microscope sheet.
@@ -862,7 +862,7 @@ written as the same stack, printed back to front. Nothing is outlined.
 
 | Layer | What it draws |
 | --- | --- |
-| Dust | Far-sky specks that slide toward the tail, fading in and out at the ends of their path. Faint specks in the far sky (DUST) |
+| Dust | The far sky's stars, sliding toward the tail as the camera follows the meteor, fading in and out at the ends of their path. They lie at different distances (DEPTH): a near one is bigger, brighter and faster and drags a long tapering tail behind it (TRAIL), a far one is a small dim point that barely moves, so the sky reads like a meteor-shower photograph, every streak parallel. A star crosses the page a whole number of times a loop (one to three), so the loop closes. Faint specks in the far sky (DUST) |
 | Glow | One soft layer of light around the beam (GLOW) |
 | Second beams | After the breakdown's Laser_Second (0:30–0:33), read frame by frame: bands that gather to a point at the head and run beside the laser, bowing out to one side and back, some rippling toward their end. They are drawn anew every beat from that beat's own random stream, so the loop still closes. They are printed in the dots' dark, the secondary colour, and stay on the beats when the laser is off. They reach as far as the laser. BEAMS is how many, and it is 0 by default |
 | Laser | A simple meteor tail after the breakdown's Laser_Main: one band in the light drum that swells just behind the head and thins toward its end (WIDTH). Like the breakdown's, it can flicker: FLICKER is the share of beats it is off, decided by that beat's own random stream so the loop still closes, and its glow goes with it. By default it never goes off (0). Every beat its thickness and its reach shift a little (VARY, ±15% and ±12% at 0.5), drawn from that same beat's stream, so it is never the same band blinking on and off; the glow keeps the knobs' own shape, since a blur that soft shows no such shift. LENGTH sets how far it reaches, as a share of the beam's LENGTH, without moving the head (LASER card: WIDTH, LENGTH, VARY, FLICKER, GLOW) |

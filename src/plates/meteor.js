@@ -3,7 +3,8 @@
 // 받은 이펙트 분해 장면을 따라 층을 나눈다. 층마다 모양 어휘와 색과 박자가 다르고, 뒤에서 앞으로
 // 이 차례로 찍는다.
 //
-//   티끌      먼 하늘의 작은 점
+//   티끌      먼 하늘의 별. 카메라가 따라가는 만큼 꼬리 쪽으로 지나간다. 가까운 것일수록 크고 밝고
+//             빠르며 긴 꼬리를 끈다
 //   번짐      광선 둘레의 흐린 빛 한 겹
 //   보조 광선  분해 장면의 Laser_Second. 머리에서 한 점으로 모여 나와 레이저 곁을 휘어 뻗는 어두운 띠.
 //             박자마다 새로 짓는다
@@ -198,7 +199,9 @@ export const meteor = {
   knobs: [
     { group: "SKY", key: "field", label: "FIELD", min: 0, max: 199, step: 1, value: 0, hint: "층마다의 자리를 뽑는 씨앗. 종이의 롤은 그대로 둔다" },
     { group: "SKY", key: "dark", label: "DARK", min: 0.3, max: 1, step: 0.05, value: 0.85, hint: "하늘의 어둠" },
-    { group: "SKY", key: "dust", label: "DUST", min: 0, max: 120, step: 5, value: 50, hint: "먼 하늘의 티끌" },
+    { group: "SKY", key: "dust", label: "DUST", min: 0, max: 120, step: 5, value: 50, hint: "먼 하늘의 별의 수" },
+    { group: "SKY", key: "depth", label: "DEPTH", min: 0, max: 1, step: 0.05, value: 0.6, hint: "별의 거리 차. 0이면 모두 같은 거리라 한 바퀴에 한 번 지나가고, 올릴수록 가까운 별이 크고 밝고 빠르게(한 바퀴에 두세 번) 지나간다" },
+    { group: "SKY", key: "trail", label: "TRAIL", min: 0, max: 1, step: 0.05, value: 0.5, hint: "별이 끄는 꼬리의 길이. 빠른 별일수록 길다. 0이면 꼬리 없는 점이다" },
     { group: "BEAM", key: "angle", label: "ANGLE", min: 10, max: 80, step: 1, value: 38, hint: "광선이 기운 각도. 꼬리가 오른쪽 위로 뻗는다" },
     { group: "BEAM", key: "length", label: "LENGTH", min: 0.4, max: 1.3, step: 0.01, value: 0.89, hint: "광선의 길이. 판 폭에 대한 비율이다. 길게 하면 꼬리가 판 밖으로 나간다" },
     { group: "BEAM", key: "beams", label: "BEAMS", min: 0, max: 4, step: 1, value: 0, hint: "레이저 곁을 휘어 뻗는 보조 광선(분해 장면의 Laser_Second)의 수" },
@@ -380,24 +383,44 @@ export const meteor = {
     S.wash.ramp(0, 0, width, height, { from: dark * 0.5, to: 0.06 });
     dim(S.key, page, width * 0.82, 0.8);
 
-    // 먼 하늘의 티끌. 카메라가 따라가는 만큼 먼 하늘도 흘러, 티끌이 꼬리 쪽으로 지나간다. 제 자리를
-    // 가운데 두고 한 바퀴에 판 폭의 절반을 가며, 양 끝에서 옅어져 되감기는 자리가 보이지 않는다
+    // 먼 하늘의 별. 카메라가 따라가는 만큼 먼 하늘도 흘러, 별이 꼬리 쪽으로 지나간다. 유성우 사진처럼
+    // 한 방향으로 나란히 흐르되 거리가 제각각이다(DEPTH) — 가까운 별은 크고 밝고 빠르며 긴 꼬리를 끌고,
+    // 먼 별은 작고 흐린 점이라 거의 움직이지 않는다. 지나가는 횟수는 한 바퀴에 정수 번이라야 루프가
+    // 닫히므로 한 번에서 세 번 사이로 끊는다. 제 자리를 가운데 두고 지나가며, 양 끝에서 옅어져 되감기는
+    // 자리가 보이지 않는다. 꼬리는 머리 쪽 뒤로 뻗어 끝에서 한 점으로 모이는 납작한 면이다
     if (dust.length) {
       const past = width * 0.5;
+      const dirX = Math.cos(angle);
+      const dirY = -Math.sin(angle);
       glowWith(
         "white",
         every(
           dust.map((d) => (g) => {
-            const p = (d.phase / TAU + held) % 1;
-            const gone = (p - 0.5) * past;
-            const r = d.size * (0.6 + 0.4 * Math.sin(turn * d.beat + d.phase)) * Math.pow(Math.sin(Math.PI * p), 0.6);
+            const near = (d.size - 0.8) / 1.4; // 0이면 가장 먼 별, 1이면 가장 가까운 별
+            const laps = 1 + Math.round(knobs.depth * near * 2);
+            const p = (d.phase / TAU + held * laps) % 1;
+            const fade = Math.pow(Math.sin(Math.PI * p), 0.6);
+            const r = d.size * (0.6 + 0.4 * Math.sin(turn * d.beat + d.phase)) * (1 + knobs.depth * near * 2) * fade;
             if (r < 0.3) return;
+            const gone = (p - 0.5) * past * laps;
+            const x = d.x + dirX * gone;
+            const y = d.y + dirY * gone;
+            const tail = knobs.trail * width * 0.05 * laps * fade;
+            const was = g.globalAlpha;
+            g.globalAlpha = was * (0.3 + 0.7 * near); // 먼 별은 흐리다
             g.beginPath();
-            g.arc(d.x + Math.cos(angle) * gone, d.y - Math.sin(angle) * gone, r, 0, TAU);
+            g.arc(x, y, r, 0, TAU);
+            if (tail > r) {
+              g.moveTo(x - dirY * r * 0.8, y + dirX * r * 0.8);
+              g.lineTo(x - dirX * tail, y - dirY * tail);
+              g.lineTo(x + dirY * r * 0.8, y - dirX * r * 0.8);
+              g.closePath();
+            }
             g.fill();
+            g.globalAlpha = was;
           })
         ),
-        0.6
+        0.8
       );
     }
 
