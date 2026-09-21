@@ -12,7 +12,7 @@ by fractions of `height` wherever they can.
 Motion is the default. The page starts playing as soon as it opens.
 
 The hung plates are **RIPPLE** · **MOON** · **GARDEN** · **JELLY** · **CELL** · **CHLORO** ·
-**COSMOS** · **FLAKE** · **KALEIDO** · **METEOR** · **GHOST**.
+**COSMOS** · **FLAKE** · **KALEIDO** · **METEOR** · **GHOST** · **POND**.
 POSTER, MEDIUM and WHALE are still in `src/plates/`. Add a line for either to `src/plates/index.js`
 and it returns to the plate picker and the contact sheet. With only one plate in the list, the
 picker hides.
@@ -389,6 +389,7 @@ knobs.
 | FLAKE | FIELD · SIZE · HABIT · BRANCH · RIDGE · BUBBLE · GLINT · FLURRY · DARK |
 | KALEIDO | FIELD · MIRRORS · PIECES · SIZE · TUMBLE · FLOW · SPIN · TINT |
 | GHOST | FIELD · DARK · COUNT · SIZE · HEM · SLIP · GHOSTS · FADE · HAND · EYES · PHONES · WEB · THREADS · STAIN · HALO · BEAT |
+| POND | FIELD · DARK · CRACKS · STONES · SIZE · SHATTER · RINGS · RIM · TICK · HAND · STAIN · BEAT |
 | METEOR | SKY: FIELD · DARK · DUST · DEPTH · TRAIL — BEAM: ANGLE · LENGTH · BEAMS — BEAT: BEAT — LASER card: WIDTH · LENGTH · VARY · FLICKER · GLOW — SPIKE card: SIZE · POINTS · STRETCH · SPREAD · NOSE · VARY · FLIP · GLOW — SECOND card: SIZE · POINTS · STRETCH · SPREAD · VARY · FLIP — DOTS card: BURST · FREQ · LIFETIME · VELOCITY · ANGLE · ACCEL · DRAG · GRAVITY · TOWARD · SIZE · VARY · SHRINK · FADE · STRETCH · SCATTER — STARS card: FREQ · LIFETIME · VELOCITY · DRAG · SIZE · SHRINK · TRAIL · SCATTER |
 
 Don't confuse the CELL plate with the CELL dial. The dial sets the halftone cell size for every
@@ -917,6 +918,39 @@ instead of bleeding off it. The turns stay circular arcs while they do it: a tur
 margin around would stop being a web and become a keyline border. WEB sets how far it reaches,
 THREADS how many spokes — fewer than six stops reading as a net. It hangs still while the figures
 move.
+
+## A frozen pond from above (POND)
+
+Clear ice is dark from above: you are looking through it at the water. A crack in it is white,
+and not because anything white was printed there. Fracturing traps air, the air-ice boundaries
+scatter every wavelength about equally, and the milky line that results is the same effect that
+makes snow white while a single ice crystal is clear. So on this plate a crack is a knockout. The
+ice is laid on every drum and the cracks are carved back out of it — the white is the paper.
+
+The pattern is not drawn either. It is the order in which ice actually breaks:
+
+**Contraction cracks.** As the temperature drops the sheet shrinks and splits. A new crack leaves
+an older one at a right angle, and when it runs into the stress-relieved zone around another crack
+it turns to meet that one at a right angle too, which is why the joints are T-shaped rather than
+crossings. The plate does exactly this, one crack at a time: take the largest shard, leave its
+longest wall perpendicular, run until you hit another wall, and land perpendicular there. One cubic
+curve has both ends fixed, so the crack is straight in the middle and turns only where it arrives.
+Splitting the largest shard each time is why the cells come out even. The departure angle is
+jittered about twenty degrees, because the literature says approximately ninety, and a ruled ninety
+gives tiles rather than ice. Earlier cracks are drawn wider: they have had longer to open.
+
+**Stone marks.** A stone that landed on the sheet leaves radials first — four to nine of them — and
+then circumferential cracks some distance out, sagging between the radials that carry them.
+
+**The stones.** A stone on clear ice shades the column beneath it, the shaded ice stops subliming
+while the ice around it goes on, and the stone is left standing on a narrow pedestal while its own
+heat scoops a shallow moat around the base; that is the Zen stone of Lake Baikal. From above it is
+a dark pebble with the pedestal ringing it in light, so the plate carves the ring first and prints
+the stone over it.
+
+**The tick.** Ice does not crack all at once. On a cold night it goes off one crack at a time with
+a report. Every crack here sits at two thirds and opens to paper once per loop on its own phase, so
+the sheet ticks. TICK 0 settles them all.
 
 ## What doesn't belong here
 
