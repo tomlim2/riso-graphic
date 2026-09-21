@@ -388,7 +388,7 @@ knobs.
 | COSMOS | FIELD · STARS · SPIKES · TWINKLE · MILKY · NEBULA · GALAXY · TILT · ARMS · DARK |
 | FLAKE | FIELD · SIZE · HABIT · BRANCH · RIDGE · BUBBLE · GLINT · FLURRY · DARK |
 | KALEIDO | FIELD · MIRRORS · PIECES · SIZE · TUMBLE · FLOW · SPIN · TINT |
-| GHOST | FIELD · DARK · COUNT · SIZE · HEM · SLIP · GHOSTS · FADE · HAND · EYES · PHONES · WEB · THREADS · STAIN · HALO · BEAT |
+| GHOST | FIELD · DARK · COUNT · SIZE · HEM · SLIP · GHOSTS · FADE · HAND · EYES · PHONES · WINDOW · PANES · DECK · SPIN · WEB · THREADS · STAIN · HALO · BEAT |
 | POND | FIELD · DARK · CRACKS · STONES · SIZE · SHATTER · RINGS · RIM · TICK · HAND · STAIN · BEAT |
 | METEOR | SKY: FIELD · DARK · DUST · DEPTH · TRAIL — BEAM: ANGLE · LENGTH · BEAMS — BEAT: BEAT — LASER card: WIDTH · LENGTH · VARY · FLICKER · GLOW — SPIKE card: SIZE · POINTS · STRETCH · SPREAD · NOSE · VARY · FLIP · GLOW — SECOND card: SIZE · POINTS · STRETCH · SPREAD · VARY · FLIP — DOTS card: BURST · FREQ · LIFETIME · VELOCITY · ANGLE · ACCEL · DRAG · GRAVITY · TOWARD · SIZE · VARY · SHRINK · FADE · STRETCH · SCATTER — STARS card: FREQ · LIFETIME · VELOCITY · DRAG · SIZE · SHRINK · TRAIL · SCATTER |
 
@@ -903,6 +903,30 @@ same vocabulary as JELLY's bell, and a scallop is kept wider than it is deep or 
 teeth. The eyes are two holes that take the same offsets as the body. Edges are shaken off true by
 hand (HAND). The figures stand centred on the sheet — one in the middle, several spread evenly to
 either side of it — and bob and sway on whole-number beats, so the loop closes.
+
+There is a window in the wall behind them, a Georgian sash. The proportions are the ones joiners
+worked to: the opening is twice as tall as it is wide, it splits into two sashes with the upper one
+a little shorter, a glazing bar is 2.3% of the width (20 mm on an 870 mm window) and the meeting rail
+4.5%. PANES sets how many panes run across a sash, and the rows follow from keeping each pane half
+again as tall as it is wide — 1, 2, 3 and 4 give 1-over-1, 2-over-2, 6-over-6 and 12-over-12, all
+real patterns. Only the glass is carved. Seen from a dark room the frame sinks into the wall and the
+bars stand black against the moonlit panes, so the bars are simply the night that was not carved.
+The glass stops short of paper so that the figures stay the brightest thing on the sheet.
+
+In front of them stands a DJ's turntable, drawn to the dimensions of a Technics SL-1200: a 453 ×
+353 × 162 mm plinth, a 332 mm platter, a 302 mm twelve-inch record with a four-inch label, the
+platter centred 178 mm in from the left and 176 mm back from the front, and a 230 mm tonearm pivoting
+at the back right that sets the stylus 118 mm out from the spindle. It is seen from 28° above, so
+depth shortens by sin 28° and height stands at cos 28°. It is printed after the figures because a DJ
+stands behind the decks — and since carving paper only leaves paper, the plinth first inks over its
+whole footprint and is carved back from there, which is what lets it hide the hem. The plinth top is
+silver and carved, the front stays dark, and the silver tonearm is carved too, so it reads across
+the black record. The label is half coloured so the turn shows; it goes round a whole number of
+times a loop (SPIN — at a two-second loop, 1 is 30 rpm, near enough to 33⅓; negative runs it
+backwards). The light the grooves catch does not turn with it: on concentric grooves the highlight
+is a band through the centre along the plane that holds the light and the eye, and the window is
+behind, so it stands front to back and stays put while the record spins under it. DECK sets the
+width; 0 takes it away, as WINDOW 0 takes the window.
 
 Behind them a web is strung in one of the four corners. It isn't drawn either, it is built: spokes
 fan out from the hub across the quadrant, the outermost two lying along the two edges so the web is

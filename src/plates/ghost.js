@@ -8,12 +8,16 @@
 // 이 판은 그 둘을 주제로 삼는다. 유령은 그려 넣은 것이 아니라 인쇄기가 만든 것이다.
 //
 //   밤      모든 통으로 깐 어두운 바탕. 아래로 갈수록 짙어진다
+//   창문    벽에 난 내리닫이창. 유리만 파내고 창살과 틀은 남은 밤이다 — 어두운 방에서 보면 틀은 벽에
+//           묻히고 살만 달빛 든 유리에 검게 선다. 비례는 조지안 창을 따른다
 //   거미줄  모서리에 걸린 줄. 살이 모서리에서 뻗고 그 사이를 늘어진 줄이 잇는다. 그리는 것이 아니라
 //           작도다 — 살의 각을 고르게 나누고, 이웃한 살 사이마다 줄이 제 무게로 처진다
 //   고스팅  유령의 꼴이 종이가 가는 쪽으로 몇 번 더, 점점 옅게 찍힌다. 잉크가 잘못 놓인 자리다
 //   몸      통마다 조금씩 어긋난 자리에서 밤을 파낸다. 세 통이 함께 파낸 한가운데는 종이가 되고,
 //           한 통이 놓친 가장자리에는 그 통의 색만 남아 옅은 테가 된다. 그 테가 유령의 테두리다
 //   눈      구멍 둘. 몸과 같은 어긋남을 함께 받는다
+//   턴테이블 유령 앞, 판 아래의 디제이 턴테이블. 테크닉스 SL-1200의 치수를 그대로 쓰고 조금 위에서
+//           내려다본다. 음반은 한 바퀴에 정수 번 돌고, 홈이 받는 빛의 띠는 돌지 않는다
 //   헤드셋  머리띠는 돔과 같은 타원을 두께만큼 밖으로 민 띠이고, 이어컵은 그 띠가 멎는 자리에
 //           머리 면과 직각으로 앉은 둥근 모서리다. 좌우가 같지 않다 — 머리가 살짝 돌아 있어서
 //           가까운 쪽 컵은 온전히 보이고 먼 쪽은 납작하게 줄어 머리 뒤로 들어간다. 몸과 달리
@@ -86,6 +90,10 @@ export const ghost = {
     { key: "hand", label: "HAND", min: 0, max: 1, step: 0.05, value: 0.5, hint: "가장자리가 손으로 오린 듯 흔들리는 정도" },
     { key: "eyes", label: "EYES", min: 0, max: 1, step: 0.05, value: 0.3, hint: "구멍 둘의 크기. 0이면 눈이 없다" },
     { key: "phones", label: "PHONES", min: 0, max: 1.4, step: 0.05, value: 1, hint: "유령이 쓴 헤드셋의 크기. 머리띠의 두께와 이어컵의 크기를 함께 정한다. 0이면 쓰지 않는다" },
+    { key: "window", label: "WINDOW", min: 0, max: 0.8, step: 0.05, value: 0.6, hint: "뒤 벽에 난 창의 높이. 판 높이에 대한 비율이고 폭은 그 절반이다(조지안 창은 높이가 폭의 두 배다). 0이면 창이 없다" },
+    { key: "panes", label: "PANES", min: 1, max: 4, step: 1, value: 3, hint: "창 한 짝의 가로 유리 수. 세로는 유리 한 장이 폭의 1.5배가 되게 저절로 나뉜다 — 1은 1-over-1, 2는 2-over-2, 3은 6-over-6, 4는 12-over-12다" },
+    { key: "deck", label: "DECK", min: 0, max: 0.8, step: 0.02, value: 0.46, hint: "유령 앞 턴테이블의 폭. 판 폭에 대한 비율이다. 0이면 턴테이블이 없다" },
+    { key: "spin", label: "SPIN", min: -3, max: 3, step: 1, value: 1, hint: "음반이 한 바퀴에 도는 수. 한 바퀴가 2초면 1이 분당 30회로 33⅓에 가깝다. 음수면 거꾸로 돈다" },
     { key: "web", label: "WEB", min: 0, max: 1, step: 0.05, value: 0.7, hint: "거미줄이 뻗는 거리. 판 폭에 대한 비율이고, 여백 밖으로 넘은 줄은 잘린다. 0이면 거미줄이 없다" },
     { key: "threads", label: "THREADS", min: 6, max: 16, step: 1, value: 9, hint: "거미줄의 살 수. 살 사이를 잇는 줄은 그 절반쯤이다. 여섯보다 적으면 그물로 읽히지 않는다" },
     { key: "stain", label: "STAIN", min: 0, max: 1, step: 0.05, value: 0.35, hint: "밤이 얼룩덜룩한 정도. 해파리의 물과 같은 얼룩이다" },
@@ -139,6 +147,52 @@ export const ghost = {
       soak(S.body, made.body, width, height);
     }
     dim(S.key, page, width * 0.85, 0.85);
+
+    // 방의 것들(창문, 턴테이블)은 제 난수로 흔든다. 유령과 거미줄의 난수를 건드리지 않아, 둘을
+    // 0으로 두면 그전의 장과 한 픽셀도 다르지 않다
+    const room = makeRng((seed ^ 0x3c6ef372) >>> 0);
+    const tremble = (points, amount) =>
+      points.map(([x, y]) => [x + (room.next() - 0.5) * amount, y + (room.next() - 0.5) * amount]);
+
+    // 창문. 조지안 내리닫이창의 비례를 따른다 — 창은 높이가 폭의 두 배이고, 위아래 두 짝으로
+    // 나뉘며, 위짝이 아래짝보다 조금 짧다. 창살은 창 폭의 2.3%(870밀리 창에 20밀리), 두 짝이 만나는
+    // 띠는 4.5%다. 한 짝의 가로 유리 수를 정하면 세로는 유리 한 장이 폭의 1.5배가 되게 나눈다.
+    // 유리만 파낸다. 살과 틀은 파내지 않고 남은 밤이다
+    if (knobs.window > 0) {
+      const tallG = height * knobs.window;
+      const wideG = tallG / 2;
+      const left = width / 2 - wideG / 2;
+      const top = height * 0.42 - tallG / 2;
+      const bar = wideG * 0.023;
+      const rail = wideG * 0.045;
+      const cols = Math.round(knobs.panes);
+      const paneW = (wideG - bar * (cols - 1)) / cols;
+      const upper = (tallG - rail) * 0.48;
+      const glass = [];
+      const sash = (y0, sashH) => {
+        const rows = Math.max(1, Math.round(sashH / (paneW * 1.5)));
+        const paneH = (sashH - bar * (rows - 1)) / rows;
+        for (let r = 0; r < rows; r += 1) {
+          for (let c = 0; c < cols; c += 1) {
+            const x = left + c * (paneW + bar);
+            const y = y0 + r * (paneH + bar);
+            glass.push(tremble([[x, y], [x + paneW, y], [x + paneW, y + paneH], [x, y + paneH]], bar * 0.6 * knobs.hand));
+          }
+        }
+      };
+      sash(top, upper);
+      sash(top + upper + rail, tallG - rail - upper);
+      // 달빛 든 유리. 종이까지 파내지 않는다 — 유령이 언제나 가장 밝아야 한다
+      carve(
+        inks,
+        (g) => {
+          g.beginPath();
+          for (const pane of glass) shapes.polySubpath(g, pane, true);
+          g.fill();
+        },
+        0.6
+      );
+    }
 
     // 거미줄. 네 모서리 가운데 하나에 걸리고, 여백 안쪽에서만 산다 — 걸리는 자리는 판 끝이 아니라
     // 여백 안쪽 모서리이고, 여백 밖으로 넘은 줄은 거기서 잘린다. 재단선까지 흘러 나가면 잘린
@@ -325,6 +379,99 @@ export const ghost = {
       // 헤드셋을 얹는다. 몸은 파낸 것이고 이것은 찍은 것이라, 같은 어긋남이 이번에는 어두운 쪽에
       // 테를 남긴다
       gear.forEach(lay);
+    }
+
+    // 턴테이블. 테크닉스 SL-1200의 치수를 그대로 쓴다 — 몸체 453×353×162밀리, 플래터 332밀리,
+    // 12인치 음반 302밀리, 라벨 4인치(101.6밀리). 플래터의 중심은 왼쪽 앞에서 178·176밀리이고,
+    // 톤암은 뒤 오른쪽(380·250)에서 230밀리를 뻗어 바늘이 스핀들에서 118밀리 떨어진 홈에 앉는다.
+    // 28도 위에서 내려다보므로 깊이는 sin 28°만큼 줄고 높이는 cos 28°만큼 선다.
+    //
+    // 유령보다 나중에 찍어 앞에 선다 — 디제이는 턴테이블 뒤에 선다. 파내기만으로는 유령을 가릴 수
+    // 없으므로(종이를 더 파내도 종이다) 몸체 자리를 먼저 잉크로 덮고 거기서 다시 파낸다
+    if (knobs.deck > 0) {
+      const unit = (width * knobs.deck) / 453;
+      const lean = Math.sin((28 * Math.PI) / 180);
+      const stand = Math.cos((28 * Math.PI) / 180);
+      const left = width / 2 - (453 * unit) / 2;
+      const floor = height - page.margin;
+      const front = floor - 162 * unit * stand;
+      // 윗면 위의 한 점. u는 왼쪽에서, v는 앞에서, z는 윗면에서 잰 밀리다
+      const at = (u, v, z = 0) => [left + u * unit, front - v * unit * lean - z * unit * stand];
+      const ring = (u, v, z, r, from = 0, to = TAU, steps = 56) =>
+        Array.from({ length: steps + 1 }, (_, i) => {
+          const a = from + ((to - from) * i) / steps;
+          return at(u + Math.cos(a) * r, v + Math.sin(a) * r, z);
+        });
+      const hand = unit * 1.2 * knobs.hand;
+      const solid = (points) => (g) => {
+        shapes.polyPath(g, points, true);
+        g.fill();
+      };
+      const rest = inks.filter((sep) => sep !== S.key);
+
+      // 몸체. 앞면은 어둡게 두고 윗면만 은빛으로 파낸다
+      const body = tremble([at(0, 353), at(453, 353), [left + 453 * unit, floor], [left, floor]], hand);
+      stain([S.key], solid(body), 1);
+      stain(rest, solid(body), 0.8);
+      carve(inks, solid(tremble([at(0, 353), at(453, 353), at(453, 0), at(0, 0)], hand)), 0.5);
+
+      // 플래터. 옆면이 앞쪽으로 띠를 이루는 원통이다 — 아래 테의 앞 절반과 위 테의 뒤 절반을 잇는다
+      const [pu, pv] = [178, 176.5];
+      const platter = [...ring(pu, pv, 0, 166, 0, Math.PI), ...ring(pu, pv, 22, 166, Math.PI, TAU)];
+      stain([S.key], solid(tremble(platter, hand)), 0.75);
+      stain(rest, solid(tremble(platter, hand)), 0.5);
+
+      // 음반. 검다
+      const record = tremble(ring(pu, pv, 22, 151), hand);
+      stain([S.key], solid(record), 1);
+      stain(rest, solid(record), 0.85);
+
+      // 홈이 받는 빛. 동심원 홈에 앉는 빛은 빛과 눈을 잇는 면을 따라 한가운데를 지나는 띠가 되고,
+      // 음반이 돌아도 제자리에 있다. 빛(창)이 뒤에 있으므로 띠는 앞뒤로 선다
+      const sheen = (g) => {
+        g.beginPath();
+        for (const aim of [Math.PI / 2, -Math.PI / 2]) {
+          const wedge = [...ring(pu, pv, 22, 56, aim - 0.2, aim + 0.2, 8), ...ring(pu, pv, 22, 148, aim + 0.2, aim - 0.2, 8)];
+          shapes.polySubpath(g, wedge, true);
+        }
+        g.fill();
+      };
+      carve(inks, sheen, 0.38);
+
+      // 라벨. 종이에 반쪽만 색이 있어 도는 것이 보인다. 한 바퀴에 정수 번이라 루프가 닫힌다
+      const spun = TAU * Math.round(knobs.spin) * held;
+      carve(inks, solid(ring(pu, pv, 22, 50.8)), 1);
+      const half = [...ring(pu, pv, 22, 50.8, spun, spun + Math.PI, 28), at(pu, pv, 22)];
+      stain([glowInk || S.wash], solid(half), 0.9);
+      stain([S.key], solid(ring(pu, pv, 22, 3.6, 0, TAU, 12)), 1);
+
+      // 톤암. 받침과 균형추, S자로 굽은 관, 끝의 헤드셸. 은빛이라 파낸다
+      const [au, av] = [380, 250];
+      const [su, sv] = [233.7, 72.4];
+      carve(inks, solid(ring(au, av, 0, 26, 0, TAU, 24)), 0.85);
+      const arm = (g) => {
+        g.lineCap = "round";
+        g.lineJoin = "round";
+        // 균형추
+        g.lineWidth = 16 * unit;
+        g.beginPath();
+        g.moveTo(...at(au, av, 40));
+        g.lineTo(...at(au + 22, av + 40, 40));
+        g.stroke();
+        // 관. 떠날 때와 닿을 때의 방향이 어긋나 S자가 된다
+        g.lineWidth = 7 * unit;
+        g.beginPath();
+        g.moveTo(...at(au, av, 40));
+        g.bezierCurveTo(...at(au - 70, av - 20, 38), ...at(su + 70, sv + 90, 32), ...at(su + 10, sv + 18, 30));
+        g.stroke();
+        // 헤드셸
+        g.lineWidth = 14 * unit;
+        g.beginPath();
+        g.moveTo(...at(su + 10, sv + 18, 30));
+        g.lineTo(...at(su - 4, sv - 14, 28));
+        g.stroke();
+      };
+      carve(inks, arm, 1);
     }
 
     return { crowd, mm, slip };
