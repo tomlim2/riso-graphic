@@ -12,7 +12,7 @@ by fractions of `height` wherever they can.
 Motion is the default. The page starts playing as soon as it opens.
 
 The hung plates are **RIPPLE** · **MOON** · **GARDEN** · **JELLY** · **CELL** · **CHLORO** ·
-**COSMOS** · **FLAKE** · **KALEIDO** · **METEOR**.
+**COSMOS** · **FLAKE** · **KALEIDO** · **METEOR** · **GHOST**.
 POSTER, MEDIUM and WHALE are still in `src/plates/`. Add a line for either to `src/plates/index.js`
 and it returns to the plate picker and the contact sheet. With only one plate in the list, the
 picker hides.
@@ -388,6 +388,7 @@ knobs.
 | COSMOS | FIELD · STARS · SPIKES · TWINKLE · MILKY · NEBULA · GALAXY · TILT · ARMS · DARK |
 | FLAKE | FIELD · SIZE · HABIT · BRANCH · RIDGE · BUBBLE · GLINT · FLURRY · DARK |
 | KALEIDO | FIELD · MIRRORS · PIECES · SIZE · TUMBLE · FLOW · SPIN · TINT |
+| GHOST | FIELD · DARK · COUNT · SIZE · HEM · SLIP · GHOSTS · FADE · HAND · EYES · PHONES · WEB · THREADS · STAIN · HALO · BEAT |
 | METEOR | SKY: FIELD · DARK · DUST · DEPTH · TRAIL — BEAM: ANGLE · LENGTH · BEAMS — BEAT: BEAT — LASER card: WIDTH · LENGTH · VARY · FLICKER · GLOW — SPIKE card: SIZE · POINTS · STRETCH · SPREAD · NOSE · VARY · FLIP · GLOW — SECOND card: SIZE · POINTS · STRETCH · SPREAD · VARY · FLIP — DOTS card: BURST · FREQ · LIFETIME · VELOCITY · ANGLE · ACCEL · DRAG · GRAVITY · TOWARD · SIZE · VARY · SHRINK · FADE · STRETCH · SCATTER — STARS card: FREQ · LIFETIME · VELOCITY · DRAG · SIZE · SHRINK · TRAIL · SCATTER |
 
 Don't confuse the CELL plate with the CELL dial. The dial sets the halftone cell size for every
@@ -863,6 +864,59 @@ round frame, and on the way to the center a piece shrinks to a point. Pieces ent
 spread times, so groups gather and break up without the whole tube emptying at once. The tube itself turns a whole number of mirror cells a loop (SPIN), which is
 the pattern's own symmetry period, so it can turn for ever without a seam; SPIN 0 holds it still. The plate
 always draws the same number of pieces, and PIECES only decides how many go in.
+
+## The press's own ghosts (GHOST)
+
+A Riso prints one ink per pass, and the paper never comes back to exactly the same place, so
+anything printed in two inks lands one to four millimetres out — that is misregistration. And a
+drum will sometimes pick ink up and set it down again where it doesn't belong, a fainter repeat of
+the artwork further along the paper's travel; printers call that ghosting. This plate takes the
+press at its word and makes both of them the picture.
+
+The night is laid on every drum. The figure is then carved back out of each drum in turn, each one
+offset a little further along the feed (SLIP, in millimetres — the real range is 1 to 4). Where all
+the drums carve together the paper is bare; where one drum missed, its ink alone is left, so the
+figure wears a thin coloured fringe that is nothing but the misregistration. The faint repeats
+behind it are the other ghost: the same shape stained again down the feed, each weaker than the
+last (GHOSTS, FADE).
+
+The figure wears headphones, and they are stated the same way. The band is not an arch drawn over
+the head, it is the dome's own ellipse pushed out by the width of the band, so it sits on whatever
+head the knobs make. The two sides are not mirrored: the head is turned a little, so the band comes
+down to eye height on the near side and stops higher on the far one, and the cups follow. The near
+cup is a rounded square set square to the surface of the head, half on and half off the silhouette,
+with the ear pad showing. The far cup is squeezed along the radius and printed before the body
+rather than after, so the head carves its inner half away and only the piece past the silhouette is
+left. Mirror the two and the figure is a diagram standing face on; offset them and it has turned its
+head. The near side is always the right one. A sheet is one view from one place, and figures turning
+different ways would be several places at once.
+
+The ear pad is not a second colour but the same shape printed less — every drum gives back a little
+of it — because knocking one drum out entirely leaves the other inks whole and drops a bright slab
+into the middle of the cup. Unlike the body the headphones are printed rather than carved, so the
+same drum offsets that put a pale fringe on the figure put a dark one here. PHONES sets the size;
+0 takes them off.
+
+The shape isn't drawn, it is stated: a half-round dome on straight sides with a scalloped hem, the
+same vocabulary as JELLY's bell, and a scallop is kept wider than it is deep or the hem reads as
+teeth. The eyes are two holes that take the same offsets as the body. Edges are shaken off true by
+hand (HAND). The figures stand centred on the sheet — one in the middle, several spread evenly to
+either side of it — and bob and sway on whole-number beats, so the loop closes.
+
+Behind them a web is strung in one of the four corners. It isn't drawn either, it is built: spokes
+fan out from the hub across the quadrant, the outermost two lying along the two edges so the web is
+anchored to them, and between each neighbouring pair of spokes a thread sags inward under its own
+weight. The hub is left clear, the spokes are not quite evenly spaced and the turns are not quite
+evenly spaced either, because a web is spun and not ruled. The threads are about seven tenths of a
+millimetre — a Riso master will not hold a line much finer than that — and they carve the night
+rather than print on it, so a thread is light.
+
+The web lives inside the margin. The hub sits on the inner corner rather than the sheet's own, and
+anything that runs past the margin on the far side is clipped there, so the web is whole on the page
+instead of bleeding off it. The turns stay circular arcs while they do it: a turn that followed the
+margin around would stop being a web and become a keyline border. WEB sets how far it reaches,
+THREADS how many spokes — fewer than six stops reading as a net. It hangs still while the figures
+move.
 
 ## What doesn't belong here
 
