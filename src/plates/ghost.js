@@ -8,10 +8,14 @@
 // 이 판은 그 둘을 주제로 삼는다. 유령은 그려 넣은 것이 아니라 인쇄기가 만든 것이다.
 //
 //   밤      모든 통으로 깐 어두운 바탕. 아래로 갈수록 짙어진다
+//   방      오래된 저택의 방. 벽 아래 3분의 1에 판재를 두르고, 걸레받이 밑으로 넓은 마루가 소실점을
+//           향해 물러난다. 모두 면을 파내 짓는다 — 판의 얼굴과 마루 널은 빛을 받아 옅고, 이음매와
+//           틈은 파내지 않고 남은 밤이다
 //   창문    벽에 난 내리닫이창. 유리만 파내고 창살과 틀은 남은 밤이다 — 어두운 방에서 보면 틀은 벽에
 //           묻히고 살만 달빛 든 유리에 검게 선다. 비례는 조지안 창을 따른다
-//   거미줄  모서리에 걸린 줄. 살이 모서리에서 뻗고 그 사이를 늘어진 줄이 잇는다. 그리는 것이 아니라
-//           작도다 — 살의 각을 고르게 나누고, 이웃한 살 사이마다 줄이 제 무게로 처진다
+//   거미줄  모서리께에 온전히 걸린 둥근 그물. 살이 한가운데에서 사방으로 뻗고 그 사이를 늘어진 줄이
+//           잇는다. 그리는 것이 아니라 작도다 — 살의 각을 고르게 나누고, 이웃한 살 사이마다 줄이 제
+//           무게로 처지며, 바깥 틀에서 벽으로 줄 셋을 매어 건다
 //   고스팅  유령의 꼴이 종이가 가는 쪽으로 몇 번 더, 점점 옅게 찍힌다. 잉크가 잘못 놓인 자리다
 //   몸      통마다 조금씩 어긋난 자리에서 밤을 파낸다. 세 통이 함께 파낸 한가운데는 종이가 되고,
 //           한 통이 놓친 가장자리에는 그 통의 색만 남아 옅은 테가 된다. 그 테가 유령의 테두리다
@@ -80,22 +84,25 @@ export const ghost = {
 
   knobs: [
     { key: "field", label: "FIELD", min: 0, max: 199, step: 1, value: 0, hint: "유령의 자리와 손떨림을 뽑는 씨앗. 종이의 롤은 그대로 둔다" },
-    { key: "dark", label: "DARK", min: 0.3, max: 1, step: 0.05, value: 0.95, hint: "밤의 어둠. 유령은 이 밤을 파낸 자리다" },
+    { key: "dark", label: "DARK", min: 0.3, max: 1, step: 0.05, value: 1, hint: "밤의 어둠. 유령은 이 밤을 파낸 자리다" },
     { key: "count", label: "COUNT", min: 1, max: MOST_GHOSTS, step: 1, value: 1, hint: "유령의 수. 하나면 하나가 크게 선다" },
-    { key: "size", label: "SIZE", min: 0.1, max: 0.7, step: 0.01, value: 0.46, hint: "유령의 크기. 판 폭에 대한 비율이다" },
-    { key: "hem", label: "HEM", min: 2, max: 9, step: 1, value: 4, hint: "밑단 가리비의 수. 많을수록 자락이 잘게 늘어진다" },
-    { key: "slip", label: "SLIP", min: 0, max: 6, step: 0.1, value: 2.4, hint: "통마다 어긋나는 거리(밀리). 실제 리소가 1~4밀리 어긋난다. 0이면 딱 맞아 테가 없다" },
-    { key: "ghosts", label: "GHOSTS", min: 0, max: 5, step: 1, value: 3, hint: "잉크가 잘못 놓여 한 번 더 찍히는 수. 종이가 가는 쪽으로 점점 옅게 남는다" },
-    { key: "fade", label: "FADE", min: 0.05, max: 0.7, step: 0.05, value: 0.25, hint: "잘못 놓인 자국이 얼마나 진한가. 첫 자국의 진하기다" },
-    { key: "hand", label: "HAND", min: 0, max: 1, step: 0.05, value: 0.5, hint: "가장자리가 손으로 오린 듯 흔들리는 정도" },
-    { key: "eyes", label: "EYES", min: 0, max: 1, step: 0.05, value: 0.3, hint: "구멍 둘의 크기. 0이면 눈이 없다" },
-    { key: "phones", label: "PHONES", min: 0, max: 1.4, step: 0.05, value: 1, hint: "유령이 쓴 헤드셋의 크기. 머리띠의 두께와 이어컵의 크기를 함께 정한다. 0이면 쓰지 않는다" },
-    { key: "window", label: "WINDOW", min: 0, max: 0.8, step: 0.05, value: 0.6, hint: "뒤 벽에 난 창의 높이. 판 높이에 대한 비율이고 폭은 그 절반이다(조지안 창은 높이가 폭의 두 배다). 0이면 창이 없다" },
+    { key: "size", label: "SIZE", min: 0.1, max: 0.7, step: 0.01, value: 0.42, hint: "유령의 크기. 판 폭에 대한 비율이다" },
+    { key: "hem", label: "HEM", min: 2, max: 9, step: 1, value: 2, hint: "밑단 가리비의 수. 많을수록 자락이 잘게 늘어진다" },
+    { key: "slip", label: "SLIP", min: 0, max: 6, step: 0.1, value: 0, hint: "통마다 어긋나는 거리(밀리). 실제 리소가 1~4밀리 어긋난다. 0이면 딱 맞아 테가 없다" },
+    { key: "ghosts", label: "GHOSTS", min: 0, max: 5, step: 1, value: 1, hint: "잉크가 잘못 놓여 한 번 더 찍히는 수. 종이가 가는 쪽으로 점점 옅게 남는다" },
+    { key: "fade", label: "FADE", min: 0.05, max: 0.7, step: 0.05, value: 0.7, hint: "잘못 놓인 자국이 얼마나 진한가. 첫 자국의 진하기다" },
+    { key: "hand", label: "HAND", min: 0, max: 1, step: 0.05, value: 0.45, hint: "가장자리가 손으로 오린 듯 흔들리는 정도" },
+    { key: "eyes", label: "EYES", min: 0, max: 1, step: 0.05, value: 1, hint: "구멍 둘의 크기. 0이면 눈이 없다" },
+    { key: "phones", label: "PHONES", min: 0, max: 1.4, step: 0.05, value: 1.05, hint: "유령이 쓴 헤드셋의 크기. 머리띠의 두께와 이어컵의 크기를 함께 정한다. 0이면 쓰지 않는다" },
+    { key: "fov", label: "FOV", min: 52, max: 110, step: 1, value: 52, hint: "눈의 화각(도). 기본은 가장 좁아 뒤 벽이 판을 가득 채운다. 넓히면 뒤 벽이 작아지며 옆벽과 천장과 마루가 드러나 소실점으로 모인다. 턴테이블도 같은 눈으로 본다" },
+    { key: "room", label: "ROOM", min: 0, max: 1, step: 0.05, value: 1, hint: "방이 드러나는 정도 — 벽의 판재와 걸레받이와 마루. 0이면 벽도 바닥도 밤에 묻힌다" },
+    { key: "window", label: "WINDOW", min: 0, max: 0.8, step: 0.05, value: 0.6, hint: "뒤 벽에 난 창의 높이. 벽 높이에 대한 비율이고 폭은 그 절반이다(조지안 창은 높이가 폭의 두 배다). 창턱은 판재 위 몰딩에 앉는다. 0이면 창이 없다" },
     { key: "panes", label: "PANES", min: 1, max: 4, step: 1, value: 3, hint: "창 한 짝의 가로 유리 수. 세로는 유리 한 장이 폭의 1.5배가 되게 저절로 나뉜다 — 1은 1-over-1, 2는 2-over-2, 3은 6-over-6, 4는 12-over-12다" },
-    { key: "deck", label: "DECK", min: 0, max: 0.8, step: 0.02, value: 0.46, hint: "유령 앞 턴테이블의 폭. 판 폭에 대한 비율이다. 0이면 턴테이블이 없다" },
+    { key: "deck", label: "DECK", min: 0, max: 0.8, step: 0.02, value: 0.46, hint: "유령 앞 턴테이블의 폭. 판 폭에 대한 비율이고, 장마다 ±15% 안에서 조금씩 다르다. 0이면 턴테이블이 없다" },
     { key: "spin", label: "SPIN", min: -3, max: 3, step: 1, value: 1, hint: "음반이 한 바퀴에 도는 수. 한 바퀴가 2초면 1이 분당 30회로 33⅓에 가깝다. 음수면 거꾸로 돈다" },
-    { key: "web", label: "WEB", min: 0, max: 1, step: 0.05, value: 0.7, hint: "거미줄이 뻗는 거리. 판 폭에 대한 비율이고, 여백 밖으로 넘은 줄은 잘린다. 0이면 거미줄이 없다" },
-    { key: "threads", label: "THREADS", min: 6, max: 16, step: 1, value: 9, hint: "거미줄의 살 수. 살 사이를 잇는 줄은 그 절반쯤이다. 여섯보다 적으면 그물로 읽히지 않는다" },
+    { key: "web", label: "WEB", min: 0, max: 1, step: 0.05, value: 0.7, hint: "거미줄의 크기. 1이면 지름이 판 폭의 80%로 여백 안을 거의 채운다. 0이면 거미줄이 없다" },
+    { key: "threads", label: "THREADS", min: 6, max: 32, step: 1, value: 9, hint: "거미줄의 살 수. 사방으로 고르게 뻗고, 살 사이를 잇는 줄은 그 절반쯤이다. 여섯보다 적으면 그물로 읽히지 않는다" },
+    { key: "cobwebs", label: "COBWEBS", min: 0, max: 1, step: 1, value: 1, hint: "큰 그물 반대편의 위 모서리에 거는 작은 그물. 0이면 걸지 않는다" },
     { key: "stain", label: "STAIN", min: 0, max: 1, step: 0.05, value: 0.35, hint: "밤이 얼룩덜룩한 정도. 해파리의 물과 같은 얼룩이다" },
     { key: "halo", label: "HALO", min: 0, max: 1, step: 0.05, value: 0, hint: "유령 둘레의 번짐. 기본은 0이다 — 납작한 면과 또렷한 가장자리가 이 판의 문법이고, 번지면 리소가 아니라 사진이 된다" },
     { key: "beat", label: "BEAT", min: 4, max: 48, step: 1, value: 16, hint: "한 바퀴를 몇 장으로 그리는가. 낮을수록 뚝뚝 끊긴다" }
@@ -114,7 +121,7 @@ export const ghost = {
     const cut = makeRng((seed ^ 0x27d4eb2f) >>> 0);
 
     const inks = S.drums.map((drum) => drum.separation);
-    const { glowInk, darkInk } = meteorInks(S.drums, S.key);
+    const { glowInk } = meteorInks(S.drums, S.key);
 
     // 자리. 판 가운데를 중심으로 늘어선다 — 하나면 한가운데, 여럿이면 가운데를 두고 양옆으로 고르게
     // 벌어진다. 뽑은 값은 자리가 아니라 그 자리에서의 흔들림이다. 언제나 끝값만큼 뽑고 COUNT는
@@ -151,18 +158,137 @@ export const ghost = {
     // 방의 것들(창문, 턴테이블)은 제 난수로 흔든다. 유령과 거미줄의 난수를 건드리지 않아, 둘을
     // 0으로 두면 그전의 장과 한 픽셀도 다르지 않다
     const room = makeRng((seed ^ 0x3c6ef372) >>> 0);
-    const tremble = (points, amount) =>
-      points.map(([x, y]) => [x + (room.next() - 0.5) * amount, y + (room.next() - 0.5) * amount]);
+    //
+    // 방의 변은 자로 긋지 않는다. 자로 그은 곧은 변은 판화가 아니라 도면이다 — 변마다 잘게 나누어, 변
+    // 전체가 한 번 불룩하게 휘고 그 위로 잔물결이 인다. 양 끝은 모서리에 붙어 있고, 모서리는 제자리에서
+    // 조금 흔들린다. 휘는 폭은 변 길이의 1.8%에서 판 폭의 0.7%까지이고 HAND를 따른다
+    const tremble = (points, amount) => {
+      const corners = points.map(([x, y]) => [x + (room.next() - 0.5) * amount, y + (room.next() - 0.5) * amount]);
+      const out = [];
+      for (let i = 0; i < corners.length; i += 1) {
+        const [x0, y0] = corners[i];
+        const [x1, y1] = corners[(i + 1) % corners.length];
+        out.push([x0, y0]);
+        const len = Math.hypot(x1 - x0, y1 - y0);
+        const pieces = Math.min(120, Math.floor(len / 14));
+        if (pieces < 2) continue;
+        const reach = Math.min(len * 0.018, width * 0.007) * knobs.hand * 2;
+        const bow = (room.next() - 0.5) * 2 * reach;
+        const ripple = (room.next() - 0.5) * reach * 0.7;
+        const turns = 2 + Math.floor(room.next() * 2);
+        const phase = room.next() * TAU;
+        const nx = -(y1 - y0) / len;
+        const ny = (x1 - x0) / len;
+        for (let j = 1; j < pieces; j += 1) {
+          const t = j / pieces;
+          const lift = Math.sin(Math.PI * t) * (bow + ripple * Math.sin(TAU * turns * t + phase));
+          out.push([x0 + (x1 - x0) * t + nx * lift, y0 + (y1 - y0) * t + ny * lift]);
+        }
+      }
+      return out;
+    };
+
+    // 방. 오래된 저택의 방을 실제 치수로 짓는다 — 폭 5.2미터, 높이 3.2미터(옛 저택은 천장이 높다), 뒤
+    // 벽은 눈에서 4.4미터. 눈높이 1.6미터에서 뒤 벽을 똑바로 보는 한 점 투시이고, 소실점은 판 높이의
+    // 37%에 있다. FOV가 눈의 화각이다 — 기본은 가장 좁아 뒤 벽이 판을 가득 채우고, 넓히면 뒤 벽이
+    // 작아지며 옆벽과 천장과 마루가 판 가장자리로 드러나 소실점으로 모인다.
+    //
+    //   판재     벽 높이의 3분의 1까지(1.07미터, 42인치) 세 벽에 두른다. 위 끝의 몰딩은 2인치, 틀의
+    //            가로대와 세로대는 4인치, 판 하나의 폭은 16인치다. 판의 얼굴만 파내고 틀은 남은 밤이다
+    //   걸레받이 판재가 높으면 걸레받이도 높다. 6인치
+    //   몰딩     벽과 천장이 만나는 자리의 띠. 3인치
+    //   마루     옛 저택의 넓은 소나무 널, 7인치. 널마다 1~2.4미터에서 끊기고 이음매는 널마다 어긋난다.
+    //            널의 얼굴만 파내고 틈은 남은 밤이다
+    const roomW = 5.2;
+    const roomH = 3.2;
+    const wallZ = 4.4;
+    const eyeH = 1.6;
+    const inch = 0.0254;
+    const railH = 1.07;
+    const horizon = height * 0.37;
+    const focal = width / 2 / Math.tan((knobs.fov * Math.PI) / 360);
+    // 눈에서 Z미터 떨어진 곳의 1미터가 판에서 몇 픽셀인가
+    const scaleAt = (Z) => focal / Z;
+    const project = (X, Y, Z) => [width / 2 + X * scaleAt(Z), horizon + (eyeH - Y) * scaleAt(Z)];
+    const wallScale = scaleAt(wallZ);
+    if (knobs.room > 0) {
+      const lit = knobs.room;
+      const near = 0.3;
+      const wobble = 0.004 * wallScale * knobs.hand;
+      const flat = (points) => tremble(points.map(([X, Y, Z]) => project(X, Y, Z)), wobble);
+      const faces = (list, tone) =>
+        carve(
+          inks,
+          (g) => {
+            g.beginPath();
+            for (const face of list) shapes.polySubpath(g, face, true);
+            g.fill();
+          },
+          tone
+        );
+      const half = roomW / 2;
+      // 벽 셋 위의 띠 하나. 뒤 벽은 X로, 옆벽은 Z로 뻗는다
+      const band = (y0, y1) => [
+        flat([[-half, y0, wallZ], [half, y0, wallZ], [half, y1, wallZ], [-half, y1, wallZ]]),
+        flat([[-half, y0, near], [-half, y0, wallZ], [-half, y1, wallZ], [-half, y1, near]]),
+        flat([[half, y0, wallZ], [half, y0, near], [half, y1, near], [half, y1, wallZ]])
+      ];
+      // 옆벽은 뒤 벽보다 조금 밝다. 창에서 든 빛이 비스듬히 스친다
+      faces(band(0, roomH).slice(1), 0.1 * lit);
+      // 판재. 뒤 벽은 가운데를 기준으로 좌우로, 옆벽은 모서리에서 앞으로 판을 늘어놓는다
+      const frame = 4 * inch;
+      const panel = 16 * inch;
+      const low = 6 * inch + frame;
+      const high = railH - 2 * inch - frame;
+      const panels = [];
+      for (let k = -8; k <= 8; k += 1) {
+        const x0 = frame / 2 + k * (panel + frame);
+        const x1 = Math.min(x0 + panel, half - frame);
+        const x2 = Math.max(x0, -half + frame);
+        if (x1 > x2) panels.push(flat([[x2, low, wallZ], [x1, low, wallZ], [x1, high, wallZ], [x2, high, wallZ]]));
+      }
+      for (let z1 = wallZ - frame; z1 - panel > near; z1 -= panel + frame) {
+        const z0 = z1 - panel;
+        panels.push(flat([[-half, low, z0], [-half, low, z1], [-half, high, z1], [-half, high, z0]]));
+        panels.push(flat([[half, low, z1], [half, low, z0], [half, high, z0], [half, high, z1]]));
+      }
+      faces(panels, 0.26 * lit);
+      // 몰딩과 걸레받이. 위쪽 모서리가 빛을 받는다
+      faces(band(railH - 2 * inch, railH), 0.42 * lit);
+      faces(band(0, 6 * inch), 0.2 * lit);
+      faces(band(6 * inch - inch, 6 * inch), 0.4 * lit);
+      faces(band(roomH - 3 * inch, roomH), 0.3 * lit);
+      // 마루. 널이 방의 폭을 가로질러 늘어서고 소실점으로 물러난다. 판 아래 끝까지만 깐다
+      const nearest = (focal * eyeH) / (height - horizon);
+      const plank = 7 * inch;
+      const gap = 0.012;
+      const boards = [];
+      for (let x0 = -half; x0 < half - 0.01; x0 += plank) {
+        const xa = x0 + gap / 2;
+        const xb = Math.min(x0 + plank, half) - gap / 2;
+        let z = wallZ + room.float(0, 2.4);
+        while (z > nearest - 0.2) {
+          const length = room.float(1, 2.4);
+          const za = Math.min(wallZ, z) - gap / 2;
+          const zb = Math.max(z - length, nearest - 0.3) + gap / 2;
+          if (za > zb) boards.push({ face: flat([[xa, 0, za], [xb, 0, za], [xb, 0, zb], [xa, 0, zb]]), tone: room.float(0.16, 0.3) });
+          z -= length;
+        }
+      }
+      for (const board of boards) faces([board.face], board.tone * lit);
+    }
 
     // 창문. 조지안 내리닫이창의 비례를 따른다 — 창은 높이가 폭의 두 배이고, 위아래 두 짝으로
     // 나뉘며, 위짝이 아래짝보다 조금 짧다. 창살은 창 폭의 2.3%(870밀리 창에 20밀리), 두 짝이 만나는
     // 띠는 4.5%다. 한 짝의 가로 유리 수를 정하면 세로는 유리 한 장이 폭의 1.5배가 되게 나눈다.
     // 유리만 파낸다. 살과 틀은 파내지 않고 남은 밤이다
     if (knobs.window > 0) {
-      const tallG = height * knobs.window;
+      // 창의 높이는 벽 높이에 대한 비율이고, 창턱이 판재 위 몰딩에 앉는다. 천장을 뚫지는 않는다
+      const tallM = Math.min(knobs.window * roomH, roomH - railH - 0.1);
+      const tallG = tallM * wallScale;
       const wideG = tallG / 2;
       const left = width / 2 - wideG / 2;
-      const top = height * 0.42 - tallG / 2;
+      const top = project(0, railH + tallM, wallZ)[1];
       const bar = wideG * 0.023;
       const rail = wideG * 0.045;
       const cols = Math.round(knobs.panes);
@@ -194,63 +320,111 @@ export const ghost = {
       );
     }
 
-    // 거미줄. 네 모서리 가운데 하나에 걸리고, 여백 안쪽에서만 산다 — 걸리는 자리는 판 끝이 아니라
-    // 여백 안쪽 모서리이고, 여백 밖으로 넘은 줄은 거기서 잘린다. 재단선까지 흘러 나가면 잘린
-    // 그물이 된다. 살은 모서리에서 사분면을 고르게 가르며 뻗고, 이웃한 살 사이를 잇는 줄은 제
-    // 무게로 안쪽으로 처진다. 줄은 둥근 호다 — 여백을 따라 돌면 그물이 아니라 테두리가 된다
-    const web = width * knobs.web;
-    if (web > 4) {
-      const spin = makeRng((seed ^ 0x5bd1e995) >>> 0);
-      const corner = layout.int(0, 3);
-      const inset = page.margin;
-      const ox = corner % 2 === 0 ? inset : width - inset;
-      const oy = corner < 2 ? inset : height - inset;
-      const turnTo = Math.atan2(corner < 2 ? 1 : -1, corner % 2 === 0 ? 1 : -1);
-      const spokes = Math.round(knobs.threads);
-      const rings = Math.max(2, Math.round(spokes * 0.55));
-      // 실은 0.7밀리쯤이다. 리소의 원지가 그보다 가는 줄은 붙들지 못한다
-      const thread = Math.max(1.2, width * 0.0034);
-      // 살은 고르게 벌어지되 꼭 같지는 않다. 양 끝 둘은 여백의 두 변에 붙어 거미줄을 모서리에 맨다
-      const arms = Array.from({ length: spokes }, (_, i) => {
-        const even = (i / (spokes - 1) - 0.5) * (Math.PI / 2);
-        const edge = i === 0 || i === spokes - 1 ? 0 : spin.float(-0.35, 0.35) / spokes;
-        return turnTo + even + edge;
-      });
-      const at = (a, r) => [ox + Math.cos(a) * r, oy + Math.sin(a) * r];
-      const draw = (paint) => {
-        carve(inks, paint, 0.88);
-        if (glowInk) stain([glowInk], paint, 0.16);
+    // 거미줄. 둥근 그물(원망)의 짜임을 따른다.
+    //
+    //   살     한가운데에서 사방으로 고르게 뻗되 꼭 같지는 않다
+    //   위아래 거미는 아래로 더 빨리 달리므로 한가운데가 위로 치우친다. 위쪽 살은 아래쪽 살의 4분의 3쯤이다
+    //   가로줄 한가운데 둘레는 비워 두고(거미가 앉는 자리다), 그 밖을 칸마다 제 무게로 안쪽으로 처지는
+    //          줄이 돈다. 줄 사이가 꼭 같지 않아야 자로 그은 것이 아니라 친 것이 된다
+    //   틀     살 끝을 잇는 바깥 줄. 가로줄과 달리 팽팽하다
+    //   매는 줄 틀에서 가까운 두 모서리 선과 모서리로 셋을 매어 건다. 매지 않은 그물은 과녁이 된다
+    //
+    // 실이 가늘어 밤을 조금만 파낸다 — 줄이 빛을 받은 것이다. 줄의 모양은 모두 찍기 전에 뽑아 둔다.
+    // 통마다 다시 뽑으면 통마다 다른 자리에 줄이 난다
+    //
+    // (cx, cy)는 그물이 걸리는 모서리이고 (sx, sy)는 그물이 모서리에서 뻗어 나가는 쪽이다
+    const hang = (rng, cx, cy, sx, sy, size, spokes, rings, thread, tone) => {
+      const arms = Array.from({ length: spokes }, (_, i) => (i / spokes) * TAU + rng.float(-0.3, 0.3) * (TAU / spokes));
+      const reach = arms.map((a) => (size * (1 + 0.14 * Math.sin(a))) / 1.14);
+      const shares = Array.from({ length: rings }, (_, k) => 0.2 + (0.72 * (k + 1 + rng.float(-0.22, 0.22))) / rings);
+      const ends = arms.map((a, i) => [Math.cos(a) * reach[i], Math.sin(a) * reach[i]]);
+      // 그물이 모서리에서 조금 떨어져 앉는다. 그 틈으로 매는 줄이 모서리 선에 닿는다
+      const gap = size * 0.14;
+      const lo = [Math.min(...ends.map((p) => p[0])), Math.min(...ends.map((p) => p[1]))];
+      const hi = [Math.max(...ends.map((p) => p[0])), Math.max(...ends.map((p) => p[1]))];
+      const hx = sx > 0 ? cx + gap - lo[0] : cx - gap - hi[0];
+      const hy = sy > 0 ? cy + gap - lo[1] : cy - gap - hi[1];
+      const at = (a, r) => [hx + Math.cos(a) * r, hy + Math.sin(a) * r];
+      const tip = (i, share = 1) => at(arms[i], reach[i] * share);
+      const toward = (aim) => {
+        let best = 0;
+        for (let i = 1; i < spokes; i += 1) {
+          if (Math.cos(arms[i] - aim) > Math.cos(arms[best] - aim)) best = i;
+        }
+        return best;
       };
-      draw((g) => {
+      const toSideX = tip(toward(sx > 0 ? Math.PI : 0));
+      const toSideY = tip(toward(sy > 0 ? -Math.PI / 2 : Math.PI / 2));
+      const toCorner = tip(toward(Math.atan2(cy - hy, cx - hx)));
+      // 곧은 줄도 자로 긋지 않는다. 살 · 틀 · 매는 줄마다 한 번씩 조금 휜다(길이의 2.5%까지, HAND를 따른다)
+      const bows = Array.from({ length: spokes * 2 + 3 }, () => (rng.next() - 0.5) * 2 * 0.05 * knobs.hand * 2);
+      const strand = (g, a, b, lean) => {
+        g.moveTo(a[0], a[1]);
+        g.quadraticCurveTo(
+          (a[0] + b[0]) / 2 - (b[1] - a[1]) * lean,
+          (a[1] + b[1]) / 2 + (b[0] - a[0]) * lean,
+          b[0],
+          b[1]
+        );
+      };
+      const paint = (g) => {
         g.save();
         g.beginPath();
-        g.rect(inset, inset, width - inset * 2, height - inset * 2);
+        g.rect(page.margin, page.margin, width - page.margin * 2, height - page.margin * 2);
         g.clip();
         g.lineWidth = thread;
         g.lineCap = "round";
         g.lineJoin = "round";
-        // 살. 모서리에서 곧게 뻗는다
-        for (const a of arms) {
+        // 살
+        g.beginPath();
+        for (let i = 0; i < spokes; i += 1) strand(g, [hx, hy], tip(i), bows[i]);
+        g.stroke();
+        // 가로줄. 살과 살 사이마다 안쪽으로 처진다
+        for (const share of shares) {
           g.beginPath();
-          g.moveTo(ox, oy);
-          g.lineTo(...at(a, web));
-          g.stroke();
-        }
-        // 살을 잇는 줄. 한가운데는 비워 두고(거미가 앉는 자리다), 칸마다 제 무게로 안쪽으로 처진다.
-        // 줄 사이가 꼭 같지 않아야 자로 그은 것이 아니라 친 것이 된다
-        for (let k = 1; k <= rings; k += 1) {
-          const step = (0.76 * (k + spin.float(-0.22, 0.22))) / rings;
-          const r = web * (0.24 + step);
-          g.beginPath();
-          for (let i = 0; i < arms.length - 1; i += 1) {
-            const mid = (arms[i] + arms[i + 1]) / 2;
-            if (i === 0) g.moveTo(...at(arms[0], r));
-            g.quadraticCurveTo(...at(mid, r * 0.84), ...at(arms[i + 1], r));
+          g.moveTo(...tip(0, share));
+          for (let i = 0; i < spokes; i += 1) {
+            const next = (i + 1) % spokes;
+            const mid = arms[i] + ((arms[next] - arms[i] + TAU) % TAU) / 2;
+            const dip = ((reach[i] + reach[next]) / 2) * share * 0.86;
+            g.quadraticCurveTo(...at(mid, dip), ...tip(next, share));
           }
           g.stroke();
         }
+        // 틀. 살 끝을 잇는다
+        g.beginPath();
+        for (let i = 0; i < spokes; i += 1) strand(g, tip(i), tip((i + 1) % spokes), bows[spokes + i]);
+        g.stroke();
+        // 매는 줄. 틀에서 가까운 모서리 선 둘과 모서리로
+        g.beginPath();
+        strand(g, toSideX, [cx, toSideX[1]], bows[spokes * 2]);
+        strand(g, toSideY, [toSideY[0], cy], bows[spokes * 2 + 1]);
+        strand(g, toCorner, [cx, cy], bows[spokes * 2 + 2]);
+        g.stroke();
         g.restore();
-      });
+      };
+      carve(inks, paint, tone);
+      if (glowInk) stain([glowInk], paint, tone * 0.18);
+    };
+
+    // 큰 그물. 판 위쪽 두 모서리 가운데 하나에, 여백 안에 온전히 걸린다 — 눈에 가까운 천장 모서리다.
+    // 아래 모서리는 턴테이블과 유령이 가린다
+    const web = width * knobs.web * 0.4;
+    // 네 모서리를 뽑던 수를 그대로 뽑고 위쪽 둘로 접는다. 뒤따르는 난수가 밀리지 않는다
+    const corner = web > 4 ? layout.int(0, 3) % 2 : 0;
+    const inset = page.margin;
+    if (web > 4) {
+      const spin = makeRng((seed ^ 0x5bd1e995) >>> 0);
+      const spokes = Math.round(knobs.threads);
+      hang(spin, corner === 0 ? inset : width - inset, inset, corner === 0 ? 1 : -1, 1, web, spokes, Math.max(2, Math.round(spokes * 0.55)), Math.max(1.2, width * 0.0034), 0.88);
+    }
+
+    // 작은 그물. 큰 그물 반대편의 위 모서리에 하나 건다. 실물로 40센티이고 살이 일고여덟에 가로줄이
+    // 셋뿐이며 실이 더 가늘다 — 큰 그물만큼 촘촘하면 그물이 아니라 흰 점이 된다
+    if (knobs.cobwebs > 0) {
+      const bit = makeRng((seed ^ 0x9e3779b9 ^ 0x85ebca6b) >>> 0);
+      const far = corner === 0 ? width - inset : inset;
+      hang(bit, far, inset, corner === 0 ? -1 : 1, 1, 0.4 * wallScale, 7 + bit.int(0, 1), 3, Math.max(1, width * 0.0015), 0.75);
     }
 
     // 손으로 오린 가장자리. 점마다 제자리에서 조금 흔들린다
@@ -384,19 +558,28 @@ export const ghost = {
     // 턴테이블. 테크닉스 SL-1200의 치수를 그대로 쓴다 — 몸체 453×353×162밀리, 플래터 332밀리,
     // 12인치 음반 302밀리, 라벨 4인치(101.6밀리). 플래터의 중심은 왼쪽 앞에서 178·176밀리이고,
     // 톤암은 뒤 오른쪽(380·250)에서 230밀리를 뻗어 바늘이 스핀들에서 118밀리 떨어진 홈에 앉는다.
-    // 28도 위에서 내려다보므로 깊이는 sin 28°만큼 줄고 높이는 cos 28°만큼 선다.
+    //
+    // 방과 같은 눈으로 본다 — 마루에 서 있고, 뒤로 갈수록 작아져 윗면이 사다리꼴이 되며, 모든 모서리가
+    // 마루의 널과 같은 소실점으로 모인다. 앞면은 벽과 나란하므로 곧은 네모다. 옆면은 눈이 턴테이블의
+    // 가운데 앞에 있어 보이지 않는다. 크기는 실물보다 크다 — 앞 모서리의 폭을 DECK으로 정하고 그만큼
+    // 통째로 키운 것이다.
     //
     // 유령보다 나중에 찍어 앞에 선다 — 디제이는 턴테이블 뒤에 선다. 파내기만으로는 유령을 가릴 수
     // 없으므로(종이를 더 파내도 종이다) 몸체 자리를 먼저 잉크로 덮고 거기서 다시 파낸다
     if (knobs.deck > 0) {
-      const unit = (width * knobs.deck) / 453;
-      const lean = Math.sin((28 * Math.PI) / 180);
-      const stand = Math.cos((28 * Math.PI) / 180);
-      const left = width / 2 - (453 * unit) / 2;
+      // 턴테이블도 장마다 조금씩 크기가 다르다(±15%). 제 난수 하나로 뽑으므로 창과 거미줄과 유령은
+      // 그대로다. 아무리 커져도 여백 안에 든다
+      const vary = makeRng((seed ^ 0x6a09e667) >>> 0).float(0.85, 1.15);
+      const wide = Math.min(width * knobs.deck * vary, width - page.margin * 2);
+      // 앞 모서리가 마루에 닿는 자리. 거기서 1미터가 몇 픽셀인지로 눈과의 거리를 거꾸로 구한다
       const floor = height - page.margin;
-      const front = floor - 162 * unit * stand;
-      // 윗면 위의 한 점. u는 왼쪽에서, v는 앞에서, z는 윗면에서 잰 밀리다
-      const at = (u, v, z = 0) => [left + u * unit, front - v * unit * lean - z * unit * stand];
+      const nearScale = (floor - horizon) / eyeH;
+      const zFront = focal / nearScale;
+      const k = wide / nearScale / 453;
+      // 턴테이블 위의 한 점. u는 왼쪽에서, v는 앞에서, z는 윗면에서 잰 밀리다
+      const at = (u, v, z = 0) => project((u - 226.5) * k, (162 + z) * k, zFront + v * k);
+      // 플래터 깊이에서 1밀리가 몇 픽셀인가. 선의 굵기와 손떨림에 쓴다
+      const unit = k * scaleAt(zFront + 176.5 * k);
       const ring = (u, v, z, r, from = 0, to = TAU, steps = 56) =>
         Array.from({ length: steps + 1 }, (_, i) => {
           const a = from + ((to - from) * i) / steps;
@@ -410,16 +593,18 @@ export const ghost = {
       const rest = inks.filter((sep) => sep !== S.key);
 
       // 몸체. 앞면은 어둡게 두고 윗면만 은빛으로 파낸다
-      const body = tremble([at(0, 353), at(453, 353), [left + 453 * unit, floor], [left, floor]], hand);
+      const body = tremble([at(0, 0, -162), at(453, 0, -162), at(453, 0), at(453, 353), at(0, 353), at(0, 0)], hand);
       stain([S.key], solid(body), 1);
       stain(rest, solid(body), 0.8);
       carve(inks, solid(tremble([at(0, 353), at(453, 353), at(453, 0), at(0, 0)], hand)), 0.5);
 
-      // 플래터. 옆면이 앞쪽으로 띠를 이루는 원통이다 — 아래 테의 앞 절반과 위 테의 뒤 절반을 잇는다
+      // 플래터. 옆면이 앞쪽으로 띠를 이루는 원통이다 — 위 테의 뒤 절반과 아래 테의 앞 절반을 잇는다
       const [pu, pv] = [178, 176.5];
-      const platter = [...ring(pu, pv, 0, 166, 0, Math.PI), ...ring(pu, pv, 22, 166, Math.PI, TAU)];
-      stain([S.key], solid(tremble(platter, hand)), 0.75);
-      stain(rest, solid(tremble(platter, hand)), 0.5);
+      const platter = [...ring(pu, pv, 22, 166, 0, Math.PI), ...ring(pu, pv, 0, 166, Math.PI, TAU)];
+      // 한 번 흔든 꼴을 두 번 찍는다. 통마다 따로 흔들면 통마다 다른 플래터가 된다
+      const drum = tremble(platter, hand);
+      stain([S.key], solid(drum), 0.75);
+      stain(rest, solid(drum), 0.5);
 
       // 음반. 검다
       const record = tremble(ring(pu, pv, 22, 151), hand);

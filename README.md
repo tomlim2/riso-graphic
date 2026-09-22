@@ -388,7 +388,7 @@ knobs.
 | COSMOS | FIELD · STARS · SPIKES · TWINKLE · MILKY · NEBULA · GALAXY · TILT · ARMS · DARK |
 | FLAKE | FIELD · SIZE · HABIT · BRANCH · RIDGE · BUBBLE · GLINT · FLURRY · DARK |
 | KALEIDO | FIELD · MIRRORS · PIECES · SIZE · TUMBLE · FLOW · SPIN · TINT |
-| GHOST | FIELD · DARK · COUNT · SIZE · HEM · SLIP · GHOSTS · FADE · HAND · EYES · PHONES · WINDOW · PANES · DECK · SPIN · WEB · THREADS · STAIN · HALO · BEAT |
+| GHOST | FIELD · DARK · COUNT · SIZE · HEM · SLIP · GHOSTS · FADE · HAND · EYES · PHONES · FOV · ROOM · WINDOW · PANES · DECK · SPIN · WEB · THREADS · COBWEBS · STAIN · HALO · BEAT |
 | POND | FIELD · DARK · CRACKS · STONES · SIZE · SHATTER · RINGS · RIM · TICK · HAND · STAIN · BEAT |
 | METEOR | SKY: FIELD · DARK · DUST · DEPTH · TRAIL — BEAM: ANGLE · LENGTH · BEAMS — BEAT: BEAT — LASER card: WIDTH · LENGTH · VARY · FLICKER · GLOW — SPIKE card: SIZE · POINTS · STRETCH · SPREAD · NOSE · VARY · FLIP · GLOW — SECOND card: SIZE · POINTS · STRETCH · SPREAD · VARY · FLIP — DOTS card: BURST · FREQ · LIFETIME · VELOCITY · ANGLE · ACCEL · DRAG · GRAVITY · TOWARD · SIZE · VARY · SHRINK · FADE · STRETCH · SCATTER — STARS card: FREQ · LIFETIME · VELOCITY · DRAG · SIZE · SHRINK · TRAIL · SCATTER |
 
@@ -904,20 +904,50 @@ teeth. The eyes are two holes that take the same offsets as the body. Edges are 
 hand (HAND). The figures stand centred on the sheet — one in the middle, several spread evenly to
 either side of it — and bob and sway on whole-number beats, so the loop closes.
 
-There is a window in the wall behind them, a Georgian sash. The proportions are the ones joiners
+They are inside an old house, and the room is built to real dimensions: 5.2 m wide and 3.2 m high —
+old houses have tall rooms — with the back wall 4.4 m from the eye. It is one-point perspective, the
+eye at a standing 1.6 m looking square at the back wall, the vanishing point 37% of the way down the
+sheet. FOV is the eye's field of view, and it starts at its narrowest, where the back wall fills the
+sheet and nothing bends but the floor and the deck; widen it and the back wall shrinks while the side
+walls, the ceiling and the floor come in from the edges and run to the vanishing point.
+
+The lower third of all three walls is raised-panel wainscot, laid out by the finish carpenter's
+rules: the chair rail at a third of the wall height (42 inches), a 2-inch rail moulding, 4-inch
+stiles and rails, 16-inch panels, and a 6-inch baseboard because tall wainscot wants a tall base; a
+3-inch moulding runs where the walls meet the ceiling. On the side walls the panels march toward the
+eye and widen as they come. The floor is wide pine plank, 7 inches, running across the room and back
+to the vanishing point; each plank breaks somewhere between 1 and 2.4 m and the joints never line up
+from one plank to the next. It is all carved the same way as the window: the faces of the panels and
+planks catch a little light and are cut back, and the joints and gaps are simply the night that was
+left. The side walls are carved a touch lighter than the back wall, where the light from the window
+grazes them. ROOM sets how much of it shows; 0 sinks the room back into the dark.
+
+Nothing in the room is ruled. A ruled edge makes a technical drawing, not a print, so every edge —
+panels, rails, planks, window panes, the plinth of the deck — is cut into short pieces, bowed once
+along its length and rippled on top of that, with its ends still pinned to the corners and the
+corners themselves nudged off true. The bow is up to 1.8% of the edge, never more than 0.7% of the
+sheet, and follows HAND. The web's straight threads — radii, frame, mooring lines — bow the same way,
+up to 2.5% of their length.
+
+There is a window in the wall behind them, a Georgian sash, and its sill sits on the chair rail. The proportions are the ones joiners
 worked to: the opening is twice as tall as it is wide, it splits into two sashes with the upper one
 a little shorter, a glazing bar is 2.3% of the width (20 mm on an 870 mm window) and the meeting rail
 4.5%. PANES sets how many panes run across a sash, and the rows follow from keeping each pane half
 again as tall as it is wide — 1, 2, 3 and 4 give 1-over-1, 2-over-2, 6-over-6 and 12-over-12, all
 real patterns. Only the glass is carved. Seen from a dark room the frame sinks into the wall and the
 bars stand black against the moonlit panes, so the bars are simply the night that was not carved.
-The glass stops short of paper so that the figures stay the brightest thing on the sheet.
+The glass stops short of paper so that the figures stay the brightest thing on the sheet. WINDOW
+sets the height as a share of the wall.
 
 In front of them stands a DJ's turntable, drawn to the dimensions of a Technics SL-1200: a 453 ×
 353 × 162 mm plinth, a 332 mm platter, a 302 mm twelve-inch record with a four-inch label, the
 platter centred 178 mm in from the left and 176 mm back from the front, and a 230 mm tonearm pivoting
-at the back right that sets the stylus 118 mm out from the spindle. It is seen from 28° above, so
-depth shortens by sin 28° and height stands at cos 28°. It is printed after the figures because a DJ
+at the back right that sets the stylus 118 mm out from the spindle. It stands on the floor and is
+seen with the same eye as the room, so FOV works on it too: the top face narrows toward the back into a trapezoid whose
+edges run to the floorboards' vanishing point, the front face is a plain rectangle because it faces
+the wall square on, and the sides don't show because the eye is straight in front of it. It is
+bigger than the real thing — DECK fixes the width of the front edge and the whole machine is scaled
+up to match — but every proportion inside it is the SL-1200's. It is printed after the figures because a DJ
 stands behind the decks — and since carving paper only leaves paper, the plinth first inks over its
 whole footprint and is carved back from there, which is what lets it hide the hem. The plinth top is
 silver and carved, the front stays dark, and the silver tonearm is carved too, so it reads across
@@ -926,22 +956,30 @@ times a loop (SPIN — at a two-second loop, 1 is 30 rpm, near enough to 33⅓; 
 backwards). The light the grooves catch does not turn with it: on concentric grooves the highlight
 is a band through the centre along the plane that holds the light and the eye, and the window is
 behind, so it stands front to back and stays put while the record spins under it. DECK sets the
-width; 0 takes it away, as WINDOW 0 takes the window.
+width, and each roll varies it by up to 15% either way, the way the figures vary, so no two sheets
+put the same deck in front of them; it never grows past the margin. 0 takes it away, as WINDOW 0
+takes the window.
 
-Behind them a web is strung in one of the four corners. It isn't drawn either, it is built: spokes
-fan out from the hub across the quadrant, the outermost two lying along the two edges so the web is
-anchored to them, and between each neighbouring pair of spokes a thread sags inward under its own
-weight. The hub is left clear, the spokes are not quite evenly spaced and the turns are not quite
-evenly spaced either, because a web is spun and not ruled. The threads are about seven tenths of a
+A smaller web hangs in the top corner opposite the big one (COBWEBS): 40 cm across, with seven or
+eight radii and only three turns on a finer thread — spin it as densely as the big web and it reads
+as a white dot.
+
+Up in a ceiling corner hangs a whole orb web — the corners where nobody reaches are where webs
+collect, and the lower corners belong to the decks and the figures. It isn't drawn either, it is
+built the way an orb weaver builds: radii run out from the hub all the way round, not quite evenly;
+the hub sits high, because a spider runs downhill faster, so the upper radii are about three
+quarters the length of the lower ones; the middle is left clear for the spider, and outside it the
+capture thread runs round, sagging inward between each pair of radii under its own weight, the
+turns not quite evenly spaced because a web is spun and not ruled. A taut frame thread joins the
+tips of the radii, and three mooring lines tie the frame to the two nearest walls and into the
+corner — without them it is a target, not a web. The threads are about seven tenths of a
 millimetre — a Riso master will not hold a line much finer than that — and they carve the night
 rather than print on it, so a thread is light.
 
-The web lives inside the margin. The hub sits on the inner corner rather than the sheet's own, and
-anything that runs past the margin on the far side is clipped there, so the web is whole on the page
-instead of bleeding off it. The turns stay circular arcs while they do it: a turn that followed the
-margin around would stop being a web and become a keyline border. WEB sets how far it reaches,
-THREADS how many spokes — fewer than six stops reading as a net. It hangs still while the figures
-move.
+The whole web lives inside the margin: it stands a little off the corner so the mooring lines have
+somewhere to run, and anything that would pass the margin is clipped there. WEB sets its size — at
+1 the web is 80% of the sheet across — and THREADS how many radii, fewer than six stops reading as
+a net. It hangs still while the figures move.
 
 ## A frozen pond from above (POND)
 
