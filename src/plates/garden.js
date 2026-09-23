@@ -10,6 +10,7 @@ export const garden = {
   id: "garden",
   name: "GARDEN",
   about: "겹침만 본다. 통이 하나 늘면 색은 하나가 아니라 넷이 는다",
+  model: "claude-opus-5",
 
   knobs: [
     { key: "stems", label: "STEMS", min: 3, max: 24, step: 1, value: 13 },

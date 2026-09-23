@@ -13,6 +13,7 @@ export const medium = {
   id: "medium",
   name: "MEDIUM",
   about: "스크린을 판단하는 자리. 통별 계조와 세 각도가 겹친 로제트, 훑고 가는 침",
+  model: "claude-opus-5",
 
   paint(S, R, page) {
     const { width, height, margin, t } = page;

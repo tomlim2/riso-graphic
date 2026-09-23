@@ -8,7 +8,7 @@
 import { PALETTES } from "./palette.js";
 import { PLATES, plateById } from "./plates/index.js";
 import { createPress, SHEET } from "./press.js";
-import { createGuides, paperGuides } from "./guides.js";
+import { createGuides, paperGuides, modelGuides } from "./guides.js";
 import { parseHash, encodeHash, applyKnobs } from "./hash.js";
 import { GRID_SCALE, layContact } from "./contact.js";
 
@@ -237,8 +237,9 @@ function draw() {
     const record = press.print(settings(plate, PALETTES[state.palette], { frame: sheetFrame(state.frame) }));
     show(sheet);
     // 안내선은 판이 방금 쓴 그 page로 짓는다. 찍은 장과 어긋날 자리가 없다. GPU가 기계를 잃은
-    // 동안에는 찍힌 것이 없으므로(record가 null) 안내선도 없다
-    guides.draw(record && state.guides ? (plate.guides ? plate.guides(record.page, record.sketch) : paperGuides(record.page)) : []);
+    // 동안에는 찍힌 것이 없으므로(record가 null) 안내선도 없다. 판을 지은 모델은 어느 판에나 적는다
+    const drawn = record && state.guides ? (plate.guides ? plate.guides(record.page, record.sketch) : paperGuides(record.page)) : null;
+    guides.draw(drawn ? [...drawn, ...modelGuides(plate, record.page)] : []);
     about.textContent = plate.about;
     note = `${plate.name} · ROLL ${state.seed} · ${state.drums} DRUMS · F${state.frame}${state.guides ? " · GUIDES" : ""}`;
   } else {

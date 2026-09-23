@@ -195,6 +195,7 @@ export const meteor = {
   id: "meteor",
   name: "METEOR",
   about: "별똥별. 이펙트 이미터를 층층이 — 머리의 부채, 광선과 도트, 꼬리별",
+  model: "claude-opus-5",
 
   knobs: [
     { group: "SKY", key: "field", label: "FIELD", min: 0, max: 199, step: 1, value: 0, hint: "층마다의 자리를 뽑는 씨앗. 종이의 롤은 그대로 둔다" },

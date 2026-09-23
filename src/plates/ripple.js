@@ -98,6 +98,7 @@ export const ripple = {
   id: "ripple",
   name: "RIPPLE",
   about: "고리 몇 개와 부서진 호. 나머지는 종이다",
+  model: "claude-opus-5",
 
   // 이 판이 스스로 내놓는 손잡이. 화면은 목록을 보고 조절칸을 짓는다.
   // RINGS를 올릴 때는 조심할 것 — 고리 수 × 잡는 프레임 ÷ 48이 0.5를 넘으면 물결이

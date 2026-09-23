@@ -198,6 +198,7 @@ export const flake = {
   id: "flake",
   name: "FLAKE",
   about: "현미경 아래의 눈 결정 한 송이. 어두운 시야에 육각 대칭으로 빛나고 모서리가 반짝인다",
+  model: "claude-opus-5",
 
   knobs: [
     { key: "field", label: "FIELD", min: 0, max: 199, step: 1, value: 0, hint: "결정의 씨앗. 종이의 롤은 그대로 두고 결정과 눈가루만 다시 뽑는다" },

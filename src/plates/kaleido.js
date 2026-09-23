@@ -44,6 +44,7 @@ export const kaleido = {
   id: "kaleido",
   name: "KALEIDO",
   about: "만화경. 색유리 조각이 거울에 비쳐 대칭으로 피고, 조각마다 굴러 무늬가 바뀐다",
+  model: "claude-opus-5",
 
   knobs: [
     { key: "field", label: "FIELD", min: 0, max: 199, step: 1, value: 70, hint: "통 속 조각의 씨앗. 종이의 롤은 그대로 두고 조각만 다시 뽑는다" },

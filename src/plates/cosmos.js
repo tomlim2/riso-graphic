@@ -218,6 +218,7 @@ export const cosmos = {
   id: "cosmos",
   name: "COSMOS",
   about: "망원경으로 들여다본 우주. 은하수가 가로지르고 성운이 번지고 은하가 기울어 있고, 별이 저마다 반짝인다",
+  model: "claude-opus-5",
 
   knobs: [
     { key: "field", label: "FIELD", min: 0, max: 199, step: 1, value: 0, hint: "하늘의 씨앗. 종이의 롤은 그대로 두고 은하수와 성운과 은하와 별의 자리만 다시 뽑는다" },

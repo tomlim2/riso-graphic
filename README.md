@@ -12,7 +12,7 @@ by fractions of `height` wherever they can.
 Motion is the default. The page starts playing as soon as it opens.
 
 The hung plates are **RIPPLE** · **MOON** · **GARDEN** · **JELLY** · **CELL** · **CHLORO** ·
-**COSMOS** · **FLAKE** · **KALEIDO** · **METEOR** · **GHOST** · **POND**.
+**COSMOS** · **FLAKE** · **KALEIDO** · **METEOR** · **GHOST** · **CLOUD** · **SEED** · **REEF**.
 POSTER, MEDIUM and WHALE are still in `src/plates/`. Add a line for either to `src/plates/index.js`
 and it returns to the plate picker and the contact sheet. With only one plate in the list, the
 picker hides.
@@ -344,6 +344,7 @@ export const hello = {
   id: "hello",
   name: "HELLO",
   about: "One line shown under the plate picker",
+  model: "claude-opus-5-5",
 
   paint(S, R, page) {
     S.wash.ramp(0, 0, page.width, page.height, { from: 0.8, to: 0 });
@@ -359,7 +360,8 @@ roll's random generator. `page` carries the size (`width`, `height`), `margin`, 
 running `inks` and their `roles`, the roll's `seed`, the time (`t`, `frame`, `frames`), the
 `headline`, and this plate's knob values in `knobs`. A separation offers `flood`, `shape`,
 `line`, `disc`, `ring`, `block`, `ramp`, `text`, `knockout` and `draw`. Whatever `paint`
-returns is handed to `guides` (below); most plates return nothing.
+returns is handed to `guides` (below); most plates return nothing. `model` names the model that
+built the plate; GUIDES writes it on every plate (below). A new plate records the model that built it.
 
 ### Knobs belong to each plate
 
@@ -389,7 +391,9 @@ knobs.
 | FLAKE | FIELD · SIZE · HABIT · BRANCH · RIDGE · BUBBLE · GLINT · FLURRY · DARK |
 | KALEIDO | FIELD · MIRRORS · PIECES · SIZE · TUMBLE · FLOW · SPIN · TINT |
 | GHOST | FIELD · DARK · COUNT · SIZE · HEM · SLIP · GHOSTS · FADE · HAND · EYES · PHONES · FOV · ROOM · WINDOW · PANES · DECK · SPIN · WEB · THREADS · COBWEBS · STAIN · HALO · BEAT |
-| POND | FIELD · DARK · CRACKS · STONES · SIZE · SHATTER · RINGS · RIM · TICK · HAND · STAIN · BEAT |
+| CLOUD | FIELD · SKY · OKTAS · SIZE · BASE · SHADE · HAZE · BOIL · HAND · STAIN · BEAT |
+| SEED | FIELD · DARK · SIZE · SEEDS · FILAMENTS · GONE · SWAY · HAND · STAIN · BEAT |
+| REEF | FIELD · DEEP · CLEAR · COVER · SIZE · EYE · LOOK · BRANCH · TABLE · BRAIN · FAN · SWELL · SURGE · RAYS · HAND · STAIN · BEAT |
 | METEOR | SKY: FIELD · DARK · DUST · DEPTH · TRAIL — BEAM: ANGLE · LENGTH · BEAMS — BEAT: BEAT — LASER card: WIDTH · LENGTH · VARY · FLICKER · GLOW — SPIKE card: SIZE · POINTS · STRETCH · SPREAD · NOSE · VARY · FLIP · GLOW — SECOND card: SIZE · POINTS · STRETCH · SPREAD · VARY · FLIP — DOTS card: BURST · FREQ · LIFETIME · VELOCITY · ANGLE · ACCEL · DRAG · GRAVITY · TOWARD · SIZE · VARY · SHRINK · FADE · STRETCH · SCATTER — STARS card: FREQ · LIFETIME · VELOCITY · DRAG · SIZE · SHRINK · TRAIL · SCATTER |
 
 Don't confuse the CELL plate with the CELL dial. The dial sets the halftone cell size for every
@@ -473,6 +477,12 @@ Positions are in sheet coordinates, but sizes —
 `r`, `ring`, `lift`, the line width and the type — are screen pixels, so the marks stay the same
 size however large the sheet hangs. A plate with no `guides` gets the paper's own: the margin box
 and the middle.
+
+Whatever the plate returns, GUIDES also writes the model that built it in the top-left margin —
+`MODEL · CLAUDE-OPUS-5-5` — from the plate's `model`. REEF was built by claude-opus-5-5 and every
+other plate, hung or not, by claude-opus-5. That record comes from the session transcripts: the model
+of each message that wrote the plate's file. (SEED's DARK default was changed by claude-opus-5-5; the
+plate itself was built by claude-opus-5.)
 
 METEOR uses it for the one thing a still frame hides: the point everything attached to the head
 grows and shrinks about. The only way to see that it holds still is to mark it while the crystal
@@ -981,38 +991,164 @@ somewhere to run, and anything that would pass the margin is clipped there. WEB 
 1 the web is 80% of the sheet across — and THREADS how many radii, fewer than six stops reading as
 a net. It hangs still while the figures move.
 
-## A frozen pond from above (POND)
+## Fair-weather cumulus (CLOUD)
 
-Clear ice is dark from above: you are looking through it at the water. A crack in it is white,
-and not because anything white was printed there. Fracturing traps air, the air-ice boundaries
-scatter every wavelength about equally, and the milky line that results is the same effect that
-makes snow white while a single ice crystal is clear. So on this plate a crack is a knockout. The
-ice is laid on every drum and the cracks are carved back out of it — the white is the paper.
+This is the sky of a sheet that will get hills and trees under it; the clouds came first. Nothing in
+it is drawn. Each rule is one the weather people measured.
 
-The pattern is not drawn either. It is the order in which ice actually breaks:
+**One base for every cloud.** A cumulus has a flat bottom, and every cumulus in the same sky has its
+bottom at the same height: air rising off the same ground reaches its dew point at the same altitude,
+the lifting condensation level. In temperate places that is 500 to 1500 m (BASE).
 
-**Contraction cracks.** As the temperature drops the sheet shrinks and splits. A new crack leaves
-an older one at a right angle, and when it runs into the stress-relieved zone around another crack
-it turns to meet that one at a right angle too, which is why the joints are T-shaped rather than
-crossings. The plate does exactly this, one crack at a time: take the largest shard, leave its
-longest wall perpendicular, run until you hit another wall, and land perpendicular there. One cubic
-curve has both ends fixed, so the crack is straight in the middle and turns only where it arrives.
-Splitting the largest shard each time is why the cells come out even. The departure angle is
-jittered about twenty degrees, because the literature says approximately ninety, and a ruled ninety
-gives tiles rather than ice. Earlier cracks are drawn wider: they have had longer to open.
+**Wider than tall, fractal round the edge.** Fair-weather cumulus (humilis) are wider than they are
+tall. Their outlines are fractal — area and perimeter follow P ∝ √A^1.35 over three orders of
+magnitude (Lovejoy 1982) — and the plate gives them three generations of bubbles, turrets on turrets.
+Each big lobe is a ball the base plane cuts, its centre 0.3 of its radius above the base, so its
+footprint is √(1 − 0.3²) ≈ 0.95 of its radius and the cloud sits on its base like a cotton ball on a
+table. The bubbles are sunk half into the lobe beneath them; perched on its rim they close ranks round
+a scrap of sky and the cloud gets a hole.
 
-**Stone marks.** A stone that landed on the sheet leaves radials first — four to nine of them — and
-then circumferential cracks some distance out, sagging between the radials that carry them.
+**Many small, few large.** Cloud widths follow a power law: the number of clouds of width L goes as
+L^−1.66 (Wood & Field 2011). The smallest here is 300 m; SIZE sets the largest.
 
-**The stones.** A stone on clear ice shades the column beneath it, the shaded ice stops subliming
-while the ice around it goes on, and the stone is left standing on a narrow pedestal while its own
-heat scoops a shallow moat around the base; that is the Zen stone of Lake Baikal. From above it is
-a dark pebble with the pedestal ringing it in light, so the plate carves the ring first and prints
-the stone over it.
+**Cover in oktas.** Observers count cloud cover in eighths of the sky, and so does OKTAS: 1–2 is few,
+3–4 scattered, 5–7 broken, 8 overcast. Clouds are added until they cover that share of the sky.
 
-**The tick.** Ice does not crack all at once. On a cold night it goes off one crack at a time with
-a report. Every crack here sits at two thirds and opens to paper once per loop on its own phase, so
-the sheet ticks. TICK 0 settles them all.
+**Perspective.** We stand on the ground and look at the horizon, 78% of the way down the sheet (the
+hills will stand below it). Clouds are spread evenly over the ground, so there are more of them the
+farther you look; the far ones shrink, their bases settle toward the horizon, and they sink into
+the air (HAZE). The base is the footprint of each lobe seen from below — a level disc at height h seen
+from d away flattens by h/d — so the nearer a cloud, the thicker its shaded underside.
+
+**Light.** The sun is up to the left. A cloud is sky carved back to paper; the side turned from the
+sun is whatever the cloud doesn't cover when you slide it toward the sun, printed lightly, and the
+base is printed darker. Shade on a cloud is lit by the sky, so it is printed in the sky's ink. The
+sky is deepest at the zenith and pales toward the horizon (SKY).
+
+**Boil.** Cumulus tops boil. Every bubble swells and settles on its own beat, a whole number of times
+a loop (BOIL). The far clouds that come out only a few pixels wide are gathered by distance and printed
+together, which keeps a sheet near 30 ms.
+
+## A dandelion clock (SEED)
+
+One dandelion head gone to seed, standing on a long thin stalk against a sky that is darkest at the top
+and pales toward the ground (DARK, darkest by default). The proportions and
+the feel follow the dandelions of picture books and book covers: a small head, a stalk a thirtieth of
+the head's width, every pappus reading as its own white star with sky between them, and a small brown
+knot of seeds in the middle. What sits inside the head is built from the rule the plant follows and the
+plant's own measurements.
+
+**The head.** The seeds sit round the receptacle in a ball, placed the way a sunflower places its
+seeds: each one turned the golden angle (137.5°) from the last, so no two ever line up and they spread
+evenly over the whole ball (SEEDS, 52 by default — fewer, denser pappi lock into a lattice the way the
+illustrations show).
+
+**One seed.** An achene 4 mm long set in the receptacle, a slender beak 8.5 mm long above it, and on the
+beak's tip the pappus: a disc 13.8 mm across of filaments from one point, each 16 µm thick, the disc
+about 90% empty. The air that slips through those gaps forms a vortex ring that stands clear above the
+pappus and holds the seed up (Cummins et al., Nature 2018). The pappus is a shallow umbrella, its
+filaments rising 30° toward the beak's tip, so the pappi round the edge of the ball, seen side on, open
+into fans pointing outward and the ball's outline bristles like a fringe. A real pappus has about a
+hundred filaments; printed at that count the ball fuses into a white disc, so the default is about half
+(FILAMENTS 48) — each pappus a dense brush of a star — and a hundred is one turn of the knob away. SIZE sets the width of the head;
+everything inside it keeps these proportions.
+
+**Printing it.** It is printed like a print — each layer laid flat and separately, no blending tone.
+Look closely at an illustrated clock and each pappus is a translucent disc, sky showing between its
+filaments, with bright filaments over it and a bright point where they meet; where neighbouring discs
+overlap they brighten into lenses, and those lenses draw a lattice over the whole ball. So each pappus's
+disc — the outline through its filament tips — is carved out of the sky on its own and lightly, the back
+ones lighter still, and the overlaps come up brighter by themselves. The filaments go over the discs as
+lines carved clean to paper, and the beaks as white spokes from the receptacle to each pappus. The
+filaments are brushed, not ruled (HAND): their spacing bunches and opens, their lengths are ragged and a
+few break off short, and each bends a little — so every pappus has a frayed edge and the ball's outline
+bristles like a feather; at HAND 0 they are the spokes of a wheel. Tip dots, to catch the light at each
+filament's end, were tried and filled the gaps that make the lattice. The
+halftone prints the sheet in 9-pixel cells, so anything finer than that, printed lightly, dissolves into
+the dots; only paper carved clean skips the screen and stays sharp. (Measuring the filaments' density
+and cutting it into flat steps was tried first: at two steps the lattice washed out into one white, at
+three the ball went grey.) The receptacle and the achenes on it are printed last, since they show
+through a pappus that is 90% empty: a pale tan knob — the warm drum heavy, the darkest drum light —
+ringed with darker spikes, which are only the front achenes and only the 2.5 mm of each that clears the
+receptacle, in the darkest drum heavy over the warm one.
+
+**The stalk.** It runs up into the middle of the head, a thirtieth of the head's width across. That
+is thinner than a real scape (3–5 mm); a head looks larger than it is from its spread of filaments,
+and the illustrations draw it at this ratio. It is cut as a band by hand rather than stroked, bends a
+little on its way down, and outside the ball it is knocked out of the sky first — printed over the
+ground it sinks into it in some palettes — then printed in the light drum with the darkest drum over
+it, which makes green the way Riso does, without a green ink; the third that faces away from the light
+gets the dark drum once more. Inside the ball it only shows faintly through the pappi.
+
+**Wind.** GONE strips a cap of the ball on the upper right, as a share of its surface, and shows the
+receptacle there; by default the head is whole. The head nods on its stalk about the stalk's root
+(SWAY).
+
+## A coral reef (REEF)
+
+A diver swims along the front of a reef and looks sideways across it. Water fills the sheet and the
+light comes down from the surface. Nothing here is drawn: the reef is built from the rules corals grow
+by and from what reef surveys measure.
+
+**The framework.** Dead coral cemented into rock rises in ridges with sand in the channels between them
+— spurs and grooves. Spurs stand 8 m apart crest to crest with grooves 1–2 m wide (Goreau 1959, the
+buttresses off Jamaica), and their crests are rounded, a |cos| profile across them (Rogers et al. 2013).
+Spurs run out to sea, so to a diver swimming along the reef front they cross the view and step back
+one row at a time. The rock is the colour of nothing alive: a blue darker than the water, with a trace
+of the pinkish coralline algae, and the far rows sink into the water. The sheet is cut into slices from
+back to front, evenly spaced on the sheet, and each slice fills only where rock rises above its line of
+sand, so a nearer ridge covers the foot of the one behind. EYE sets how far above the crests the eye
+floats, LOOK how far it looks down.
+
+**Cover and sizes.** How much of the bottom is live coral is what a surveyor measures along a line,
+sand and all; healthy reefs sit at 40–50% (COVER, 45 by default — Gardner et al. 2003, Bruno & Selig
+2007). Corals grow on rock, so nearly all of them stand on the spurs and only a few on the sand.
+Colony diameters are log-normal (Bak & Meesters 1998): the logarithm of the diameter is normally
+distributed, median 30 cm, standard deviation 0.28 in log10 (Medina-Valmaseda et al. 2020). BRANCH,
+TABLE, BRAIN and FAN are each form's share of the cover, as surveys record cover by life form (English,
+Wilkinson & Baker 1997); since a table covers nine times what a branching colony of the median size
+does, tables are fewer.
+
+**Branching.** Staghorn coral. Each axis grows straight and throws side branches at 60–90° from its
+nodes, and the side branches grow the same way. Branches are cylinders 1.2 cm across (0.25–1.5 cm) and
+don't taper; colonies are about half as tall as they are wide (27–80 cm tall, 50–175 cm long). A branch
+that would leave the colony's envelope stops there. The last 1.5 cm of every branch is pale — the
+growing tip, with few algae in it yet (Acropora Biological Review Team 2005; Agudo-Adriani et al. 2016).
+Colonies that take a harder surge grow denser, with shorter internodes and more side branches
+(SURGE).
+
+**Tables.** A flat plate on a thin stalk. However wide the plate, its top sits 0.43 m above the
+bottom — the plate widens and the stalk only thickens as the colony grows (Kerry 2015, Ferrari et al.
+2017). Tables average about a metre across. From above, the branches the plate is woven from show as
+grain running out from the middle to the rim; the underside and the stalk are in deep shade, and so is
+the bottom beneath.
+
+**Brain corals.** A hemispherical dome covered in meandering valleys, one valley and one ridge together
+1–2 cm across (Corals of the World). The meanders are laid by a Turing rule — each point is pushed up by
+its near neighbours and down by its farther ones, and the two pulls sort a field of noise into valleys of
+even width (Turing 1952). For each pixel of the dome the ray is followed back to the dome's surface, and
+the maze is unrolled from the crown by distance along the surface; the side of the dome turned away from
+the sun gets a flat shade.
+
+**Sea fans.** A net spread in one plane. A few thick axes spread from the holdfast, and the branchlets,
+one every 3–6 mm, fuse into a mesh (Bayer 1961); here the mesh is a relative-neighbourhood graph of
+evenly scattered points, so its openings close as polygons. The fan faces the direction the surge moves
+in (SWELL), small fans any way and taller fans more squarely (Wainwright & Dillon 1969). The surge rocks
+the fans once a loop.
+
+**Water.** A black target disappears into the water at 4.8/c, c being the beam attenuation (Zaneveld &
+Pegau 2003), so CLEAR, the horizontal visibility, sets c, and contrast falls as e^(−c·r). Nothing
+finer than the halftone is printed lightly: every colony and every slice of rock is knocked out to
+paper and printed in its own colour, and the water between it and the eye is laid over it as a veil.
+Farther away its own colour thins and the veil thickens until the two are one. Water eats red first
+(pure-water absorption, Pope & Fry 1997), so with distance the warm drum thins faster than the yellow
+one, and the blue only as fast as the contrast. Anything fainter than 35% contrast is printed as a flat
+silhouette in five layers. The water is brightest looking up and darkest level with the eye (Tyler
+1958); the sand is lit and warm, and sinks into the water with distance.
+
+**Light.** Sunlight entering the water bends to within 48.6° of the vertical. Its beams are parallel,
+so on the sheet they fan out from the refracted sun, and as the waves gather and scatter the light the
+beams flicker — ±94% at 4 m, ±10% at 29 m (Hieronymi et al. 2012); here ±60% (RAYS).
 
 ## What doesn't belong here
 

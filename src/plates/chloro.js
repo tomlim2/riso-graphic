@@ -241,6 +241,7 @@ export const chloro = {
   id: "chloro",
   name: "CHLORO",
   about: "현미경 아래의 잎 세포. 벽 사이마다 엽록체가 가득 차, 저마다 제자리에서 조금씩 움직인다",
+  model: "claude-opus-5",
 
   knobs: [
     { key: "field", label: "FIELD", min: 0, max: 199, step: 1, value: 0, hint: "조직의 씨앗. 종이의 롤은 그대로 두고 세포와 엽록체만 다시 뽑는다" },

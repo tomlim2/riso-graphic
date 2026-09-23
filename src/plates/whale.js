@@ -75,6 +75,7 @@ export const whale = {
   id: "whale",
   name: "WHALE",
   about: "바다 속의 고래. 물과 실루엣 하나뿐인, 움직이지 않는 한 장",
+  model: "claude-opus-5",
 
   knobs: [
     { key: "field", label: "FIELD", min: 0, max: 199, step: 1, value: 0, hint: "얼룩과 손떨림을 뽑는 씨앗. 종이의 롤은 그대로 둔다" },

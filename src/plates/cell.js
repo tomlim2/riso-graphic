@@ -77,6 +77,7 @@ export const cell = {
   id: "cell",
   name: "CELL",
   about: "공초점 현미경 아래의 바이러스 입자. 어두운 시야에 가시 두른 입자가 저마다 빛나며 까딱인다",
+  model: "claude-opus-5",
 
   knobs: [
     { key: "count", label: "COUNT", min: 3, max: 30, step: 1, value: 9 },

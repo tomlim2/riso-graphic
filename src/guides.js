@@ -13,6 +13,10 @@ export const paperGuides = ({ width, height, margin }) => [
   { kind: "cross", at: [width / 2, height / 2], r: 16 }
 ];
 
+// 판을 지은 모델. 판이 제 이름표(plate.model)를 달고 있으면, 어느 판이든 종이 왼쪽 위 여백에 적는다
+export const modelGuides = (plate, { margin }) =>
+  plate.model ? [{ kind: "text", at: [margin, margin / 2], text: `MODEL · ${plate.model.toUpperCase()}` }] : [];
+
 // 글자는 종이 빛깔로 한 번 두르고 찍는다. 밤하늘 위에서도, 흰빛 위에서도 읽힌다
 function label(g, text, x, y, ink, k) {
   g.strokeStyle = "rgba(252, 251, 249, 0.9)";

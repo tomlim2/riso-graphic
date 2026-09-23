@@ -81,6 +81,7 @@ export const ghost = {
   id: "ghost",
   name: "GHOST",
   about: "인쇄기가 내는 유령 — 통마다 어긋난 자리와, 잉크가 잘못 놓인 자리",
+  model: "claude-opus-5",
 
   knobs: [
     { key: "field", label: "FIELD", min: 0, max: 199, step: 1, value: 0, hint: "유령의 자리와 손떨림을 뽑는 씨앗. 종이의 롤은 그대로 둔다" },
