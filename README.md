@@ -393,7 +393,7 @@ knobs.
 | GHOST | FIELD · DARK · COUNT · SIZE · HEM · SLIP · GHOSTS · FADE · HAND · EYES · PHONES · FOV · ROOM · WINDOW · PANES · DECK · SPIN · WEB · THREADS · COBWEBS · STAIN · HALO · BEAT |
 | CLOUD | FIELD · SKY · OKTAS · SIZE · BASE · SHADE · HAZE · BOIL · HAND · STAIN · BEAT |
 | SEED | FIELD · DARK · SIZE · SEEDS · FILAMENTS · GONE · SWAY · HAND · STAIN · BEAT |
-| REEF | FIELD · DEEP · CLEAR · COVER · SIZE · EYE · LOOK · BRANCH · TABLE · BRAIN · FAN · SWELL · SURGE · RAYS · HAND · STAIN · BEAT |
+| REEF | DEEP · CLEAR · SWELL · SURGE · RAYS · HAND · STAIN |
 | METEOR | SKY: FIELD · DARK · DUST · DEPTH · TRAIL — BEAM: ANGLE · LENGTH · BEAMS — BEAT: BEAT — LASER card: WIDTH · LENGTH · VARY · FLICKER · GLOW — SPIKE card: SIZE · POINTS · STRETCH · SPREAD · NOSE · VARY · FLIP · GLOW — SECOND card: SIZE · POINTS · STRETCH · SPREAD · VARY · FLIP — DOTS card: BURST · FREQ · LIFETIME · VELOCITY · ANGLE · ACCEL · DRAG · GRAVITY · TOWARD · SIZE · VARY · SHRINK · FADE · STRETCH · SCATTER — STARS card: FREQ · LIFETIME · VELOCITY · DRAG · SIZE · SHRINK · TRAIL · SCATTER |
 
 Don't confuse the CELL plate with the CELL dial. The dial sets the halftone cell size for every
@@ -1086,69 +1086,77 @@ receptacle there; by default the head is whole. The head nods on its stalk about
 
 ## A coral reef (REEF)
 
-A diver swims along the front of a reef and looks sideways across it. Water fills the sheet and the
-light comes down from the surface. Nothing here is drawn: the reef is built from the rules corals grow
-by and from what reef surveys measure.
+One composed piece rather than a field of chance: a coral outcrop — a bommie — rising from the sand,
+seen at its waist height by a diver. Plates of table coral jut from its flanks in tiers, bushes of
+branching coral with pale tips crowd between them, pink-tipped heaps of *Stylophora* sit among them, a
+big red sea fan stands on the sand in front to the left with another farther left, farther bommies sink
+into the blue behind, and sunbeams come down from the upper left.
+The layout follows a reference photograph (Toby Hudson, *Coral Outcrop Flynn Reef*, Wikimedia Commons).
+The composition is fixed: the roll changes only what the press changes — the screen's grain and the
+misregistration — and never the picture. The picture doesn't move either: it is painted once on the
+plate's own paper and handed to the press unchanged for every sheet, so only the grain and the
+misregistration change from sheet to sheet. Every coral in it is still built, not drawn, from the rules
+corals grow by and what reef surveys measure.
 
-**The framework.** Dead coral cemented into rock rises in ridges with sand in the channels between them
-— spurs and grooves. Spurs stand 8 m apart crest to crest with grooves 1–2 m wide (Goreau 1959, the
-buttresses off Jamaica), and their crests are rounded, a |cos| profile across them (Rogers et al. 2013).
-Spurs run out to sea, so to a diver swimming along the reef front they cross the view and step back
-one row at a time. The rock is the colour of nothing alive: a blue darker than the water, with a trace
-of the pinkish coralline algae, and the far rows sink into the water. The sheet is cut into slices from
-back to front, evenly spaced on the sheet, and each slice fills only where rock rises above its line of
-sand, so a nearer ridge covers the foot of the one behind. EYE sets how far above the crests the eye
-floats, LOOK how far it looks down.
-
-**Cover and sizes.** How much of the bottom is live coral is what a surveyor measures along a line,
-sand and all; healthy reefs sit at 40–50% (COVER, 45 by default — Gardner et al. 2003, Bruno & Selig
-2007). Corals grow on rock, so nearly all of them stand on the spurs and only a few on the sand.
-Colony diameters are log-normal (Bak & Meesters 1998): the logarithm of the diameter is normally
-distributed, median 30 cm, standard deviation 0.28 in log10 (Medina-Valmaseda et al. 2020). BRANCH,
-TABLE, BRAIN and FAN are each form's share of the cover, as surveys record cover by life form (English,
-Wilkinson & Baker 1997); since a table covers nine times what a branching colony of the median size
-does, tables are fewer.
+**The bommie.** Reef framework — dead coral cemented into rock — heaped on the sand, more than a metre
+high, steep-sided and round-headed; the hero is 2 m. Live coral covers more than 90% of it (Goreau 1959).
+The named colonies are placed by hand; the rest of the face is filled with smaller ones scattered over
+the surface and kept only where their circle on the sheet overlaps its neighbours a little, so the
+visible face is covered evenly and without holes. What shows between them is rock crusted with
+coralline algae in deep shade. Filler diameters are log-normal (median 30 cm, 0.28 in log10 — Bak &
+Meesters 1998, Medina-Valmaseda et al. 2020).
 
 **Branching.** Staghorn coral. Each axis grows straight and throws side branches at 60–90° from its
 nodes, and the side branches grow the same way. Branches are cylinders 1.2 cm across (0.25–1.5 cm) and
-don't taper; colonies are about half as tall as they are wide (27–80 cm tall, 50–175 cm long). A branch
-that would leave the colony's envelope stops there. The last 1.5 cm of every branch is pale — the
-growing tip, with few algae in it yet (Acropora Biological Review Team 2005; Agudo-Adriani et al. 2016).
-Colonies that take a harder surge grow denser, with shorter internodes and more side branches
-(SURGE).
+don't taper; colonies are about half as tall as they are wide. The last 1.5 cm of every branch is pale —
+the growing tip, with few algae in it yet (Acropora Biological Review Team 2005; Agudo-Adriani et al.
+2016). Colonies that take a harder surge grow denser (SURGE); those crowding the bommie are dense bushes.
 
-**Tables.** A flat plate on a thin stalk. However wide the plate, its top sits 0.43 m above the
-bottom — the plate widens and the stalk only thickens as the colony grows (Kerry 2015, Ferrari et al.
-2017). Tables average about a metre across. From above, the branches the plate is woven from show as
-grain running out from the middle to the rim; the underside and the stalk are in deep shade, and so is
-the bottom beneath.
+**Tables.** A flat plate on a thin stalk whose top sits 0.43 m above the bottom however wide it grows
+(Kerry 2015, Ferrari et al. 2017). On the bommie a plate attaches at one side with no stalk and juts out
+like a shelf: it sits where the flank reaches its height, so its inner edge is buried in the face. Below
+the eye a plate shows its top, speckled with the pale tips of the upright branchlets less than 25 mm long
+that stand on it; above the eye it shows its underside in deep shade, under the pale growing rim. Seen
+edge-on a plate is a hairline, so none sits within about 8° of eye level. Seen from below, a plate's face
+is only its width times the sine of the angle you look up at it, so a small one is a thin band: only the
+named plates sit above the eye, and the filler colonies up there are bushes.
 
-**Brain corals.** A hemispherical dome covered in meandering valleys, one valley and one ridge together
-1–2 cm across (Corals of the World). The meanders are laid by a Turing rule — each point is pushed up by
-its near neighbours and down by its farther ones, and the two pulls sort a field of noise into valleys of
-even width (Turing 1952). For each pixel of the dome the ray is followed back to the dome's surface, and
-the maze is unrolled from the crown by distance along the surface; the side of the dome turned away from
-the sun gets a flat shade.
+**Stylophora.** Thick, blunt branches rise from one base and fork in two at every joint, filling a
+rounded heap — in shallow water the colonies are mound-like with thick branches (Einbinder et al. 2009).
+Adults are 20–25 cm across (Kramer et al. 2022) and reach about 50 cm. The corallites are 0.85–1.2 mm
+and closely set, so they are stippled no closer than a cell and a half, like the branchlets on the tables.
+A colony is one colour — cream, pink or green (Corals of the World) — and its growing tips are pinker:
+the corals' own pigment proteins gather where the skeleton grows fastest, at branch tips and plate
+margins (D'Angelo et al. 2012).
 
-**Sea fans.** A net spread in one plane. A few thick axes spread from the holdfast, and the branchlets,
-one every 3–6 mm, fuse into a mesh (Bayer 1961); here the mesh is a relative-neighbourhood graph of
-evenly scattered points, so its openings close as polygons. The fan faces the direction the surge moves
-in (SWELL), small fans any way and taller fans more squarely (Wainwright & Dillon 1969). The surge rocks
-the fans once a loop.
+**Red sea fans.** A net in one plane. A short, thick trunk splits near the holdfast into a few thick
+branches that radiate like the ribs of a fan. A growing tip bends toward that radiating line, and it puts
+out a side branch wherever the gap beside it grows wide enough for another, so branches multiply as the
+fan widens and the mesh stays even. A tip that comes closer to another branch than the mesh width
+usually fuses into it (anastomosis) and closes a cell of the net; otherwise it stops. Terminal branches
+are 2–4 mm (Branch et al. 2010), thicker toward the trunk by the cube root of the tips they carry, and
+fans grow to 2 m. The fan faces the direction the surge moves in (SWELL), small fans any way and taller
+fans more squarely (Wainwright & Dillon 1969).
 
-**Water.** A black target disappears into the water at 4.8/c, c being the beam attenuation (Zaneveld &
-Pegau 2003), so CLEAR, the horizontal visibility, sets c, and contrast falls as e^(−c·r). Nothing
-finer than the halftone is printed lightly: every colony and every slice of rock is knocked out to
-paper and printed in its own colour, and the water between it and the eye is laid over it as a veil.
-Farther away its own colour thins and the veil thickens until the two are one. Water eats red first
-(pure-water absorption, Pope & Fry 1997), so with distance the warm drum thins faster than the yellow
-one, and the blue only as fast as the contrast. Anything fainter than 35% contrast is printed as a flat
-silhouette in five layers. The water is brightest looking up and darkest level with the eye (Tyler
-1958); the sand is lit and warm, and sinks into the water with distance.
+**Colour.** Symbionts and pigments differ from colony to colony, so one growth form comes in several
+colours; each colony draws one set from its own seed — pink, tan or salmon for branching and table coral,
+cream with pink tips, pink or green for *Stylophora*, and red, scarlet or dark red for sea fans.
 
-**Light.** Sunlight entering the water bends to within 48.6° of the vertical. Its beams are parallel,
-so on the sheet they fan out from the refracted sun, and as the waves gather and scatter the light the
-beams flicker — ±94% at 4 m, ±10% at 29 m (Hieronymi et al. 2012); here ±60% (RAYS).
+**Water.** A black target disappears at 4.8/c, c being the beam attenuation (Zaneveld & Pegau 2003), so
+CLEAR, the horizontal visibility, sets c, and contrast falls as e^(−c·r). Every colony and every slice of
+rock is knocked out to paper and printed in its own colour, and the water between it and the eye is laid
+over it as a veil. Water eats red first (Pope & Fry 1997), but the eye is balanced for the bommie — as an
+underwater photographer sets white balance at the subject's distance — so only what lies beyond it loses
+its warm drum faster than its yellow one. Anything fainter than 30% contrast is printed as a flat
+silhouette in five layers. The water is brightest looking up and darkest level with the eye (Tyler 1958).
+
+**Light.** Sunlight entering the water bends to within 48.6° of the vertical. Its beams are parallel, so
+on the sheet they fan out from the refracted sun. The waves gather and scatter the light, so its strength
+swings ±94% at 4 m and ±10% at 29 m (Hieronymi et al. 2012); here each beam takes one moment of a ±60%
+swing, and RAYS sets how strong they are.
+
+The halftone cell matters here more than on most plates: at 4 px the fan's mesh, pale tips, corallite
+pits and branchlet speckles all read; at 9 px the bommie reads as masses of colour.
 
 ## What doesn't belong here
 
