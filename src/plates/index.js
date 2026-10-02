@@ -25,8 +25,8 @@ import { seed } from "./seed.js";
 import { reef } from "./reef.js";
 import { lamp } from "./lamp.js";
 
-// 첫째가 기본이다.
-export const PLATES = [ripple, moon, garden, jelly, cell, chloro, cosmos, flake, kaleido, meteor, ghost, seed, reef, lamp];
+// 첫째가 기본이다. 지은 판 가운데 가장 예쁜 JELLY가 맨 앞에서 페이지를 연다.
+export const PLATES = [jelly, ripple, moon, garden, cell, chloro, cosmos, flake, kaleido, meteor, ghost, seed, reef, lamp];
 
 export function plateById(id) {
   return PLATES.find((plate) => plate.id === id) || PLATES[0];

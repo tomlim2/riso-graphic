@@ -11,8 +11,9 @@ by fractions of `height` wherever they can.
 
 Motion is the default. The page starts playing as soon as it opens.
 
-The hung plates are **RIPPLE** · **MOON** · **GARDEN** · **JELLY** · **CELL** · **CHLORO** ·
-**COSMOS** · **FLAKE** · **KALEIDO** · **METEOR** · **GHOST** · **SEED** · **REEF** · **LAMP**.
+The hung plates are **JELLY** · **RIPPLE** · **MOON** · **GARDEN** · **CELL** · **CHLORO** ·
+**COSMOS** · **FLAKE** · **KALEIDO** · **METEOR** · **GHOST** · **SEED** · **REEF** · **LAMP**. The first
+one opens the page, so the prettiest of them, JELLY, goes first.
 POSTER, MEDIUM and WHALE are still in `src/plates/`. Add a line for either to `src/plates/index.js`
 and it returns to the plate picker and the contact sheet. With only one plate in the list, the
 picker hides.
