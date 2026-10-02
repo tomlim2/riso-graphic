@@ -12,7 +12,7 @@ by fractions of `height` wherever they can.
 Motion is the default. The page starts playing as soon as it opens.
 
 The hung plates are **RIPPLE** · **MOON** · **GARDEN** · **JELLY** · **CELL** · **CHLORO** ·
-**COSMOS** · **FLAKE** · **KALEIDO** · **METEOR** · **GHOST** · **CLOUD** · **SEED** · **REEF**.
+**COSMOS** · **FLAKE** · **KALEIDO** · **METEOR** · **GHOST** · **SEED** · **REEF** · **LAMP**.
 POSTER, MEDIUM and WHALE are still in `src/plates/`. Add a line for either to `src/plates/index.js`
 and it returns to the plate picker and the contact sheet. With only one plate in the list, the
 picker hides.
@@ -391,9 +391,9 @@ knobs.
 | FLAKE | FIELD · SIZE · HABIT · BRANCH · RIDGE · BUBBLE · GLINT · FLURRY · DARK |
 | KALEIDO | FIELD · MIRRORS · PIECES · SIZE · TUMBLE · FLOW · SPIN · TINT |
 | GHOST | FIELD · DARK · COUNT · SIZE · HEM · SLIP · GHOSTS · FADE · HAND · EYES · PHONES · FOV · ROOM · WINDOW · PANES · DECK · SPIN · WEB · THREADS · COBWEBS · STAIN · HALO · BEAT |
-| CLOUD | FIELD · SKY · OKTAS · SIZE · BASE · SHADE · HAZE · BOIL · HAND · STAIN · BEAT |
 | SEED | FIELD · DARK · SIZE · SEEDS · FILAMENTS · GONE · SWAY · HAND · STAIN · BEAT |
 | REEF | DEEP · CLEAR · SWELL · SURGE · RAYS · HAND · STAIN |
+| LAMP | DARK · GLOW · FOG · POOL · HAND · STAIN |
 | METEOR | SKY: FIELD · DARK · DUST · DEPTH · TRAIL — BEAM: ANGLE · LENGTH · BEAMS — BEAT: BEAT — LASER card: WIDTH · LENGTH · VARY · FLICKER · GLOW — SPIKE card: SIZE · POINTS · STRETCH · SPREAD · NOSE · VARY · FLIP · GLOW — SECOND card: SIZE · POINTS · STRETCH · SPREAD · VARY · FLIP — DOTS card: BURST · FREQ · LIFETIME · VELOCITY · ANGLE · ACCEL · DRAG · GRAVITY · TOWARD · SIZE · VARY · SHRINK · FADE · STRETCH · SCATTER — STARS card: FREQ · LIFETIME · VELOCITY · DRAG · SIZE · SHRINK · TRAIL · SCATTER |
 
 Don't confuse the CELL plate with the CELL dial. The dial sets the halftone cell size for every
@@ -479,7 +479,7 @@ size however large the sheet hangs. A plate with no `guides` gets the paper's ow
 and the middle.
 
 Whatever the plate returns, GUIDES also writes the model that built it in the top-left margin —
-`MODEL · CLAUDE-OPUS-5-5` — from the plate's `model`. REEF was built by claude-opus-5-5 and every
+`MODEL · CLAUDE-OPUS-5-5` — from the plate's `model`. REEF and LAMP were built by claude-opus-5-5 and every
 other plate, hung or not, by claude-opus-5. That record comes from the session transcripts: the model
 of each message that wrote the plate's file. (SEED's DARK default was changed by claude-opus-5-5; the
 plate itself was built by claude-opus-5.)
@@ -991,44 +991,6 @@ somewhere to run, and anything that would pass the margin is clipped there. WEB 
 1 the web is 80% of the sheet across — and THREADS how many radii, fewer than six stops reading as
 a net. It hangs still while the figures move.
 
-## Fair-weather cumulus (CLOUD)
-
-This is the sky of a sheet that will get hills and trees under it; the clouds came first. Nothing in
-it is drawn. Each rule is one the weather people measured.
-
-**One base for every cloud.** A cumulus has a flat bottom, and every cumulus in the same sky has its
-bottom at the same height: air rising off the same ground reaches its dew point at the same altitude,
-the lifting condensation level. In temperate places that is 500 to 1500 m (BASE).
-
-**Wider than tall, fractal round the edge.** Fair-weather cumulus (humilis) are wider than they are
-tall. Their outlines are fractal — area and perimeter follow P ∝ √A^1.35 over three orders of
-magnitude (Lovejoy 1982) — and the plate gives them three generations of bubbles, turrets on turrets.
-Each big lobe is a ball the base plane cuts, its centre 0.3 of its radius above the base, so its
-footprint is √(1 − 0.3²) ≈ 0.95 of its radius and the cloud sits on its base like a cotton ball on a
-table. The bubbles are sunk half into the lobe beneath them; perched on its rim they close ranks round
-a scrap of sky and the cloud gets a hole.
-
-**Many small, few large.** Cloud widths follow a power law: the number of clouds of width L goes as
-L^−1.66 (Wood & Field 2011). The smallest here is 300 m; SIZE sets the largest.
-
-**Cover in oktas.** Observers count cloud cover in eighths of the sky, and so does OKTAS: 1–2 is few,
-3–4 scattered, 5–7 broken, 8 overcast. Clouds are added until they cover that share of the sky.
-
-**Perspective.** We stand on the ground and look at the horizon, 78% of the way down the sheet (the
-hills will stand below it). Clouds are spread evenly over the ground, so there are more of them the
-farther you look; the far ones shrink, their bases settle toward the horizon, and they sink into
-the air (HAZE). The base is the footprint of each lobe seen from below — a level disc at height h seen
-from d away flattens by h/d — so the nearer a cloud, the thicker its shaded underside.
-
-**Light.** The sun is up to the left. A cloud is sky carved back to paper; the side turned from the
-sun is whatever the cloud doesn't cover when you slide it toward the sun, printed lightly, and the
-base is printed darker. Shade on a cloud is lit by the sky, so it is printed in the sky's ink. The
-sky is deepest at the zenith and pales toward the horizon (SKY).
-
-**Boil.** Cumulus tops boil. Every bubble swells and settles on its own beat, a whole number of times
-a loop (BOIL). The far clouds that come out only a few pixels wide are gathered by distance and printed
-together, which keeps a sheet near 30 ms.
-
 ## A dandelion clock (SEED)
 
 One dandelion head gone to seed, standing on a long thin stalk against a sky that is darkest at the top
@@ -1158,9 +1120,48 @@ swing, and RAYS sets how strong they are.
 The halftone cell matters here more than on most plates: at 4 px the fan's mesh, pale tips, corallite
 pits and branchlet speckles all read; at 9 px the bommie reads as masses of colour.
 
+## A street lamp (LAMP)
+
+One lamp-type street lamp stands on a road at night and glows. Nothing in it is drawn: the lamp
+stands at the sizes of an old street lamp, and its light carves the night the way light spreads.
+
+**The lamp.** A cast-iron column rises 4 m and carries the lantern on a 76 mm spigot, the frog
+mounting heritage lanterns sit on. A wide cast base stands at its foot, and a ladder bar crosses
+under the lantern. The lantern follows DW Windsor's Windsor Street: 833 mm high and 440 mm at its
+widest, glass on four sides and wider at the top, under a canopy with a finial. A bulb glows inside.
+
+**The glow.** Look at a bright light and the dark around it goes pale: light scattered inside the eye
+lays a veil around it, and the veil's luminance falls with the square of the angle from the light
+(Stiles–Holladay, L = 10E/θ²). GLOW is the strength of that veil. The angle is measured from the
+bulb, with the glass's half-width as the unit. Light adds, so the veil and the pool are summed.
+
+**The fog.** In fog the droplets scatter the lamp's light, and the air around the lantern glows
+wide. A line of sight passing b from the light gathers scattered light that goes as 1/b, far slower
+than the eye's veil, and loses more as e^−βb where the fog soaks the light up (FOG; at 1 the
+visibility is about 10 m, by Koschmieder's V = 3.912/β). Thicker fog glows brighter near the lamp
+and dies out sooner. The fog's light is carved as it is, without the veil's 1.6 boost, so it thins
+out evenly with no flat plateau, and since dim light shows little colour to the eye (mesopic vision)
+it takes less yellow and stays hazy.
+
+**The pool.** The ground under a lamp follows the cosine-cubed law: ground r from the foot of a
+light hung at height h is lit (1 + r²/h²)^−3/2 as brightly as the foot (POOL). We look from eye
+height, 1.6 m, at a lamp 10 m away, so the round pool lies flattened by perspective.
+
+**Printing.** With no white ink, light isn't printed but carved. The night drums are carved as far
+as the light reaches, and the yellowest drum is laid in their place, so the screen draws the
+fall-off. Where the light runs past full, the yellow goes too, as 1/L, so a strong light burns
+white in the middle and only its rim is coloured, the way an overexposed lamp looks in a photograph.
+The column and the lantern's frame are every drum overprinted, the darkest the press can print; the
+glass is the palest yellow and the bulb is paper. Nothing is outlined. Where a palette's
+warmest ink is orange, the lamp burns orange, like sodium.
+
+**One composed piece.** The scene is fixed, and the roll changes only what the press changes. The
+light doesn't flicker, so the plate stands still. Its light is worked out once per knob setting
+(34–44 ms) and reused, so a sheet takes about 2.5 ms with the GPU's work included.
+
 ## What doesn't belong here
 
-Two plates were built and taken down again, and they failed the same way.
+Three plates were built and taken down again, and they failed the same way.
 
 FRIEZE drew bands of ornament — the seven frieze groups, twenty motifs from the ornament handbooks,
 rails, a border with corner blocks. WHALE drew a whale in the sea — a silhouette against light,
@@ -1175,8 +1176,17 @@ makes the rule visible. Ornament and depiction are the other way round: the form
 the press only reproduces it, so the sheet stands or falls on draughtsmanship, and a mediocre drawing
 is not rescued by being printed well.
 
+CLOUD was built to answer that, and failed the same way. It was a sky of fair-weather cumulus with
+nothing drawn by eye: every base at the lifting condensation level, widths on the L^−1.66 power law
+(Wood & Field 2011), fractal edges, cover counted in oktas. The first version didn't look like a
+print at all. It was redone twice, once as a woodblock sky with a graded band (ichimonji bokashi) and
+once flat, one tone to each ink, and then taken down. The rules were the weather's, not the press's:
+they decided where each cloud stood and how big it was, and the cloud itself was still a depicted
+thing that the press only reproduced.
+
 So: no plates whose subject is a drawn thing, and no plates whose quality is a matter of taste in
-ornament. If a new plate can't be stated as a rule the press carries out, it doesn't belong here.
+ornament. Measuring the subject doesn't change that — the rule has to belong to the press. If a new
+plate can't be stated as a rule the press carries out, it doesn't belong here.
 
 ## A shooting star (METEOR)
 
@@ -1192,8 +1202,8 @@ written as the same stack, printed back to front. Nothing is outlined.
 | Laser | A simple meteor tail after the breakdown's Laser_Main: one band in the light drum that swells just behind the head and thins toward its end (WIDTH). Like the breakdown's, it can flicker: FLICKER is the share of beats it is off, decided by that beat's own random stream so the loop still closes, and its glow goes with it. By default it never goes off (0). Every beat its thickness and its reach shift a little (VARY, ±15% and ±12% at 0.5), drawn from that same beat's stream, so it is never the same band blinking on and off; the glow keeps the knobs' own shape, since a blur that soft shows no such shift. LENGTH sets how far it reaches, as a share of the beam's LENGTH, without moving the head (LASER card: WIDTH, LENGTH, VARY, FLICKER, GLOW) |
 | Dots | Flat dark ellipses after the breakdown's Dots emitter. Every one is born big and long right behind the head, then flows down the beam, shrinking and rounding until it ends as a circle. Each dot pivots on its leading tip at full size, so it shrinks into that point and keeps its pace as it rounds; pivoting on the head-side end dragged the shape back and made it seem to slow down. So new ones always overlap into one dark lump behind the head, and a string of ever smaller beads runs along the beam. It takes an effects emitter's values: spawn rate (FREQ, per second), lifetime (LIFETIME, seconds, snapped to an even share of the 2 s loop so the loop closes), how fast they fly, in which direction, how that speed changes and what pulls them (VELOCITY the speed, ANGLE the heading away from the beam's axis in degrees, ACCEL speeding up along that heading over life — negative slows down — with the distance covered kept the same, DRAG, GRAVITY a constant pull that grows with the square of age and bends the bead line into a parabola, TOWARD its direction in degrees, 0 straight down the page), start size and size over life (SIZE, SHRINK), alpha over life (FADE) and how much of the spawning is gathered into one burst (BURST: 0 spawns evenly, 1 gives every dot the same age, so a whole puff is born at once and dies together), elongation (STRETCH) and sideways spread (SCATTER). FREQ × LIFETIME dots live at once, up to 60. These knobs sit in a DOTS card of their own. Dots with the same FADE step are drawn in one path, in eight steps, so overlaps don't print darker. Printed over the main beam, since the beads line up with it |
 | Tail stars | Four-point stars the head throws back, after the breakdown's Stars emitter. Each leaves the rim of the head's circle, flies down the beam and shrinks, trailing a hairline tail back toward the head that is longer the faster it flies. Yellow, pink, blue or white, one color each, and about one in ten is the dots' dark instead, so dark stars sit among the bright ones. The same emitter values as the dots plus TRAIL, the tail's length, in a STARS card of their own |
-| Second spike | After the breakdown's Spike_Second, where thin navy and purple spikes stick out behind the bright one in the colour stage: a second fan behind the head, printed in the dots' dark, the secondary colour. Its body is no bigger than the head's smallest body (SIZE 1), so it always hides behind the head and only its longer blades show. It has its own random stream and its own FLIP, its blade length changes each drawing (VARY), and its nose is kept blunt so it tucks behind the head (SECOND card: SIZE, POINTS, STRETCH, SPREAD, VARY, FLIP; SIZE 0 turns it off; it is half the head's floor by default) |
-| Head | After the breakdown's Spike_Main and its final composite: a heart in the accent ink, the head's core, cut round by hand rather than struck with a compass — its edge is redrawn with the fan each drawing, off its own random stream so the fan itself is untouched — sits fixed on HEAD 0, and blades fan out from it toward the tail, with the core as the fan's pivot. The fan is built anew FLIP times a loop (12 by default, apart from BEAT), the way that emitter picks a random texture almost every frame. Blades spread like the ribs of a fan, from half of POINTS (rounded up) to POINTS of them, the count changing each drawing: the middle ones are longest, deep notches part them, and a short nose leads the way. The nose is cut into a polygon that goes back and forth between a pentagon and a heptagon from drawing to drawing: two points half the shorter edge back along each side, and one to three between them, spaced along a curve that bulges toward the old tip, so the front of the head is never a sharp triangle; the blade tips stay pointed. The fan opens by SPREAD (140° by default), each drawing up to 30% narrower or wider (narrower ones have longer blades), leans a little to one side, and turns a little about the core. The front is two tangent lines from the nose to the ring around the core, and NOSE is the angle between them (137° by default): small makes a long, sharp nose. The flanks are tangent to the same ring, so each corner sits where a nose tangent meets a flank, and SPREAD and NOSE never pull on each other. Each blade is uneven on its own. The core never moves, and its size changes per drawing on its own (0.16–0.26 of SIZE). The fan's floor is the size that still wraps the largest core with a yellow rim — its outline stays 1/0.85 of that core's radius from the center — and each drawing only scales the whole fan up from there (VARY; 1–1.6× at 0.5), apart from the core, so fan and core never swell and shrink together as one lump. Nothing blinks: the fan is always the light drum and the core always white, lightly tinted by the palette (see White in the table below). The core is cut out of the fan and printed on its own. A soft glow lies around the fan (GLOW) (SPIKE card: SIZE, POINTS as the most blades, STRETCH, SPREAD, NOSE, VARY, FLIP, GLOW) |
+| Second spike | After the breakdown's Spike_Second, where thin navy and purple spikes stick out behind the bright one in the colour stage: a second fan behind the head, printed in the accent ink at 80% (see White below), so it reads as that ink. Its body is no bigger than the head's smallest body (SIZE 1), so it always hides behind the head and only its longer blades show. It has its own random stream and its own FLIP, its blade length changes each drawing (VARY), and its nose is kept blunt so it tucks behind the head (SECOND card: SIZE, POINTS, STRETCH, SPREAD, VARY, FLIP; SIZE 0 turns it off; it is half the head's floor by default) |
+| Head | After the breakdown's Spike_Main and its final composite: a heart in the dots' dark, the head's core, all but round — its edge wavers by about 1% of its radius and is redrawn with the fan each drawing, off its own random stream so the fan itself is untouched — sits fixed on HEAD 0, and blades fan out from it toward the tail, with the core as the fan's pivot. The fan is built anew FLIP times a loop (12 by default, apart from BEAT), the way that emitter picks a random texture almost every frame. Blades spread like the ribs of a fan, from half of POINTS (rounded up) to POINTS of them, the count changing each drawing: the middle ones are longest, deep notches part them, and a short nose leads the way. The nose is cut into a polygon that goes back and forth between a pentagon and a heptagon from drawing to drawing: two points half the shorter edge back along each side, and one to three between them, spaced along a curve that bulges toward the old tip, so the front of the head is never a sharp triangle; the blade tips stay pointed. The fan opens by SPREAD (140° by default), each drawing up to 30% narrower or wider (narrower ones have longer blades), leans a little to one side, and turns a little about the core. The front is two tangent lines from the nose to the ring around the core, and NOSE is the angle between them (137° by default): small makes a long, sharp nose. The flanks are tangent to the same ring, so each corner sits where a nose tangent meets a flank, and SPREAD and NOSE never pull on each other. Each blade is uneven on its own. The core never moves, and its size changes per drawing on its own (0.16–0.26 of SIZE). The fan's floor is the size that still wraps the largest core with a yellow rim — its outline stays 1/0.85 of that core's radius from the center — and each drawing only scales the whole fan up from there (VARY; 1–1.6× at 0.5), apart from the core, so fan and core never swell and shrink together as one lump. Nothing blinks: the fan is always the light drum and the core always the dots' dark (see Dark in the table below). The core is cut out of the fan and printed on its own. A soft glow lies around the fan (GLOW) (SPIKE card: SIZE, POINTS as the most blades, STRETCH, SPREAD, NOSE, VARY, FLIP, GLOW) |
 
 The head is anchored on the head's origin, HEAD 0, where the beams start. The core sits on it and the
 fan's nose just ahead of it, and the dots and tail stars are born on an
@@ -1224,8 +1234,8 @@ an average lets orange beat yellow.
 | Yellow | Carve every drum, then print the light drum |
 | Blue | Carve every drum but leave some, a paler sky |
 | Pink | Carve every drum and print the accent; with two drums, leave some of the sky instead |
-| White | Carve every drum, then tint it lightly (40%) with the accent, or with the darkest drum when there are only two, so the whites change with the palette too. The head's core takes the same ink at 80%, so it reads as that ink |
-| Dark | Fill the darkest drum, overprint the accent and carve the rest; a yellow accent is left out, since it would turn the dark olive |
+| White | Carve every drum, then tint it lightly (40%) with the accent, or with the darkest drum when there are only two, so the whites change with the palette too. The second spike takes the same ink at 80%, so it reads as that ink |
+| Dark | Fill the darkest drum, overprint the accent and carve the rest; a yellow accent is left out, since it would turn the dark olive. The head's core is carved clean first, so the second spike and the laser under it don't show through |
 
 A thin layer of the yellow drum over the sky gives the bluish gray of the reference.
 

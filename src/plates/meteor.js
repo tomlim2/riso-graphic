@@ -221,7 +221,7 @@ export const meteor = {
     { panel: "SPIKE", key: "spikeVary", label: "VARY", min: 0, max: 1, step: 0.05, value: 0.2, hint: "장마다 창끝이 커지는 정도. 가장 작을 때도 가장 커진 심을 감싼다. 0이면 늘 그 크기다" },
     { panel: "SPIKE", key: "spikeFlip", label: "FLIP", min: 4, max: 48, step: 1, value: 12, hint: "창끝이 한 바퀴에 몇 번 바뀌는가. 한 바퀴는 48프레임이고, 분해 장면은 거의 매 프레임 바뀐다. BEAT와 따로 논다" },
     { panel: "SPIKE", key: "spikeGlow", label: "GLOW", min: 0, max: 1, step: 0.05, value: 0.45, hint: "창끝 둘레의 번짐" },
-    // 두 번째 창끝(분해 장면의 Spike_Second). 첫째 부채 뒤에 도트의 빛깔로 한 겹 더 편다. SECOND 칸으로 따로 둔다
+    // 두 번째 창끝(분해 장면의 Spike_Second). 첫째 부채 뒤에 곁들이 잉크의 빛깔로 한 겹 더 편다. SECOND 칸으로 따로 둔다
     { panel: "SECOND", key: "secondSize", label: "SIZE", min: 0, max: 2.5, step: 0.05, value: 0.5, hint: "몸통의 크기. 1이면 첫째 부채의 가장 작은 몸통과 같아 늘 그 뒤에 묻힌다. 0이면 없다" },
     { panel: "SECOND", key: "secondPoints", label: "POINTS", min: 2, max: 8, step: 1, value: 2, hint: "칼날 수의 끝값. 장마다 이 수의 절반에서 이 수 사이다" },
     { panel: "SECOND", key: "secondStretch", label: "STRETCH", min: 0.5, max: 2.5, step: 0.05, value: 2.2, hint: "칼날이 뻗는 길이" },
@@ -347,7 +347,7 @@ export const meteor = {
     // 통, 분홍은 곁들이, 흰빛은 곁들이로 옅게 물든 종이다. 푸른 빛은 하늘을 조금 남겨 옅은 하늘이 된다.
     // 곁들이가 없으면 분홍 빛도 하늘을 조금 남긴다
     // 흰빛은 종이 그대로가 아니라 곁들이 잉크로 옅게 물든다. 배색마다 흰 부분의 빛깔도 바뀐다. 곁들이가 없는
-    // 두 통 배색에서는 가장 진한 통으로 물든다. 머리의 심은 같은 잉크로 진하게 물들어 잉크색에 가깝다
+    // 두 통 배색에서는 가장 진한 통으로 물든다. 두 번째 창끝은 같은 잉크로 진하게 물들어 잉크색에 가깝다
     const tint = accent || (S.key !== glowInk ? S.key : null);
     const keeps = (kind) => (kind === "cyan" ? 0.6 : kind === "pink" && !accent ? 0.45 : 0);
     const glowWith = (kind, paint, strength = 1) => {
@@ -355,11 +355,11 @@ export const meteor = {
       if (kind === "pink" && accent) stain([accent], paint, strength * 0.8);
       else if (kind === "yellow" && glowInk) stain([glowInk], paint, strength * 0.95);
       else if (kind === "white" && tint) stain([tint], paint, strength * 0.4);
-      else if (kind === "core" && tint) stain([tint], paint, strength * 0.8);
+      else if (kind === "tint" && tint) stain([tint], paint, strength * 0.8);
     };
 
     // 어둠을 찍는다. 가장 진한 통을 끝까지 채우고 곁들이를 겹쳐 하늘보다 짙게, 나머지 통은 파낸다 — 노랑이
-    // 겹치면 어둠이 올리브가 된다. 도트가 쓴다
+    // 겹치면 어둠이 올리브가 된다. 도트와 머리의 심이 쓴다
     const darken = (paint, strength = 1) => {
       carve(inks.filter((sep) => sep !== S.key && sep !== darkInk), paint, strength);
       stain([S.key], paint, strength);
@@ -597,7 +597,7 @@ export const meteor = {
     // 붙박이로 빛나고, 심을 사북으로 칼날이 부채꼴로 꼬리 쪽에 펼쳐진다. 부채는 한 바퀴에 FLIP번 새로
     // 짓는다 — 텍스처를 거의 매 프레임 무작위로 고르는 분해 장면과 같다. BEAT와 따로 논다. 장마다 날의 수는
     // 그대로(POINTS)이고 펼친 폭과 길이와 크기가 달라지며(VARY), 심은 자리가 붙박이고 크기만 부채를 따라
-    // 바뀐다. 빛깔은 깜빡이지 않는다 — 부채는 늘 빛의 통이고 심은 늘 곁들이 잉크다. 둘레로 번진다(GLOW).
+    // 바뀐다. 빛깔은 깜빡이지 않는다 — 부채는 늘 빛의 통이고 심은 늘 도트와 같은 어둠이다. 둘레로 번진다(GLOW).
     //
     // 장의 부채는 제 난수로 짓는다. 장 번호로 씨앗을 섞으므로 같은 장은 늘 같은 부채이고, t=1은 t=0과
     // 같은 장이다. 자리를 뽑는 난수는 건드리지 않아 다른 층은 그대로다
@@ -606,11 +606,11 @@ export const meteor = {
     const spikeRng = makeRng((seed ^ 0x51f15e5d ^ Math.imul(leaf + 1, 0x9e3779b1)) >>> 0);
     const base = width * 0.1 * knobs.spikeSize; // 창끝 크기(SIZE)
     // 심. 머리의 코어라 머리 원점에 붙박이고, 크기는 장마다 제 난수로 바뀐다(창끝 크기의 0.16~0.26배).
-    // 꼴은 자로 그린 원이 아니라 손으로 오린 둥근 꼴이다 — 컴퍼스로 그린 동그라미는 이 판의 다른
-    // 층과 따로 논다. 부채의 난수를 건드리지 않도록 제 난수를 따로 굴린다
+    // 꼴은 거의 동그라미다. 가장자리가 반지름의 1%쯤만 흔들린다 — 0.16만큼 흔들면 울퉁불퉁했다.
+    // 부채의 난수를 건드리지 않도록 제 난수를 따로 굴린다
     const heartR = base * (0.16 + 0.1 * spikeRng.next());
     const coreRng = makeRng((seed ^ 0x7feb352d ^ Math.imul(leaf + 1, 0x846ca68b)) >>> 0);
-    const core = shapes.blob(coreRng, hx, hy, heartR, { lobes: 4, wobble: 0.16, steps: 16 });
+    const core = shapes.blob(coreRng, hx, hy, heartR, { lobes: 4, wobble: 0.01, steps: 16 });
     // 부채. 가장 작을 때도 가장 커진 심을 감싸고 테를 남긴다 — 윤곽이 심 가운데에서 가장 큰 심의 1/0.85배
     // 밖에 있다. 부채는 이 바닥만 지키고, 장마다 그보다 크게 통째로 스케일한다(VARY). 심과 따로 논다. 장마다
     // 심을 축으로 조금 돈다(±3°) — 텍스처를 바꿔 끼울 때마다 조금씩 어긋나는 것과 같다. 등 쪽은 축의 -v다
@@ -622,7 +622,7 @@ export const meteor = {
     const outline = shape.map(([x, y]) => at(x * cosT - y * sinT, -(x * sinT + y * cosT)));
 
     // 두 번째 창끝(분해 장면의 Spike_Second). 분해 장면의 색 단계에서 밝은 창끝 뒤로 남색 · 보라의 가늘고 긴
-    // 창끝이 삐져나오듯, 첫째 부채 뒤에 도트와 같은 어둠(세컨더리 빛깔)으로 부채 하나를 더 편다. 몸통은 첫째
+    // 창끝이 삐져나오듯, 첫째 부채 뒤에 곁들이 잉크를 진하게 물들인 빛깔로 부채 하나를 더 편다. 몸통은 첫째
     // 부채의 가장 작은 몸통보다 크지 않아(SIZE 1) 늘 그 뒤에 묻히고, 날이 길어 그 밖으로 나온 날만 보인다. 장마다
     // 날의 길이가 달라진다(VARY). 제 난수와 제 박자(FLIP)로 짓는다. 코는 뭉툭하게 두어 첫째 부채 뒤에 묻는다(SECOND 칸)
     if (knobs.secondSize > 0) {
@@ -634,7 +634,7 @@ export const meteor = {
       const grow2 = ((base * 0.26) / 0.85 / edgeDistance(shape2, 0, 0)) * knobs.secondSize;
       const cos2 = Math.cos(turn2) * grow2;
       const sin2 = Math.sin(turn2) * grow2;
-      darken(poly(shape2.map(([x, y]) => at(x * cos2 - y * sin2, -(x * sin2 + y * cos2)))));
+      glowWith("tint", poly(shape2.map(([x, y]) => at(x * cos2 - y * sin2, -(x * sin2 + y * cos2)))));
     }
 
     // 번짐. 부채의 흐린 무늬를 한 겹 깐다. 장마다 꼴이 달라 장마다 짓고, 같은 장이면 쥐고 있다
@@ -656,10 +656,13 @@ export const meteor = {
       g.clip("evenodd");
       poly(outline)(g);
     });
-    glowWith("core", (g) => {
+    // 심은 도트와 같은 어둠이다. 밑에 깔린 두 번째 창끝의 몸통과 레이저가 비치지 않게 모든 통을 파낸 뒤 찍는다
+    const heart = (g) => {
       shapes.splinePath(g, core, true);
       g.fill();
-    });
+    };
+    carve(inks, heart, 1);
+    darken(heart);
 
     // 도트가 사는 동안 가는 끝. 기운 방향(ANGLE)과 끌림(GRAVITY)을 따라간다. 안내선이 여기를 찍는다
     const dotEnd = headRadius * 0.2 + 2 * width * 0.08 * knobs.size * dotPeak + dotReach;
