@@ -1,10 +1,27 @@
+/* 화면은 흑백이고 시스템의 밝음 · 어둠을 따른다. 밝으면 흰회색 책상에 흰 카드, 어두우면 검은 책상에
+   검회색 카드다. 빛깔은 찍힌 장에만 둔다 */
 :root {
-  --desk: #2e2b28; /* 판화를 받치는 책상. 짙은 숯빛이라 한 장이 라이트박스처럼 떠오른다 */
-  --on-desk: #efe9dd; /* 책상 위에 바로 앉는 글자 */
-  --paper: #efe9dd;
+  color-scheme: light dark;
+  --desk: #ececec; /* 판화를 받치는 책상 */
+  --on-desk: #000; /* 책상 위에 바로 앉는 글자 */
+  --paper: #fff; /* 카드 */
   --sheet: #fcfbf9; /* 인쇄되는 종이. src/palette.js의 PAPER와 같다 */
-  --ink: #2b2724;
-  --line: rgba(43, 39, 36, 0.22);
+  --ink: #000;
+  --line: rgba(0, 0, 0, 0.2);
+  --hover: rgba(0, 0, 0, 0.06);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.12), 0 18px 44px rgba(0, 0, 0, 0.16);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --desk: #000;
+    --on-desk: #fff;
+    --paper: #1c1c1c;
+    --ink: #f2f2f2;
+    --line: rgba(255, 255, 255, 0.18);
+    --hover: rgba(255, 255, 255, 0.08);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 22px 60px rgba(0, 0, 0, 0.45);
+  }
 }
 
 * { box-sizing: border-box; }
@@ -64,7 +81,7 @@ html, body {
   max-width: 100%;
   max-height: 100%;
   background: var(--sheet);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 22px 60px rgba(0, 0, 0, 0.45);
+  box-shadow: var(--shadow);
 }
 
 /* 안내선. 한 장 위에 겹쳐 놓기만 한다. 손은 통과시키고, 자리와 크기는 한 장을 따라간다 */
@@ -120,7 +137,7 @@ button, input[type="text"] {
   letter-spacing: 0.12em;
 }
 
-button:hover { background: rgba(43, 39, 36, 0.06); }
+button:hover { background: var(--hover); }
 
 /* 버튼처럼 생긴 연결. 다른 페이지로 넘어가는 것이라 모양만 빌린다 */
 a.link {
@@ -130,7 +147,7 @@ a.link {
   padding: 7px 9px;
   letter-spacing: 0.12em;
 }
-a.link:hover { background: rgba(43, 39, 36, 0.06); }
+a.link:hover { background: var(--hover); }
 button.on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
 
 .wide { display: block; width: 100%; text-align: center; }

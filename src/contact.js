@@ -21,7 +21,11 @@ export function layContact(board, sheet, cells, printCell, size) {
   board.width = columns * (cellWidth + GUTTER);
   board.height = rows * (cellHeight + CAPTION);
   const out = board.getContext("2d");
-  out.fillStyle = "#2e2b28"; // 책상 빛깔(styles.css의 --desk)
+  // 대지와 이름표는 책상의 빛깔을 따른다(styles.css의 --desk · --on-desk). 시스템의 밝음 · 어둠을 따라 바뀐다
+  const style = getComputedStyle(board);
+  const desk = style.getPropertyValue("--desk").trim() || "#000";
+  const label = style.getPropertyValue("--on-desk").trim() || "#fff";
+  out.fillStyle = desk;
   out.fillRect(0, 0, board.width, board.height);
 
   cells.forEach((cell, index) => {
@@ -30,9 +34,11 @@ export function layContact(board, sheet, cells, printCell, size) {
     const y = Math.floor(index / columns) * (cellHeight + CAPTION) + GUTTER / 2;
     out.drawImage(sheet, x, y);
 
-    out.fillStyle = cell.mark ? "#efe9dd" : "rgba(239, 233, 221, 0.55)";
+    out.fillStyle = label;
+    out.globalAlpha = cell.mark ? 1 : 0.55;
     out.font = "600 11px ui-monospace, SFMono-Regular, Menlo, monospace";
     out.fillText(cell.label, x, y + cellHeight + 14);
+    out.globalAlpha = 1;
   });
 
   return cells.length;

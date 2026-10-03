@@ -5,20 +5,24 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>망점은 어떻게 찍히나 — RISO GRAPHIC</title>
 <meta name="description" content="리소 스타일 샘플 시트의 망점이 분판에서 종이까지 어떻게 찍히는지, 이 화면의 인쇄기가 지금 찍은 그림으로 열 단계를 따라간다.">
+<meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="./styles.css">
 <style>
   :root {
-    /* 글이 책상 위에 바로 앉는 페이지라 읽는 책상은 옅게 둔다 */
-    --desk: #ddd8cb;
     --on-desk: var(--ink);
     --accent: #00a8e8;
     --display: "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", "Helvetica Neue", system-ui, sans-serif;
   }
 
+  /* 글이 책상 위에 바로 앉는 페이지라, 밝을 때는 읽는 책상을 흰 종이로 둔다. 어두울 때는 앱과 같은 검은 책상이다 */
+  @media (prefers-color-scheme: light) {
+    :root { --desk: #fff; }
+  }
+
   body.how { height: auto; min-height: 100%; }
 
   /* 글을 내리면 머리줄이 글자 위에 겹치지 않게 책상색으로 받친다 */
-  .how .bar { background: linear-gradient(var(--desk) 72%, rgba(221, 216, 203, 0)); padding-bottom: 20px; }
+  .how .bar { background: linear-gradient(var(--desk) 72%, transparent); padding-bottom: 20px; }
   .how .bar .status { opacity: 0.8; }
 
   .article { max-width: 1120px; margin: 0 auto; padding: 72px 24px 40px; }
@@ -50,7 +54,7 @@
   .lens {
     position: absolute;
     border: 1.5px solid var(--ink);
-    box-shadow: 0 0 0 1.5px rgba(243, 239, 228, 0.9);
+    box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.9);
     pointer-events: none;
   }
   .dials { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
@@ -80,7 +84,7 @@
     width: 100%;
     height: auto;
     background: var(--paper);
-    box-shadow: 0 1px 2px rgba(43, 39, 36, 0.18), 0 10px 24px rgba(43, 39, 36, 0.14);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18), 0 10px 24px rgba(0, 0, 0, 0.14);
   }
   figure canvas { background: var(--sheet); }
   canvas.px { image-rendering: pixelated; }
