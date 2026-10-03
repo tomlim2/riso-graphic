@@ -654,14 +654,14 @@ them have a white core carved down the middle.
 The legs hang the way they do in a photo of a real jellyfish. Tentacles fall long from the rim
 in slow S-curves and fan outward toward the tips, so neighbors cross. The oral arms start inside
 the bell, so their roots are hidden and they seem to pour out from under the rim; they gather
-near the middle and cross each other on the way down, like a loose braid. There are five by
+near the middle and cross each other on the way down, like a loose braid. There are six by
 default, and a far jellyfish loses only one of them. Only the layout of the legs follows the
 photo, not how they are drawn.
 
 The whiskers (the thin tentacles on the rim) and the legs (the thick oral arms in the middle)
 are two parts with their own knobs. Whiskers take TENTACLES, TRAIL, WOBBLE and SWAY. Legs take
 ARMS, REACH, GIRTH and SWING. The legs grow with the bell: REACH is a multiple of the bell's
-size, and their width scales with the bell against a near bell at the default BELL, so a far or
+size, and their width scales with the bell against a near bell at BELL 0.13, so a far or
 small jellyfish has short, thin legs. Whisker length still follows the sheet (TRAIL). Knobs that
 belong to one part never move the other.
 

@@ -90,12 +90,14 @@ const guides = createGuides(sheet, document.getElementById("marks"), SHEET);
 
 const DEFAULTS = {
   plate: PLATES[0].id,
-  seed: (Math.random() * 0xffffffff) >>> 0,
-  palette: 6, // 노랑 × 산호 × 하늘. 페이지를 처음 여는 배색이다
+  // 처음 여는 장. 쓰는 사람이 고른 JELLY 한 장의 롤과 배색(물빛 × 노랑 × 분홍), 망점 4픽셀, 어긋남 0이다.
+  // NEW ROLL은 여전히 새 롤을 뽑는다
+  seed: 96345256,
+  palette: 8,
   drums: 3,
-  cell: 9,
+  cell: 4,
   grain: 0.35,
-  register: 2,
+  register: 0,
   headline: "",
   grid: "off",
   frame: 0,
