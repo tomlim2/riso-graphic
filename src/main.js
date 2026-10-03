@@ -91,7 +91,7 @@ const guides = createGuides(sheet, document.getElementById("marks"), SHEET);
 const DEFAULTS = {
   plate: PLATES[0].id,
   seed: (Math.random() * 0xffffffff) >>> 0,
-  palette: 0,
+  palette: 6, // 노랑 × 산호 × 하늘. 페이지를 처음 여는 배색이다
   drums: 3,
   cell: 9,
   grain: 0.35,

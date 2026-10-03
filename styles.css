@@ -1,5 +1,6 @@
 :root {
-  --desk: #ddd8cb;
+  --desk: #2e2b28; /* 판화를 받치는 책상. 짙은 숯빛이라 한 장이 라이트박스처럼 떠오른다 */
+  --on-desk: #efe9dd; /* 책상 위에 바로 앉는 글자 */
   --paper: #efe9dd;
   --sheet: #fcfbf9; /* 인쇄되는 종이. src/palette.js의 PAPER와 같다 */
   --ink: #2b2724;
@@ -29,6 +30,7 @@ html, body {
   gap: 14px;
   align-items: baseline;
   padding: 14px 18px;
+  color: var(--on-desk);
   pointer-events: none;
 }
 
@@ -62,7 +64,7 @@ html, body {
   max-width: 100%;
   max-height: 100%;
   background: var(--sheet);
-  box-shadow: 0 1px 2px rgba(43, 39, 36, 0.18), 0 18px 44px rgba(43, 39, 36, 0.22);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 22px 60px rgba(0, 0, 0, 0.45);
 }
 
 /* 안내선. 한 장 위에 겹쳐 놓기만 한다. 손은 통과시키고, 자리와 크기는 한 장을 따라간다 */
@@ -224,11 +226,13 @@ input[type="range"] {
 
 .knob + .knobGroup { margin-top: 16px; }
 
-.hint { margin: 2px 0 0; opacity: 0.45; font-size: 10px; letter-spacing: 0.1em; }
+.hint { margin: 2px 0 0; opacity: 0.45; font-size: 10px; letter-spacing: 0.1em; color: var(--on-desk); }
 
-.noscript { padding: 80px 24px; text-align: center; }
+.noscript { padding: 80px 24px; text-align: center; color: var(--on-desk); }
 
 @media (max-width: 860px) {
+  /* 좁은 화면은 내려 읽으므로 머리줄을 책상색으로 받쳐 카드 위에 글자가 겹치지 않게 한다 */
+  .bar { background: var(--desk); }
   .press { padding: 52px 16px 16px; }
   .deck {
     position: static;
